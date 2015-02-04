@@ -8,6 +8,14 @@
 
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
 
+	<bean class="org.ihtsdo.ts.importer.snowowl.SnowOwlRestClient">
+		<constructor-arg value="${snowowl.url}"/>
+		<constructor-arg value="${snowowl.username}"/>
+		<constructor-arg value="${snowowl.password}"/>
+	</bean>
+
+	<bean class="org.ihtsdo.ts.importer.s3.S3SyncClient"/>
+
 	<bean class="org.ihtsdo.otf.dao.s3.S3ClientImpl" >
 		<constructor-arg>
 			<bean class="com.amazonaws.auth.BasicAWSCredentials">
@@ -15,6 +23,10 @@
 				<constructor-arg value="${s3.secretKey}"/>
 			</bean>
 		</constructor-arg>
+	</bean>
+
+	<bean name="bucketName" class="java.lang.String">
+		<constructor-arg value="${s3.bucket}"/>
 	</bean>
 
 	<bean class="org.ihtsdo.ts.importer.jira.JiraProjectSync">
