@@ -1,3 +1,4 @@
 .*
 target
-jira.properties
+ts-delta-import.properties
+*.iml
