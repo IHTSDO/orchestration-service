@@ -1,52 +1,64 @@
 package org.ihtsdo.ts.importer;
 
 import org.ihtsdo.ts.importer.jira.JiraProjectSync;
-import org.ihtsdo.ts.importer.jira.JiraSyncException;
-import org.ihtsdo.ts.importer.s3.S3SyncClient;
 import org.ihtsdo.ts.importer.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.ts.importfilter.ImportFilterService;
+import org.ihtsdo.ts.importfilter.ImportFilterServiceException;
+import org.ihtsdo.ts.importfilter.SelectionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
-import java.util.List;
+import java.io.InputStream;
 
 public class Importer {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
-	private S3SyncClient s3SyncClient;
+	private ImportFilterService importFilterService;
 
 	@Autowired
-	private JiraProjectSync jiraProjectSync;
+	private JiraProjectSync jiraImportProjectSync;
 
 	@Autowired
-	private SnowOwlRestClient snowOwlRestClient;
+	private JiraProjectSync jiraContentProjectSync;
 
-	public void go() {
+	@Autowired
+	private SnowOwlRestClient tsClient;
+
+	public ImportResult importSelectedWBContent(String taskLabel, Long[] sctids) throws ImporterException {
 		logger.info("Started");
+		ImportResult importResult = new ImportResult();
+
 		try {
-			// Test S3 connection
-			List<String> filenames = s3SyncClient.listFiles();
-			System.out.println("S3 Objects:");
-			for (String filename : filenames) {
-				System.out.println(" " + filename);
-			}
+			SelectionResult selectionResult = importFilterService.createSelectionArchive(sctids);
 
-			// Test Jira connection
-			jiraProjectSync.assertProjectExists();
+			if (selectionResult.isSuccess()) {
+				tsClient.getCreateBranch(taskLabel);
 
-			// Test Snow Owl connection
-			List<String> branchNames = snowOwlRestClient.listBranches();
-			System.out.println("Snow Owl Branches:");
-			for (String branchName : branchNames) {
-				System.out.println(" " + branchName);
+				String filteredArchiveVersion = selectionResult.getFilteredArchiveVersion();
+				logger.info("Filter version {}", filteredArchiveVersion);
+				InputStream selectionArchiveStream = importFilterService.getSelectionArchive(filteredArchiveVersion);
+				Assert.notNull(selectionArchiveStream, "Archive to import should not be null.");
+				tsClient.importRF2(taskLabel, selectionArchiveStream);
+				return importResult.success();
+			} else {
+				if (selectionResult.isMissingDependencies()) {
+					return importResult.fail("The concept selection should be extended to include the following dependencies: " + selectionResult.getMissingDependencies());
+				} else if (selectionResult.isEmptySelection()) {
+					return importResult.fail("The current selection did not match anything in the backlog.");
+				} else {
+					return importResult.fail("Unknown selection problem.");
+				}
 			}
-		} catch (JiraSyncException | SnowOwlRestClientException e) {
-			logger.error("Sync Failed", e);
+		} catch (ImportFilterServiceException e) {
+			throw new ImporterException("Error during selection archive creation process.", e);
+		} catch (SnowOwlRestClientException e) {
+			throw new ImporterException("Error using Snow Owl Terminology Server.", e);
 		}
-		logger.info("Finished");
 	}
 
 }
