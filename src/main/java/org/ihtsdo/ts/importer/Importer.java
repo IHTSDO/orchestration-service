@@ -9,7 +9,6 @@ import org.ihtsdo.ts.importfilter.SelectionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.Assert;
 
 import java.io.InputStream;
 
@@ -34,17 +33,22 @@ public class Importer {
 		ImportResult importResult = new ImportResult();
 
 		try {
+			// Create selection archive (automatically pulls in any new daily exports first)
 			SelectionResult selectionResult = importFilterService.createSelectionArchive(sctids);
 
 			if (selectionResult.isSuccess()) {
+				// Create TS branch
 				tsClient.getCreateBranch(taskLabel);
 
-				String filteredArchiveVersion = selectionResult.getFilteredArchiveVersion();
-				logger.info("Filter version {}", filteredArchiveVersion);
-				InputStream selectionArchiveStream = importFilterService.getSelectionArchive(filteredArchiveVersion);
-				Assert.notNull(selectionArchiveStream, "Archive to import should not be null.");
-				tsClient.importRF2(taskLabel, selectionArchiveStream);
-				return importResult.success();
+				// Stream selection archive into TS import process
+				logger.info("Filter version {}", selectionResult.getFilteredArchiveVersion());
+				InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getFilteredArchiveVersion());
+				boolean importSuccessful = tsClient.importRF2(taskLabel, selectionArchiveStream);
+				if (importSuccessful) {
+					return importResult.success();
+				} else {
+					return importResult.fail("Import process failed, see SnowOwl logs for details.");
+				}
 			} else {
 				if (selectionResult.isMissingDependencies()) {
 					return importResult.fail("The concept selection should be extended to include the following dependencies: " + selectionResult.getMissingDependencies());

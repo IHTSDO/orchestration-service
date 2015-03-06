@@ -8,6 +8,7 @@ import org.ihtsdo.ts.importer.rest.MultipartEntityContent;
 import org.ihtsdo.ts.importer.rest.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -61,11 +62,17 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public void getCreateBranch(String branchName) throws SnowOwlRestClientException {
+	/**
+	 * @param branchName
+	 * @return true if branch created, false if already existed
+	 * @throws SnowOwlRestClientException
+	 */
+	public boolean getCreateBranch(String branchName) throws SnowOwlRestClientException {
 		// http://localhost:8080/snowowl/snomed-ct/MAIN/tasks/create-1
 		try {
 			resty.json(snowOwlUrl + TASKS_URL + "/" + branchName);
 			logger.info("Branch exists {}", branchName);
+			return false;
 		} catch (IOException e) {
 			if (e.getCause() instanceof FileNotFoundException) {
 				// Branch not found. Create.
@@ -76,6 +83,7 @@ public class SnowOwlRestClient {
 							"}";
 					resty.json(snowOwlUrl + TASKS_URL, content(json));
 					logger.info("Created branch {}", branchName);
+					return true;
 				} catch (IOException e1) {
 					throw new SnowOwlRestClientException("Failed to create branch '" + branchName + "'.", e1);
 				}
@@ -85,7 +93,9 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public void importRF2(String branchName, final InputStream rf2FileStream) throws SnowOwlRestClientException {
+	public boolean importRF2(String branchName, final InputStream rf2FileStream) throws SnowOwlRestClientException {
+		Assert.notNull(rf2FileStream, "Archive to import should not be null.");
+
 		try {
 			// Create import
 			logger.info("Create import, branch name '{}'", branchName);
@@ -101,7 +111,6 @@ public class SnowOwlRestClient {
 			JSONResource json = resty.json(snowOwlUrl + IMPORTS_URL, RestyHelper.content(new JSONObject(jsonString), SNOWOWL_V1_CONTENT_TYPE));
 			String location = json.getUrlConnection().getHeaderField("Location");
 			String importId = location.substring(location.lastIndexOf("/") + 1);
-			logger.info("Import ID {}", importId);
 
 			// Create file from stream
 			File tempDirectory = Files.createTempDirectory(getClass().getSimpleName()).toFile();
@@ -123,16 +132,19 @@ public class SnowOwlRestClient {
 			}
 
 			// Poll import entity until complete or times-out
+			logger.info("SnowOwl processing import, this will probably take a few minutes. (Import ID '{}')", importId);
 			Date timeoutDate = getTimeoutDate(IMPORT_TIMEOUT_MINUTES);
+			String status = "";
 			boolean complete = false;
 			while (!complete) {
-				complete = !"RUNNING".equals(resty.json(snowOwlUrl + IMPORTS_URL + "/" + importId).get("status"));
+				status = (String) resty.json(snowOwlUrl + IMPORTS_URL + "/" + importId).get("status");
+				complete = !"RUNNING".equals(status);
 				if (new Date().after(timeoutDate)) {
 					throw new SnowOwlRestClientException("Client maximum import time reached.");
 				}
 				Thread.sleep(1000 * 10);
 			}
-
+			return "COMPLETED".equals(status);
 		} catch (Exception e) {
 			throw new SnowOwlRestClientException("Import failed.", e);
 		}

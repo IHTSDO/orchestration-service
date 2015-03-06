@@ -3,6 +3,7 @@ package org.ihtsdo.ts.importer;
 import org.ihtsdo.otf.dao.s3.S3Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -10,37 +11,51 @@ import java.io.File;
 
 public class Application {
 
-	private static Logger LOGGER = LoggerFactory.getLogger(Application.class);
+	@Autowired
+	private Importer importer;
+
+	@Autowired
+	private S3Client s3Client;
+
+	@Autowired
+	private String archiveBucket;
+
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static void main(String[] args) {
-		ApplicationContext applicationContext = createApplicationContext();
+		String task_test = "task_test";
+		Long[] sctidsToSelect = {84625002L};
 
+		ApplicationContext applicationContext = new ClassPathXmlApplicationContext(new String[]{"spring_context.xml"});
+		Application application = applicationContext.getBean(Application.class);
+		application.importSelectedContent(task_test, sctidsToSelect);
+	}
+
+	private void importSelectedContent(String taskLabel, Long[] sctidsToSelect) {
 		// TODO: Switch to online S3 Client when finished testing
+		primeOfflineBucket();
+
+		// Run importer
+		try {
+			ImportResult importResult = importer.importSelectedWBContent(taskLabel, sctidsToSelect);
+			if (importResult.getCompletedSuccessfully()) {
+				logger.info("Completed successfully");
+			} else {
+				logger.info("Failure - " + importResult.getMessage());
+			}
+		} catch (ImporterException e) {
+			logger.error("Unrecoverable error", e);
+		}
+
+	}
+
+	private void primeOfflineBucket() {
 		// Prime offline bucket
-		S3Client s3Client = applicationContext.getBean(S3Client.class);
-		String archiveBucket = applicationContext.getBean("archiveBucket", String.class);
 		File dir = new File("/Users/kaikewley/leg/");
 		File[] files = dir.listFiles();
 		for (File file : files) {
 			s3Client.putObject(archiveBucket, file.getName(), file);
 		}
-
-		// Run importer
-		Importer importer = applicationContext.getBean(Importer.class);
-		try {
-			ImportResult importResult = importer.importSelectedWBContent("task_test", new Long[]{10641351000119109L});
-			if (importResult.getCompletedSuccessfully()) {
-				LOGGER.info("Completed successfully");
-			} else {
-				LOGGER.info("Failure - " + importResult.getMessage());
-			}
-		} catch (ImporterException e) {
-			LOGGER.error("Unrecoverable error", e);
-		}
-	}
-
-	private static ApplicationContext createApplicationContext() {
-		return new ClassPathXmlApplicationContext(new String[] {"spring_context.xml"});
 	}
 
 }
