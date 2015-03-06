@@ -18,16 +18,14 @@
 		<constructor-arg value="${snowowl.password}"/>
 	</bean>
 
-	<!-- TODO: Switch back to online S3 Client when finished testing -->
-	<bean class="org.ihtsdo.otf.dao.s3.OfflineS3ClientImpl" />
-	<!--<bean class="org.ihtsdo.otf.dao.s3.S3ClientImpl" >-->
-		<!--<constructor-arg>-->
-			<!--<bean class="com.amazonaws.auth.BasicAWSCredentials">-->
-				<!--<constructor-arg value="${aws.key}"/>-->
-				<!--<constructor-arg value="${aws.secretKey}"/>-->
-			<!--</bean>-->
-		<!--</constructor-arg>-->
-	<!--</bean>-->
+	<bean class="org.ihtsdo.otf.dao.s3.S3ClientImpl" >
+		<constructor-arg>
+			<bean class="com.amazonaws.auth.BasicAWSCredentials">
+				<constructor-arg value="${aws.key}"/>
+				<constructor-arg value="${aws.secretKey}"/>
+			</bean>
+		</constructor-arg>
+	</bean>
 
 	<bean name="jiraImportProjectSync" class="org.ihtsdo.ts.importer.jira.JiraProjectSync">
 		<constructor-arg value="${jira.importProjectKey}"/>

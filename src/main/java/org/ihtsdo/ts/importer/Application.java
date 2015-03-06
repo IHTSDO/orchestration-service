@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import java.io.File;
-
 public class Application {
 
 	@Autowired
@@ -32,9 +30,6 @@ public class Application {
 	}
 
 	private void importSelectedContent(String taskLabel, Long[] sctidsToSelect) {
-		// TODO: Switch to online S3 Client when finished testing
-		primeOfflineBucket();
-
 		// Run importer
 		try {
 			ImportResult importResult = importer.importSelectedWBContent(taskLabel, sctidsToSelect);
@@ -47,15 +42,6 @@ public class Application {
 			logger.error("Unrecoverable error", e);
 		}
 
-	}
-
-	private void primeOfflineBucket() {
-		// Prime offline bucket
-		File dir = new File("/Users/kaikewley/leg/");
-		File[] files = dir.listFiles();
-		for (File file : files) {
-			s3Client.putObject(archiveBucket, file.getName(), file);
-		}
 	}
 
 }
