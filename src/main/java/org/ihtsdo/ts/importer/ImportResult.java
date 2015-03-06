@@ -2,22 +2,20 @@ package org.ihtsdo.ts.importer;
 
 public class ImportResult {
 
-	private Boolean completedSuccessfully;
+	private boolean importCompletedSuccessfully;
 	private String message;
 
-	public ImportResult fail(String message) {
-		completedSuccessfully = false;
+	public void setImportCompletedSuccessfully(boolean importCompletedSuccessfully) {
+		this.importCompletedSuccessfully = importCompletedSuccessfully;
+	}
+
+	public ImportResult setMessage(String message) {
 		this.message = message;
 		return this;
 	}
 
-	public ImportResult success() {
-		completedSuccessfully = true;
-		return this;
-	}
-
-	public Boolean getCompletedSuccessfully() {
-		return completedSuccessfully;
+	public boolean isImportCompletedSuccessfully() {
+		return importCompletedSuccessfully;
 	}
 
 	public String getMessage() {

@@ -8,6 +8,8 @@
 
 	<import resource="classpath*:common_context.xml"/>
 
+	<bean class="org.ihtsdo.ts.importer.Application"/>
+
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
 
 	<bean class="org.ihtsdo.ts.importer.snowowl.SnowOwlRestClient">

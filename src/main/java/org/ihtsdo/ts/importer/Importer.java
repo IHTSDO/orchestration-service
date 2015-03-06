@@ -1,5 +1,6 @@
 package org.ihtsdo.ts.importer;
 
+import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.ts.importer.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.snowowl.SnowOwlRestClientException;
@@ -20,9 +21,6 @@ public class Importer {
 	private ImportFilterService importFilterService;
 
 	@Autowired
-	private JiraProjectSync jiraImportProjectSync;
-
-	@Autowired
 	private JiraProjectSync jiraContentProjectSync;
 
 	@Autowired
@@ -38,31 +36,52 @@ public class Importer {
 
 			if (selectionResult.isSuccess()) {
 				// Create TS branch
-				tsClient.getCreateBranch(taskLabel);
+				boolean newBranch = tsClient.getCreateBranch(taskLabel);
 
 				// Stream selection archive into TS import process
 				logger.info("Filter version {}", selectionResult.getFilteredArchiveVersion());
 				InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getFilteredArchiveVersion());
 				boolean importSuccessful = tsClient.importRF2(taskLabel, selectionArchiveStream);
 				if (importSuccessful) {
-					return importResult.success();
+					importResult.setImportCompletedSuccessfully(true);
 				} else {
-					return importResult.fail("Import process failed, see SnowOwl logs for details.");
+					return importResult.setMessage("Import process failed, see SnowOwl logs for details.");
 				}
+
+				// TODO: Using Jira issue label seems risky. Maybe use a custom field to identify tasks?
+				boolean taskExists = jiraContentProjectSync.doesTaskExist(taskLabel);
+				if (!taskExists) {
+					jiraContentProjectSync.createTask(taskLabel);
+				}
+				String operator = newBranch ? "Created" : "Updated";
+				jiraContentProjectSync.addComment(taskLabel, operator + " task with selection from workbench daily export. SCTID list: " + toString(sctids));
+
+				return importResult;
 			} else {
 				if (selectionResult.isMissingDependencies()) {
-					return importResult.fail("The concept selection should be extended to include the following dependencies: " + selectionResult.getMissingDependencies());
+					return importResult.setMessage("The concept selection should be extended to include the following dependencies: " + selectionResult.getMissingDependencies());
 				} else if (selectionResult.isEmptySelection()) {
-					return importResult.fail("The current selection did not match anything in the backlog.");
+					return importResult.setMessage("The current selection did not match anything in the backlog.");
 				} else {
-					return importResult.fail("Unknown selection problem.");
+					return importResult.setMessage("Unknown selection problem.");
 				}
 			}
 		} catch (ImportFilterServiceException e) {
 			throw new ImporterException("Error during selection archive creation process.", e);
 		} catch (SnowOwlRestClientException e) {
 			throw new ImporterException("Error using Snow Owl Terminology Server.", e);
+		} catch (JiraException e) {
+			throw new ImporterException("Error using Jira.", e);
 		}
+	}
+
+	private String toString(Long[] sctids) {
+		StringBuilder builder = new StringBuilder();
+		for (Long sctid : sctids) {
+			if (builder.length() > 0) builder.append(",");
+			builder.append(sctid.toString());
+		}
+		return builder.toString();
 	}
 
 }

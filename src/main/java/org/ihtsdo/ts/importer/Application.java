@@ -38,7 +38,7 @@ public class Application {
 		// Run importer
 		try {
 			ImportResult importResult = importer.importSelectedWBContent(taskLabel, sctidsToSelect);
-			if (importResult.getCompletedSuccessfully()) {
+			if (importResult.isImportCompletedSuccessfully()) {
 				logger.info("Completed successfully");
 			} else {
 				logger.info("Failure - " + importResult.getMessage());
