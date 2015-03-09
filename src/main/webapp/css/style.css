@@ -1,0 +1,9 @@
+body {
+    padding-left: 50px;
+}
+thead th:nth-child(1) {
+    width: 5em;
+}
+tbody td:nth-child(1) {
+    text-align: center;
+}

@@ -1,0 +1,268 @@
+[
+  {
+    "sctid": 504009,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Androgen-dependent hirsutism (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 688000,
+    "relationshipTargets": [
+      {
+        "sctid": 51114001,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      },
+      {
+        "sctid": 60322006,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      }
+    ],
+    "inConceptFile": false,
+    "inDescriptionFile": false,
+    "fsn": "Fetal hyaloid artery (body structure)",
+    "modified": true
+  },
+  {
+    "sctid": 715001,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Nontraumatic rupture of urethra (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 1023001,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Apnea (finding)",
+    "modified": true
+  },
+  {
+    "sctid": 1261007,
+    "relationshipTargets": [],
+    "inConceptFile": true,
+    "inDescriptionFile": false,
+    "fsn": "Fracture of multiple ribs (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 1717003,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Idiopathic guttate hypomelanosis (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 2254005,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Orotic acid (substance)",
+    "modified": true
+  },
+  {
+    "sctid": 2298005,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Goltz syndrome (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 2786004,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Epithelial ovarian tumor, International Federation of Gynecology and Obstetrics stage III (finding)",
+    "modified": true
+  },
+  {
+    "sctid": 2835000,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Traumatic cardiac hemolytic anemia (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 3226008,
+    "relationshipTargets": [
+      {
+        "sctid": 40275004,
+        "relationshipTargets": [
+          {
+            "sctid": 472963003,
+            "relationshipTargets": [],
+            "inConceptFile": false,
+            "inDescriptionFile": false,
+            "modified": false
+          },
+          {
+            "sctid": 473010000,
+            "relationshipTargets": [],
+            "inConceptFile": false,
+            "inDescriptionFile": false,
+            "modified": false
+          },
+          {
+            "sctid": 703938007,
+            "relationshipTargets": [],
+            "inConceptFile": false,
+            "inDescriptionFile": false,
+            "modified": false
+          },
+          {
+            "sctid": 64572001,
+            "relationshipTargets": [],
+            "inConceptFile": false,
+            "inDescriptionFile": false,
+            "modified": false
+          }
+        ],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": true
+      },
+      {
+        "sctid": 105590001,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      }
+    ],
+    "inConceptFile": true,
+    "inDescriptionFile": true,
+    "fsn": "Contact dermatitis due to non-medicinal chemical (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 3716002,
+    "relationshipTargets": [],
+    "inConceptFile": false,
+    "inDescriptionFile": true,
+    "fsn": "Goiter (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 3733009,
+    "relationshipTargets": [
+      {
+        "sctid": 17128000,
+        "relationshipTargets": [
+          {
+            "sctid": 233745009,
+            "relationshipTargets": [
+              {
+                "sctid": 48475001,
+                "relationshipTargets": [],
+                "inConceptFile": false,
+                "inDescriptionFile": false,
+                "modified": false
+              },
+              {
+                "sctid": 6920004,
+                "relationshipTargets": [],
+                "inConceptFile": false,
+                "inDescriptionFile": false,
+                "modified": false
+              },
+              {
+                "sctid": 5798000,
+                "relationshipTargets": [],
+                "inConceptFile": false,
+                "inDescriptionFile": false,
+                "modified": false
+              },
+              {
+                "sctid": 64572001,
+                "relationshipTargets": [],
+                "inConceptFile": false,
+                "inDescriptionFile": false,
+                "modified": false
+              }
+            ],
+            "inConceptFile": true,
+            "inDescriptionFile": false,
+            "modified": true
+          },
+          {
+            "sctid": 64572001,
+            "relationshipTargets": [],
+            "inConceptFile": false,
+            "inDescriptionFile": false,
+            "modified": false
+          }
+        ],
+        "inConceptFile": true,
+        "inDescriptionFile": false,
+        "modified": true
+      },
+      {
+        "sctid": 64572001,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      }
+    ],
+    "inConceptFile": false,
+    "inDescriptionFile": false,
+    "fsn": "Congenital eventration of right crus of diaphragm (disorder)",
+    "modified": true
+  },
+  {
+    "sctid": 3803006,
+    "relationshipTargets": [
+      {
+        "sctid": 255399007,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      },
+      {
+        "sctid": 47393002,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      },
+      {
+        "sctid": 21974007,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      },
+      {
+        "sctid": 60447007,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      },
+      {
+        "sctid": 107656002,
+        "relationshipTargets": [],
+        "inConceptFile": false,
+        "inDescriptionFile": false,
+        "modified": false
+      }
+    ],
+    "inConceptFile": true,
+    "inDescriptionFile": false,
+    "fsn": "Congenital fissure of tongue (disorder)",
+    "modified": true
+  }
+]

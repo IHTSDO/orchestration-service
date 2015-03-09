@@ -1,4 +1,4 @@
-package org.ihtsdo.ts.importer.rest;
+package org.ihtsdo.ts.importer.resty;
 
 import us.monoid.json.JSONObject;
 import us.monoid.web.Content;
