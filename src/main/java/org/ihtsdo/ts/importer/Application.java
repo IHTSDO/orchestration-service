@@ -20,7 +20,7 @@ public class Application {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	public static void main(String[] args) {
+	public static void main_manual_testing(String[] args) {
 		String task_test = "task_test";
 		Long[] sctidsToSelect = {84625002L};
 
