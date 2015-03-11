@@ -1,11 +1,11 @@
-package org.ihtsdo.ts.importer.snowowl;
+package org.ihtsdo.ts.importer.clients.snowowl;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
-import org.ihtsdo.ts.importer.resty.MultipartEntityContent;
-import org.ihtsdo.ts.importer.resty.RestyHelper;
+import org.ihtsdo.ts.importer.clients.resty.MultipartEntityContent;
+import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;

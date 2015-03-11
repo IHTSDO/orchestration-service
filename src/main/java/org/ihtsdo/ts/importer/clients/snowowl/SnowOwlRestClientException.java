@@ -1,4 +1,4 @@
-package org.ihtsdo.ts.importer.snowowl;
+package org.ihtsdo.ts.importer.clients.snowowl;
 
 public class SnowOwlRestClientException extends Exception {
 	public SnowOwlRestClientException(String message) {

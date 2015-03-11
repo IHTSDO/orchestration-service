@@ -1,4 +1,4 @@
-package org.ihtsdo.ts.importer.jira;
+package org.ihtsdo.ts.importer.clients.jira;
 
 public class JiraSyncException extends Exception {
 

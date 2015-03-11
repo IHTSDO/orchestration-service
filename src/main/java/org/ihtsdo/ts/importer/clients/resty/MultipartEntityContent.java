@@ -1,4 +1,4 @@
-package org.ihtsdo.ts.importer.resty;
+package org.ihtsdo.ts.importer.clients.resty;
 
 import org.apache.http.entity.mime.MultipartEntity;
 import us.monoid.web.AbstractContent;

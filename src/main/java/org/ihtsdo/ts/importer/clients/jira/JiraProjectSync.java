@@ -1,4 +1,4 @@
-package org.ihtsdo.ts.importer.jira;
+package org.ihtsdo.ts.importer.clients.jira;
 
 import net.rcarz.jiraclient.BasicCredentials;
 import net.rcarz.jiraclient.Issue;

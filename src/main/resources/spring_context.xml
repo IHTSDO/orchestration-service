@@ -12,7 +12,7 @@
 
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
 
-	<bean class="org.ihtsdo.ts.importer.snowowl.SnowOwlRestClient">
+	<bean class="org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>
@@ -27,14 +27,14 @@
 		</constructor-arg>
 	</bean>
 
-	<bean name="jiraImportProjectSync" class="org.ihtsdo.ts.importer.jira.JiraProjectSync">
+	<bean name="jiraImportProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync">
 		<constructor-arg value="${jira.importProjectKey}"/>
 		<constructor-arg value="${jira.url}"/>
 		<constructor-arg value="${jira.username}"/>
 		<constructor-arg value="${jira.password}"/>
 	</bean>
 
-	<bean name="jiraContentProjectSync" class="org.ihtsdo.ts.importer.jira.JiraProjectSync">
+	<bean name="jiraContentProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync">
 		<constructor-arg value="${jira.contentProjectKey}"/>
 		<constructor-arg value="${jira.url}"/>
 		<constructor-arg value="${jira.username}"/>

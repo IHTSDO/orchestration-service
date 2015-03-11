@@ -1,9 +1,9 @@
 package org.ihtsdo.ts.importer;
 
 import net.rcarz.jiraclient.JiraException;
-import org.ihtsdo.ts.importer.jira.JiraProjectSync;
-import org.ihtsdo.ts.importer.snowowl.SnowOwlRestClient;
-import org.ihtsdo.ts.importer.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
+import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
+import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
 import org.ihtsdo.ts.importfilter.ImportFilterService;
 import org.ihtsdo.ts.importfilter.ImportFilterServiceException;
 import org.ihtsdo.ts.importfilter.SelectionResult;
