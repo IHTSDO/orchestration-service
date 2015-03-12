@@ -60,11 +60,11 @@ public class Importer {
 				boolean importSuccessful = tsClient.importRF2(taskKey, selectionArchiveStream);
 				if (importSuccessful) {
 					importResult.setImportCompletedSuccessfully(true);
+					jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toString(selectionResult.getFoundConceptIds()));
+					jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
 				} else {
-					return importResult.setMessage("Import process failed, see SnowOwl logs for details.");
+					importResult.setMessage("Import process failed, see SnowOwl logs for details.");
 				}
-
-				jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toString(selectionResult.getFoundConceptIds()));
 
 				return importResult;
 			} else {

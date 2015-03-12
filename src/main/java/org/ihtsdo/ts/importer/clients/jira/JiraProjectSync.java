@@ -7,11 +7,8 @@ import net.rcarz.jiraclient.JiraException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-
 public class JiraProjectSync {
 
-	public static final String TS_TASK_ID_FIELD = "customfield_11902";
 	public static final String SUMMARY_FIELD = "summary";
 	private final String projectKey;
 	private final JiraClient jiraClient;
@@ -32,21 +29,16 @@ public class JiraProjectSync {
 		return key;
 	}
 
-	public boolean doesTaskExist(String taskLabel) throws JiraException {
-		return findTask(taskLabel) != null;
+	public void addComment(String taskKey, String commentString) throws JiraException {
+		findIssue(taskKey).addComment(commentString);
 	}
 
-	public void addComment(String taskLabel, String commentString) throws JiraException {
-		findTask(taskLabel).addComment(commentString);
+	public void updateStatus(String taskKey, String statusName) throws JiraException {
+		Issue issue = findIssue(taskKey);
+		issue.transition().execute(statusName);
 	}
 
-	private Issue findTask(String taskLabel) throws JiraException {
-		List<Issue> issues = jiraClient.searchIssues("project = " + projectKey + " AND summary ~ '" + taskLabel + "'").issues;
-		for (Issue issue : issues) {
-			if (taskLabel.equals(issue.getSummary())) {
-				return issue;
-			}
-		}
-		return null;
+	private Issue findIssue(String taskKey) throws JiraException {
+		return jiraClient.getIssue(taskKey);
 	}
 }
