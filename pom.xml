@@ -20,6 +20,13 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
+	<scm>
+		<connection>scm:git:git@git.ihtsdotools.org:ihtsdo/ts-delta-import-process.git</connection>
+		<developerConnection>scm:git:git@git.ihtsdotools.org:ihtsdo/ts-delta-import-process.git</developerConnection>
+		<url>https://git.ihtsdotools.org/ihtsdo/ts-delta-import-process</url>
+		<tag>HEAD</tag>
+	</scm>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.ihtsdo.ts</groupId>
@@ -81,6 +88,16 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>external.atlassian.jgitflow</groupId>
+				<artifactId>jgitflow-maven-plugin</artifactId>
+				<version>1.0-m4.3</version>
+				<configuration>
+					<autoVersionSubmodules>true</autoVersionSubmodules>
+					<enableSshAgent>true</enableSshAgent>
+					<noDeploy>true</noDeploy>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
