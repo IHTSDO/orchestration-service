@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Set;
 
 public class Importer {
 
@@ -27,33 +30,30 @@ public class Importer {
 	private SnowOwlRestClient tsClient;
 
 	public ImportResult importSelectedWBContent(String taskLabel, Long[] sctids) throws ImporterException {
+	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 		logger.info("Started");
 		ImportResult importResult = new ImportResult();
 
 		try {
+			// Create Jira issue
+			String taskKey = jiraContentProjectSync.createTask(SIMPLE_DATE_FORMAT.format(startDate));
 			// Create selection archive (automatically pulls in any new daily exports first)
 			SelectionResult selectionResult = importFilterService.createSelectionArchive(sctids);
 
 			if (selectionResult.isSuccess()) {
 				// Create TS branch
-				boolean newBranch = tsClient.getCreateBranch(taskLabel);
+				tsClient.getCreateBranch(taskKey);
 
 				// Stream selection archive into TS import process
 				logger.info("Filter version {}", selectionResult.getFilteredArchiveVersion());
 				InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getFilteredArchiveVersion());
-				boolean importSuccessful = tsClient.importRF2(taskLabel, selectionArchiveStream);
+				boolean importSuccessful = tsClient.importRF2(taskKey, selectionArchiveStream);
 				if (importSuccessful) {
 					importResult.setImportCompletedSuccessfully(true);
 				} else {
 					return importResult.setMessage("Import process failed, see SnowOwl logs for details.");
 				}
 
-				// TODO: Using Jira issue label seems risky. Maybe use a custom field to identify tasks?
-				boolean taskExists = jiraContentProjectSync.doesTaskExist(taskLabel);
-				if (!taskExists) {
-					jiraContentProjectSync.createTask(taskLabel);
-				}
-				String operator = newBranch ? "Created" : "Updated";
 				jiraContentProjectSync.addComment(taskLabel, operator + " task with selection from workbench daily export. SCTID list: " + toString(sctids));
 
 				return importResult;
