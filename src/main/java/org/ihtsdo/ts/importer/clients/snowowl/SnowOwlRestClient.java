@@ -1,10 +1,11 @@
 package org.ihtsdo.ts.importer.clients.snowowl;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.content.FileBody;
-import org.ihtsdo.ts.importer.clients.resty.MultipartEntityContent;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.ihtsdo.ts.importer.clients.resty.HttpEntityContent;
 import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,10 +122,12 @@ public class SnowOwlRestClient {
 				}
 
 				// Post file to TS
-				final MultipartEntity multipartEntity = new MultipartEntity(HttpMultipartMode.BROWSER_COMPATIBLE);
-				multipartEntity.addPart("file", new FileBody(tempFile, tempFile.getName()));
+				MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
+				multipartEntityBuilder.addBinaryBody("file", tempFile, ContentType.create("application/zip"), tempFile.getName());
+				multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+				HttpEntity httpEntity = multipartEntityBuilder.build();
 				resty.withHeader("Accept", ANY_CONTENT_TYPE);
-				resty.json(snowOwlUrl + IMPORTS_URL + "/" + importId + "/archive", new MultipartEntityContent(multipartEntity));
+				resty.json(snowOwlUrl + IMPORTS_URL + "/" + importId + "/archive", new HttpEntityContent(httpEntity));
 
 			} finally {
 				tempFile.delete();

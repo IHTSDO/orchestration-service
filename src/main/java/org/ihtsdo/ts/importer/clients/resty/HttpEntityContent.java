@@ -1,6 +1,6 @@
 package org.ihtsdo.ts.importer.clients.resty;
 
-import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.HttpEntity;
 import us.monoid.web.AbstractContent;
 
 import java.io.IOException;
@@ -8,17 +8,17 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URLConnection;
 
-public class MultipartEntityContent extends AbstractContent {
+public class HttpEntityContent extends AbstractContent {
 
-	private final MultipartEntity multipartEntity;
+	private final HttpEntity httpEntity;
 
-	public MultipartEntityContent(MultipartEntity multipartEntity) {
-		this.multipartEntity = multipartEntity;
+	public HttpEntityContent(HttpEntity httpEntity) {
+		this.httpEntity = httpEntity;
 	}
 
 	@Override
 	protected void addContent(URLConnection con) throws IOException {
-		sendEntity(con, multipartEntity);
+		sendEntity(con, httpEntity);
 	}
 
 	@Override
@@ -29,7 +29,7 @@ public class MultipartEntityContent extends AbstractContent {
 	public void writeContent(OutputStream os) throws IOException {
 	}
 
-	private void sendEntity(URLConnection urlConnection, MultipartEntity entity) throws IOException {
+	private void sendEntity(URLConnection urlConnection, HttpEntity entity) throws IOException {
 		HttpURLConnection conn = (HttpURLConnection) urlConnection;
 		conn.setReadTimeout(10000);
 		conn.setConnectTimeout(15000);
@@ -39,7 +39,7 @@ public class MultipartEntityContent extends AbstractContent {
 		conn.setDoOutput(true);
 
 		conn.setRequestProperty("Connection", "Keep-Alive");
-		conn.addRequestProperty("Content-length", entity.getContentLength()+"");
+		conn.addRequestProperty("Content-length", entity.getContentLength() + "");
 		conn.addRequestProperty(entity.getContentType().getName(), entity.getContentType().getValue());
 
 		OutputStream os = conn.getOutputStream();

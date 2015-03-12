@@ -55,4 +55,6 @@
 
 	<bean class="org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient"/>
 
+	<bean class="org.ihtsdo.ts.importer.DevTestTool"/>
+
 </beans>
