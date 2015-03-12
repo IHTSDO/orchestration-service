@@ -1,6 +1,7 @@
 package org.ihtsdo.ts.importer;
 
 import net.rcarz.jiraclient.JiraException;
+import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
@@ -18,7 +19,8 @@ import java.util.Set;
 
 public class Importer {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	@Autowired
+	private WorkbenchWorkflowClient workbenchWorkflowClient;
 
 	@Autowired
 	private ImportFilterService importFilterService;
@@ -29,16 +31,24 @@ public class Importer {
 	@Autowired
 	private SnowOwlRestClient tsClient;
 
-	public ImportResult importSelectedWBContent(String taskLabel, Long[] sctids) throws ImporterException {
 	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	public ImportResult importSelectedWBContent() throws ImporterException {
 		logger.info("Started");
+		Date startDate = new Date();
+
 		ImportResult importResult = new ImportResult();
 
 		try {
 			// Create Jira issue
 			String taskKey = jiraContentProjectSync.createTask(SIMPLE_DATE_FORMAT.format(startDate));
+
+			Set<Long> completedConceptIds = workbenchWorkflowClient.getCompletedConceptSctids();
+
 			// Create selection archive (automatically pulls in any new daily exports first)
-			SelectionResult selectionResult = importFilterService.createSelectionArchive(sctids);
+			SelectionResult selectionResult = importFilterService.createSelectionArchive(completedConceptIds.toArray(new Long[]{}));
 
 			if (selectionResult.isSuccess()) {
 				// Create TS branch
@@ -54,7 +64,7 @@ public class Importer {
 					return importResult.setMessage("Import process failed, see SnowOwl logs for details.");
 				}
 
-				jiraContentProjectSync.addComment(taskLabel, operator + " task with selection from workbench daily export. SCTID list: " + toString(sctids));
+				jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toString(selectionResult.getFoundConceptIds()));
 
 				return importResult;
 			} else {
@@ -75,11 +85,13 @@ public class Importer {
 		}
 	}
 
-	private String toString(Long[] sctids) {
+	private String toString(Set<Long> sctids) {
 		StringBuilder builder = new StringBuilder();
 		for (Long sctid : sctids) {
 			if (builder.length() > 0) builder.append(",");
+			builder.append("|");
 			builder.append(sctid.toString());
+			builder.append("|");
 		}
 		return builder.toString();
 	}

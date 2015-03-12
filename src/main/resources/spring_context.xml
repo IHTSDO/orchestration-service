@@ -8,7 +8,6 @@
 
 	<import resource="classpath*:common_context.xml"/>
 
-	<bean class="org.ihtsdo.ts.importer.Application"/>
 
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
 
@@ -27,13 +26,6 @@
 		</constructor-arg>
 	</bean>
 
-	<bean name="jiraImportProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync">
-		<constructor-arg value="${jira.importProjectKey}"/>
-		<constructor-arg value="${jira.url}"/>
-		<constructor-arg value="${jira.username}"/>
-		<constructor-arg value="${jira.password}"/>
-	</bean>
-
 	<bean name="jiraContentProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync">
 		<constructor-arg value="${jira.contentProjectKey}"/>
 		<constructor-arg value="${jira.url}"/>
@@ -44,5 +36,7 @@
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" >
 		<property name="location" value="ts-delta-import.properties"/>
 	</bean>
+
+	<bean class="org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient"/>
 
 </beans>
