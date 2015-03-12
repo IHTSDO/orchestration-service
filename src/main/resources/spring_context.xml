@@ -8,7 +8,21 @@
 
 	<import resource="classpath*:common_context.xml"/>
 
+	<bean class="org.springframework.scheduling.config.ScheduledTaskRegistrar">
+		<property name="cronTasks">
+			<map>
+				<entry>
+					<key>
+						<bean class="org.ihtsdo.ts.importer.schedule.StartFilteredImport"/>
+					</key>
+					<value>${schedule.startDailyImport.cron}</value>
+				</entry>
+			</map>
+		</property>
+	</bean>
 
+	<bean class="org.ihtsdo.ts.importer.ImporterService"/>
+	
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
 
 	<bean class="org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient">
@@ -16,6 +30,8 @@
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>
 	</bean>
+
+	<!--<bean class="org.ihtsdo.otf.dao.s3.OfflineS3ClientImpl"/>-->
 
 	<bean class="org.ihtsdo.otf.dao.s3.S3ClientImpl" >
 		<constructor-arg>

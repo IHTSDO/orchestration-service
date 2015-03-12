@@ -11,23 +11,9 @@ public class RestApplication {
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext applicationContext = SpringApplication.run(Config.class, "server.port=9000");
-		Importer importer = applicationContext.getBean(Importer.class);
-		importSelectedContent(importer);
-	}
 
-	private static void importSelectedContent(Importer importer) {
-		// Run importer
-		try {
-			ImportResult importResult = importer.importSelectedWBContent();
-			if (importResult.isImportCompletedSuccessfully()) {
-				LOGGER.info("Completed successfully");
-			} else {
-				LOGGER.info("Failure - " + importResult.getMessage());
-			}
-		} catch (ImporterException e) {
-			LOGGER.error("Unrecoverable error", e);
-		}
-
+		// Uncomment next line to trigger import on startup (useful for testing)
+//		applicationContext.getBean(ImporterService.class).importCompletedWBContent();
 	}
 
 }
