@@ -2,3 +2,4 @@
 target
 ts-delta-import.properties
 *.iml
+*.sh

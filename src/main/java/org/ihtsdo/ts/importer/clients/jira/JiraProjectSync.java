@@ -38,7 +38,7 @@ public class JiraProjectSync {
 		issue.transition().execute(statusName);
 	}
 
-	private Issue findIssue(String taskKey) throws JiraException {
+	public Issue findIssue(String taskKey) throws JiraException {
 		return jiraClient.getIssue(taskKey);
 	}
 }

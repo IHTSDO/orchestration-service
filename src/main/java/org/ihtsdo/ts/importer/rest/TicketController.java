@@ -1,0 +1,51 @@
+package org.ihtsdo.ts.importer.rest;
+
+import net.rcarz.jiraclient.Issue;
+import net.rcarz.jiraclient.JiraException;
+
+import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
+import org.ihtsdo.ts.importfilter.LoadException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/REST")
+public class TicketController {
+
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+
+	@Autowired
+	private JiraProjectSync jiraService;
+
+	@RequestMapping(value = "/{jiraProject}/tickets/{ticketId}", method = RequestMethod.GET)
+	Issue getTicket(@PathVariable String jiraProject, @PathVariable String ticketId) throws IOException, LoadException, JiraException {
+		logger.info("Looking for ticket " + ticketId);
+		return jiraService.findIssue(ticketId);
+	}
+
+	@RequestMapping(value = "/{jiraProject}/tickets/process", method = RequestMethod.POST)
+	Map<String, Object> processIncompleteTickets(@PathVariable String jiraProject) throws IOException, LoadException, JiraException {
+		Map<String, Object> response = new HashMap();
+		response.put("status", "Not yet implemented");
+		return response;
+	}
+
+	@RequestMapping(value = "/{jiraProject}/tickets/{ticketId}/process", method = RequestMethod.POST)
+	Map<String, Object> processIncompleteTicket(@PathVariable String jiraProject, @PathVariable String ticketId) throws IOException,
+			LoadException, JiraException {
+		Map<String, Object> response = new HashMap();
+		response.put("status", "Not yet implemented");
+		return response;
+	}
+
+}
