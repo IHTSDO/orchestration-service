@@ -11,4 +11,8 @@
 		<level value="info"/>
 		<appender-ref ref="console"/>
 	</root>
+	<logger name="org.ihtsdo" additivity="false">
+		<level value="debug"/>
+		<appender-ref ref="console"/>
+	</logger>
 </log4j:configuration>
