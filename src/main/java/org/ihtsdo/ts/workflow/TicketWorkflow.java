@@ -1,6 +1,7 @@
 package org.ihtsdo.ts.workflow;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
@@ -20,7 +21,7 @@ public abstract class TicketWorkflow {
 		return workflowName;
 	}
 
-	protected abstract void processTicket(Issue issue);
+	protected abstract Map<String, Object> processTicket(Issue issue);
 
 	protected List<Issue> findIncompleteTickets() {
 		// We'll have to find tickets that belong to projects that implement the specific
@@ -35,9 +36,9 @@ public abstract class TicketWorkflow {
 		}
 	}
 
-	public void processTicket(String ticketId) throws JiraException {
+	public Map<String, Object> processTicket(String ticketId) throws JiraException {
 		Issue ticket = jiraService.findIssue(ticketId);
-		processTicket(ticket);
+		return processTicket(ticket);
 	}
 
 }

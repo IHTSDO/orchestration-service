@@ -25,6 +25,9 @@
 	
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
 
+	<bean class=" org.ihtsdo.ts.workflow.TicketWorkflowManager" init-method="init"/>
+	<bean class=" org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow"/>
+	
 	<bean class="org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
 		<constructor-arg value="${snowowl.username}"/>
