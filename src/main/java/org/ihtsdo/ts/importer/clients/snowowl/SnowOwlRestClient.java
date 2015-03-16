@@ -10,6 +10,7 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -22,8 +23,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
-
-import static us.monoid.web.Resty.content;
 
 public class SnowOwlRestClient {
 
@@ -82,10 +81,10 @@ public class SnowOwlRestClient {
 							"  \"description\": \"" + branchName + "\",\n" +
 							"  \"taskId\": \"" + branchName + "\"\n" +
 							"}";
-					resty.json(snowOwlUrl + TASKS_URL, content(json));
+					resty.json(snowOwlUrl + TASKS_URL, RestyHelper.content(new JSONObject(json), SNOWOWL_V1_CONTENT_TYPE));
 					logger.info("Created branch {}", branchName);
 					return true;
-				} catch (IOException e1) {
+				} catch (IOException | JSONException e1) {
 					throw new SnowOwlRestClientException("Failed to create branch '" + branchName + "'.", e1);
 				}
 			} else {

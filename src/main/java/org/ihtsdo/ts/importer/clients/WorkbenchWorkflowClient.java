@@ -7,7 +7,7 @@ public class WorkbenchWorkflowClient {
 
 	public Set<Long> getCompletedConceptSctids() {
 		Set<Long> set = new HashSet<>();
-		set.add(504009L);
+		set.add(601008L);
 		return set;
 	}
 

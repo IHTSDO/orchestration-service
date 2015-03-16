@@ -57,8 +57,8 @@ public class Importer {
 					tsClient.getCreateBranch(taskKey);
 
 					// Stream selection archive into TS import process
-					logger.info("Filter version {}", selectionResult.getFilteredArchiveVersion());
-					InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getFilteredArchiveVersion());
+					logger.info("Filter version {}", selectionResult.getSelectedArchiveVersion());
+					InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getSelectedArchiveVersion());
 					boolean importSuccessful = tsClient.importRF2(taskKey, selectionArchiveStream);
 					if (importSuccessful) {
 						importResult.setImportCompletedSuccessfully(true);
