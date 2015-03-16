@@ -2,6 +2,7 @@ package org.ihtsdo.ts.importer;
 
 import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient;
+import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClientException;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
@@ -82,6 +83,8 @@ public class Importer {
 				return handleError("Error during selection archive creation process.", importResult, e);
 			} catch (SnowOwlRestClientException e) {
 				return handleError("Error using Snow Owl Terminology Server.", importResult, e);
+			} catch (WorkbenchWorkflowClientException e) {
+				return handleError(e.getMessage(), importResult, e);
 			}
 		} catch (JiraException e) {
 			throw new ImporterException("Error using Jira.", e);
