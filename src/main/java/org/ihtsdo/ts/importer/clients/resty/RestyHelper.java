@@ -7,12 +7,13 @@ import java.io.UnsupportedEncodingException;
 
 public class RestyHelper {
 
+	public static final String UTF_8 = "UTF-8";
+
 	public static Content content(JSONObject someJson, String aMimeType) {
-		Content c = null;
 		try {
-			c = new Content(aMimeType, someJson.toString().getBytes("UTF-8"));
-		} catch (UnsupportedEncodingException e) { /* UTF-8 is never unsupported */
+			return new Content(aMimeType, someJson.toString().getBytes(UTF_8));
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(UTF_8 + " encoding not supported!", e);
 		}
-		return c;
 	}
 }
