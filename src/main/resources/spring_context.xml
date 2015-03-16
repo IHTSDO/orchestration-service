@@ -52,10 +52,6 @@
 		<constructor-arg value="${jira.password}"/>
 	</bean>
 
-	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer" >
-		<property name="location" value="ts-delta-import.properties"/>
-	</bean>
-
 	<bean class="org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient"/>
 
 	<bean class="org.ihtsdo.ts.importer.DevTestTool"/>

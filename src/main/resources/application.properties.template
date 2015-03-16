@@ -1,19 +1,22 @@
+server.port=9001
+
 # Snow Owl Server
 snowowl.url = http://localhost:8080/snowowl/
 snowowl.username =
 snowowl.password =
 
 # Jira
-jira.url = https://jira.ihtsdotools.org/
+jira.url = http://localhost:8080/jira
 jira.username =
 jira.password =
 jira.importProjectKey =
 jira.contentProjectKey =
 
-# AWS 'dev-ts-sync' user
 aws.key =
 aws.secretKey =
 aws.bucket.archives =
 aws.bucket.filter =
 
 import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
+
+schedule.startDailyImport.cron = 0 0 2 * * *
