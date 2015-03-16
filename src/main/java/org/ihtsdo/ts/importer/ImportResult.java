@@ -4,6 +4,7 @@ public class ImportResult {
 
 	private boolean importCompletedSuccessfully;
 	private String message;
+	private String taskKey;
 
 	public void setImportCompletedSuccessfully(boolean importCompletedSuccessfully) {
 		this.importCompletedSuccessfully = importCompletedSuccessfully;
@@ -20,5 +21,13 @@ public class ImportResult {
 
 	public String getMessage() {
 		return message;
+	}
+
+	public void setTaskKey(String taskKey) {
+		this.taskKey = taskKey;
+	}
+
+	public String getTaskKey() {
+		return taskKey;
 	}
 }

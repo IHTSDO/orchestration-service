@@ -2,6 +2,7 @@ package org.ihtsdo.ts.importer;
 
 import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient;
+import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClientException;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
@@ -44,45 +45,63 @@ public class Importer {
 		try {
 			// Create Jira issue
 			String taskKey = jiraContentProjectSync.createTask(SIMPLE_DATE_FORMAT.format(startDate));
+			importResult.setTaskKey(taskKey);
 
-			Set<Long> completedConceptIds = workbenchWorkflowClient.getCompletedConceptSctids();
+			try {
+				Set<Long> completedConceptIds = workbenchWorkflowClient.getCompletedConceptSctids();
 
-			// Create selection archive (automatically pulls in any new daily exports first)
-			SelectionResult selectionResult = importFilterService.createSelectionArchive(completedConceptIds.toArray(new Long[]{}));
+				// Create selection archive (automatically pulls in any new daily exports first)
+				SelectionResult selectionResult = importFilterService.createSelectionArchive(completedConceptIds.toArray(new Long[]{}));
 
-			if (selectionResult.isSuccess()) {
-				// Create TS branch
-				tsClient.getCreateBranch(taskKey);
+				if (selectionResult.isSuccess()) {
+					// Create TS branch
+					tsClient.getCreateBranch(taskKey);
 
-				// Stream selection archive into TS import process
-				logger.info("Filter version {}", selectionResult.getFilteredArchiveVersion());
-				InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getFilteredArchiveVersion());
-				boolean importSuccessful = tsClient.importRF2(taskKey, selectionArchiveStream);
-				if (importSuccessful) {
-					importResult.setImportCompletedSuccessfully(true);
-					jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toString(selectionResult.getFoundConceptIds()));
-					jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
+					// Stream selection archive into TS import process
+					logger.info("Filter version {}", selectionResult.getSelectedArchiveVersion());
+					InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getSelectedArchiveVersion());
+					boolean importSuccessful = tsClient.importRF2(taskKey, selectionArchiveStream);
+					if (importSuccessful) {
+						importResult.setImportCompletedSuccessfully(true);
+						jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toString(selectionResult.getFoundConceptIds()));
+						jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
+					} else {
+						handleError("Import process failed, see SnowOwl logs for details.", importResult);
+					}
+
+					return importResult;
 				} else {
-					importResult.setMessage("Import process failed, see SnowOwl logs for details.");
+					if (selectionResult.isMissingDependencies()) {
+						return handleError("The concept selection should be extended to include the following dependencies: " + selectionResult.getMissingDependencies(), importResult);
+					} else if (selectionResult.isEmptySelection()) {
+						return handleError("The current selection did not match anything in the backlog.", importResult);
+					} else {
+						return handleError("Unknown selection problem.", importResult);
+					}
 				}
-
-				return importResult;
-			} else {
-				if (selectionResult.isMissingDependencies()) {
-					return importResult.setMessage("The concept selection should be extended to include the following dependencies: " + selectionResult.getMissingDependencies());
-				} else if (selectionResult.isEmptySelection()) {
-					return importResult.setMessage("The current selection did not match anything in the backlog.");
-				} else {
-					return importResult.setMessage("Unknown selection problem.");
-				}
+			} catch (ImportFilterServiceException e) {
+				return handleError("Error during selection archive creation process.", importResult, e);
+			} catch (SnowOwlRestClientException e) {
+				return handleError("Error using Snow Owl Terminology Server.", importResult, e);
+			} catch (WorkbenchWorkflowClientException e) {
+				return handleError(e.getMessage(), importResult, e);
 			}
-		} catch (ImportFilterServiceException e) {
-			throw new ImporterException("Error during selection archive creation process.", e);
-		} catch (SnowOwlRestClientException e) {
-			throw new ImporterException("Error using Snow Owl Terminology Server.", e);
 		} catch (JiraException e) {
 			throw new ImporterException("Error using Jira.", e);
 		}
+	}
+
+	private ImportResult handleError(String message, ImportResult importResult, Exception e) {
+		logger.error(message, e);
+		return handleError(message, importResult);
+	}
+	private ImportResult handleError(String message, ImportResult importResult) {
+		try {
+			jiraContentProjectSync.addComment(importResult.getTaskKey(), "Error: " + message);
+		} catch (JiraException e) {
+			logger.error("Failed to add error comment to issue.", e);
+		}
+		return importResult.setMessage(message);
 	}
 
 	private String toString(Set<Long> sctids) {

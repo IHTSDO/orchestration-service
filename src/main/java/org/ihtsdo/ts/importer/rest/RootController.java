@@ -13,11 +13,18 @@ public class RootController {
 
 	@RequestMapping
 	public Map<String, String> getAvailableEndpoints(HttpServletRequest request) {
-		String requestURL = request.getRequestURL().append("/").toString();
-		System.out.println(requestURL);
 		HashMap<String, String> endpoints = new HashMap<>();
+		String requestURL = addTrailingSlash(request.getRequestURL().toString());
 		addEndpoint(requestURL, endpoints, "backlog");
+		addEndpoint(requestURL, endpoints, "selections/create");
 		return endpoints;
+	}
+
+	private String addTrailingSlash(String requestURL) {
+		if (requestURL.charAt(requestURL.length() - 1) != '/') {
+			requestURL += "/";
+		}
+		return requestURL;
 	}
 
 	private String addEndpoint(String requestURI, HashMap<String, String> endpoints, String endpoint) {

@@ -7,12 +7,12 @@
 			<param name="ConversionPattern" value="%d{yyyyMMdd_HH:mm:ss} %-5p %c{1} - %m%n"/>
 		</layout>
 	</appender>
-	<root>
-		<level value="info"/>
-		<appender-ref ref="console"/>
-	</root>
 	<logger name="org.ihtsdo" additivity="false">
 		<level value="debug"/>
 		<appender-ref ref="console"/>
 	</logger>
+	<root>
+		<level value="info"/>
+		<appender-ref ref="console"/>
+	</root>
 </log4j:configuration>
