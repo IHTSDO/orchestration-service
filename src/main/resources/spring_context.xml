@@ -6,6 +6,8 @@
 
 	<context:annotation-config />
 
+	<import resource="classpath*:common_context.xml"/>
+
 	<bean class="org.springframework.scheduling.config.ScheduledTaskRegistrar">
 		<property name="cronTasks">
 			<map>
@@ -53,34 +55,5 @@
 	<bean class="org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient"/>
 
 	<bean class="org.ihtsdo.ts.importer.DevTestTool"/>
-
-	<!-- RF2 Import Filter beans -->
-	<bean class="org.ihtsdo.ts.importfilter.ImportFilterService"/>
-
-	<bean class="org.ihtsdo.ts.importfilter.ArchiveService"/>
-
-	<bean class="org.ihtsdo.ts.importfilter.ResourceFactoryImpl"/>
-
-	<bean class="org.ihtsdo.ts.importfilter.BacklogContentService"/>
-
-	<bean id="archiveBucket" class="java.lang.String">
-		<constructor-arg value="${aws.bucket.archives}"/>
-	</bean>
-
-	<bean id="filterBucket" class="java.lang.String">
-		<constructor-arg value="${aws.bucket.filter}"/>
-	</bean>
-
-	<bean id="importArchivePrefix" class="java.lang.String">
-		<constructor-arg value="${import.archive.prefix}"/>
-	</bean>
-
-	<bean class="org.ihtsdo.ts.importfilter.ImportFilter"/>
-
-	<bean class="org.ihtsdo.ts.importfilter.helper.MemoHelper"/>
-
-	<bean class="com.google.gson.Gson"/>
-
-	<bean class="org.ihtsdo.ts.importfilter.helper.S3Helper"/>
 
 </beans>
