@@ -21,3 +21,4 @@ aws.bucket.filter =
 import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
 
 schedule.startDailyImport.cron = 0 0 2 * * *
+schedule.pollJiraTickets.cron = 0 */3 * * * *

@@ -17,6 +17,12 @@
 					</key>
 					<value>${schedule.startDailyImport.cron}</value>
 				</entry>
+				<entry>
+					<key>
+						<bean class="org.ihtsdo.ts.importer.schedule.CheckJiraTickets"/>
+					</key>
+					<value>${schedule.pollJiraTickets.cron}</value>
+				</entry>
 			</map>
 		</property>
 	</bean>
@@ -25,9 +31,16 @@
 	
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
 
-	<bean class=" org.ihtsdo.ts.workflow.TicketWorkflowManager" init-method="init"/>
-	<bean class=" org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow"/>
-	
+	<bean class="org.ihtsdo.ts.workflow.TicketWorkflowManager">
+		<constructor-arg>
+			<map>
+				<entry key="DailyDelta">
+					<bean class="org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow"/>
+				</entry>
+			</map>
+		</constructor-arg>
+	</bean>
+
 	<bean class="org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
 		<constructor-arg value="${snowowl.username}"/>
@@ -51,6 +64,10 @@
 		<constructor-arg value="${jira.url}"/>
 		<constructor-arg value="${jira.username}"/>
 		<constructor-arg value="${jira.password}"/>
+	</bean>
+
+	<bean name="jiraProjectKey" class="java.lang.String" >
+		<constructor-arg value="${jira.contentProjectKey}"/>
 	</bean>
 
 	<bean class="org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient"/>
