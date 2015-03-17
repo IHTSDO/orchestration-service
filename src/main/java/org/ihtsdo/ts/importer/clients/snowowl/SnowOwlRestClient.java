@@ -10,6 +10,7 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.JSONResource;
@@ -36,6 +37,7 @@ public class SnowOwlRestClient {
 	public static final String IMPORTS_URL = SNOMED_TERMINOLOGY_URL + "/imports";
 	public static final String CLASSIFICATIONS_URL = "/classifications";
 	public static final String EQUIVALENT_CONCEPTS_URL = "/equivalent-concepts";
+	public static final String RELATIONSHIP_CHANGES_URL = "/relationship-changes";
 
 	private final String snowOwlUrl;
 	private final Resty resty;
@@ -145,7 +147,8 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public void classify(String branchName) throws SnowOwlRestClientException, InterruptedException {
+	public ClassificationResults classify(String branchName) throws SnowOwlRestClientException, InterruptedException {
+		ClassificationResults results = new ClassificationResults();
 		String classificationLocation;
 		try {
 			String requestJson = "{ reasonerId: \"" + reasonerId + "\" }";
@@ -158,18 +161,33 @@ public class SnowOwlRestClient {
 		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
 		boolean classifierCompleted = waitForCompleteStatus(classificationLocation, getTimeoutDate(CLASSIFICATION_TIMEOUT_MINUTES), "classifier");
 		if (classifierCompleted) {
-			// Get equivalent concepts
 			try {
-				// TODO: Check there are no equivalent concepts returned
-				JSONResource jsonResource = resty.json(classificationLocation + EQUIVALENT_CONCEPTS_URL);
+				// Check equivalent concepts
+				results.setEquivalentConceptsFound(!checkNoItems(classificationLocation + EQUIVALENT_CONCEPTS_URL));
 			} catch (Exception e) {
 				throw new SnowOwlRestClientException("Failed to retrieve equivalent concepts of classification.", e);
 			}
-
-			// Get relationship changes
-
+			try {
+				// Check relationship changes
+				Integer total = (Integer) resty.json(classificationLocation + RELATIONSHIP_CHANGES_URL).get("total");
+				results.setRelationshipChangesFound(total != 0);
+			} catch (Exception e) {
+				throw new SnowOwlRestClientException("Failed to retrieve relationship changes of classification.", e);
+			}
+			return results;
 		} else {
 			throw new SnowOwlRestClientException("Classification failed, see SnowOwl logs for details.");
+		}
+	}
+
+	private boolean checkNoItems(String url) throws Exception {
+		JSONResource jsonResource = resty.json(url);
+		try {
+			JSONArray items = (JSONArray) jsonResource.get("items");
+			return items == null || items.length() == 0;
+		} catch (JSONException e) {
+			// this gets thrown when the attribute does not exist
+			return true;
 		}
 	}
 
