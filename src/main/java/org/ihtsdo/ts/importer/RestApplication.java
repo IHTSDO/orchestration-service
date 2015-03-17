@@ -9,7 +9,7 @@ public class RestApplication {
 
 	private static Logger LOGGER = LoggerFactory.getLogger(RestApplication.class);
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		ConfigurableApplicationContext applicationContext = SpringApplication.run(Config.class, "server.port=9000");
 
 		// Uncomment next line to trigger import on startup (useful for testing)

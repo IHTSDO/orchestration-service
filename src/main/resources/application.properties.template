@@ -4,6 +4,7 @@ server.port=9001
 snowowl.url = http://localhost:8080/snowowl/
 snowowl.username =
 snowowl.password =
+snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
 
 # Jira
 jira.url = http://localhost:8080/jira
@@ -20,3 +21,4 @@ aws.bucket.filter =
 import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
 
 schedule.startDailyImport.cron = 0 0 2 * * *
+schedule.pollJiraTickets.cron = 0 */3 * * * *

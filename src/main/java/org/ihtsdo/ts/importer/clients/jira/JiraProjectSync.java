@@ -7,6 +7,8 @@ import net.rcarz.jiraclient.JiraException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class JiraProjectSync {
 
 	public static final String SUMMARY_FIELD = "summary";
@@ -40,5 +42,15 @@ public class JiraProjectSync {
 
 	public Issue findIssue(String taskKey) throws JiraException {
 		return jiraClient.getIssue(taskKey);
+	}
+
+	/**
+	 * Note - will only return the first page of issues. In our case this is enough.
+	 * @param jqlSelectStatement
+	 * @return
+	 * @throws JiraException
+	 */
+	public List<Issue> findIssues(String jqlSelectStatement) throws JiraException {
+		return jiraClient.searchIssues(jqlSelectStatement).issues;
 	}
 }

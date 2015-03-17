@@ -21,7 +21,7 @@ public class DevTestTool {
 	public void run() {
 		try {
 			InputStream selectionArchiveStream = importFilterService.getSelectionArchive("-20150312_133849_322");
-			boolean importSuccessful = tsClient.importRF2("test", selectionArchiveStream);
+			boolean importSuccessful = tsClient.importRF2Archive("test", selectionArchiveStream);
 		} catch (Exception e) {
 			logger.error("Bang", e);
 		}
