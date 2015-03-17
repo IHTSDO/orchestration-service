@@ -4,6 +4,7 @@ server.port=9001
 snowowl.url = http://localhost:8080/snowowl/
 snowowl.username =
 snowowl.password =
+snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
 
 # Jira
 jira.url = http://localhost:8080/jira

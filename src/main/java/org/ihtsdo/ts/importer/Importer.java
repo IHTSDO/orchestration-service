@@ -60,7 +60,7 @@ public class Importer {
 					// Stream selection archive into TS import process
 					logger.info("Filter version {}", selectionResult.getSelectedArchiveVersion());
 					InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getSelectedArchiveVersion());
-					boolean importSuccessful = tsClient.importRF2(taskKey, selectionArchiveStream);
+					boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
 					if (importSuccessful) {
 						importResult.setImportCompletedSuccessfully(true);
 						jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toString(selectionResult.getFoundConceptIds()));

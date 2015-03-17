@@ -27,15 +27,19 @@ import java.util.List;
 public class SnowOwlRestClient {
 
 	public static final int IMPORT_TIMEOUT_MINUTES = 30;
+	public static final int CLASSIFICATION_TIMEOUT_MINUTES = 10;
 	public static final String SNOWOWL_V1_CONTENT_TYPE = "application/vnd.com.b2international.snowowl-v1+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final String SNOMED_TERMINOLOGY_URL = "snomed-ct";
 	public static final String MAIN_BRANCH_URL = SNOMED_TERMINOLOGY_URL + "/MAIN";
 	public static final String TASKS_URL = MAIN_BRANCH_URL + "/tasks";
 	public static final String IMPORTS_URL = SNOMED_TERMINOLOGY_URL + "/imports";
+	public static final String CLASSIFICATIONS_URL = "/classifications";
+	public static final String EQUIVALENT_CONCEPTS_URL = "/equivalent-concepts";
 
 	private final String snowOwlUrl;
 	private final Resty resty;
+	private String reasonerId;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -93,8 +97,8 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public boolean importRF2(String branchName, final InputStream rf2FileStream) throws SnowOwlRestClientException {
-		Assert.notNull(rf2FileStream, "Archive to import should not be null.");
+	public boolean importRF2Archive(String branchName, final InputStream rf2ZipFileStream) throws SnowOwlRestClientException {
+		Assert.notNull(rf2ZipFileStream, "Archive to import should not be null.");
 
 		try {
 			// Create import
@@ -117,7 +121,7 @@ public class SnowOwlRestClient {
 			File tempFile = new File(tempDirectory, "SnomedCT_Release_INT_20150101.zip");
 			try {
 				try (FileOutputStream output = new FileOutputStream(tempFile)) {
-					IOUtils.copy(rf2FileStream, output);
+					IOUtils.copy(rf2ZipFileStream, output);
 				}
 
 				// Post file to TS
@@ -135,21 +139,56 @@ public class SnowOwlRestClient {
 
 			// Poll import entity until complete or times-out
 			logger.info("SnowOwl processing import, this will probably take a few minutes. (Import ID '{}')", importId);
-			Date timeoutDate = getTimeoutDate(IMPORT_TIMEOUT_MINUTES);
-			String status = "";
-			boolean complete = false;
-			while (!complete) {
-				status = (String) resty.json(snowOwlUrl + IMPORTS_URL + "/" + importId).get("status");
-				complete = !"RUNNING".equals(status);
-				if (new Date().after(timeoutDate)) {
-					throw new SnowOwlRestClientException("Client maximum import time reached.");
-				}
-				Thread.sleep(1000 * 10);
-			}
-			return "COMPLETED".equals(status);
+			return waitForCompleteStatus(snowOwlUrl + IMPORTS_URL + "/" + importId, getTimeoutDate(IMPORT_TIMEOUT_MINUTES), "import");
 		} catch (Exception e) {
 			throw new SnowOwlRestClientException("Import failed.", e);
 		}
+	}
+
+	public void classify(String branchName) throws SnowOwlRestClientException, InterruptedException {
+		String classificationLocation;
+		try {
+			String requestJson = "{ reasonerId: \"" + reasonerId + "\" }";
+			JSONResource jsonResponse = resty.json(snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL, RestyHelper.content(new JSONObject(requestJson), SNOWOWL_V1_CONTENT_TYPE));
+			classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
+		} catch (IOException | JSONException e) {
+			throw new SnowOwlRestClientException("Create classification failed.", e);
+		}
+
+		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
+		boolean classifierCompleted = waitForCompleteStatus(classificationLocation, getTimeoutDate(CLASSIFICATION_TIMEOUT_MINUTES), "classifier");
+		if (classifierCompleted) {
+			// Get equivalent concepts
+			try {
+				// TODO: Check there are no equivalent concepts returned
+				JSONResource jsonResource = resty.json(classificationLocation + EQUIVALENT_CONCEPTS_URL);
+			} catch (Exception e) {
+				throw new SnowOwlRestClientException("Failed to retrieve equivalent concepts of classification.", e);
+			}
+
+			// Get relationship changes
+
+		} else {
+			throw new SnowOwlRestClientException("Classification failed, see SnowOwl logs for details.");
+		}
+	}
+
+	private boolean waitForCompleteStatus(String url, Date timeoutDate, final String waitingFor) throws SnowOwlRestClientException, InterruptedException {
+		String status = "";
+		boolean complete = false;
+		while (!complete) {
+			try {
+				status = (String) resty.json(url).get("status");
+			} catch (Exception e) {
+				throw new SnowOwlRestClientException("Rest client error while checking status of " + waitingFor + ".", e);
+			}
+			complete = !"RUNNING".equals(status);
+			if (new Date().after(timeoutDate)) {
+				throw new SnowOwlRestClientException("Client timeout waiting for " + waitingFor + ".");
+			}
+			Thread.sleep(1000 * 10);
+		}
+		return "COMPLETED".equals(status);
 	}
 
 	private Date getTimeoutDate(int importTimeoutMinutes) {
@@ -158,4 +197,11 @@ public class SnowOwlRestClient {
 		return timeoutCalendar.getTime();
 	}
 
+	public void setReasonerId(String reasonerId) {
+		this.reasonerId = reasonerId;
+	}
+
+	public String getReasonerId() {
+		return reasonerId;
+	}
 }

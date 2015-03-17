@@ -32,6 +32,7 @@
 		<constructor-arg value="${snowowl.url}"/>
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>
+		<property name="reasonerId" value="${snowowl.reasonerId}"/>
 	</bean>
 
 	<!--<bean class="org.ihtsdo.otf.dao.s3.OfflineS3ClientImpl"/>-->
