@@ -1,6 +1,7 @@
 package org.ihtsdo.ts.importer.clients.snowowl;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -13,6 +14,7 @@ import org.springframework.util.Assert;
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
+import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 import us.monoid.web.RestyMod;
@@ -32,12 +34,18 @@ public class SnowOwlRestClient {
 	public static final String SNOWOWL_V1_CONTENT_TYPE = "application/vnd.com.b2international.snowowl-v1+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final String SNOMED_TERMINOLOGY_URL = "snomed-ct";
-	public static final String MAIN_BRANCH_URL = SNOMED_TERMINOLOGY_URL + "/MAIN";
+	public static final String MAIN = "MAIN";
+	public static final String MAIN_BRANCH_URL = SNOMED_TERMINOLOGY_URL + "/" + MAIN;
 	public static final String TASKS_URL = MAIN_BRANCH_URL + "/tasks";
 	public static final String IMPORTS_URL = SNOMED_TERMINOLOGY_URL + "/imports";
+	public static final String EXPORTS_URL = "/exports";
 	public static final String CLASSIFICATIONS_URL = "/classifications";
 	public static final String EQUIVALENT_CONCEPTS_URL = "/equivalent-concepts";
 	public static final String RELATIONSHIP_CHANGES_URL = "/relationship-changes";
+
+	public static enum EXTRACT_TYPE {
+		DELTA, SNAPSHOT, FULL
+	};
 
 	private final String snowOwlUrl;
 	private final Resty resty;
@@ -189,6 +197,36 @@ public class SnowOwlRestClient {
 			// this gets thrown when the attribute does not exist
 			return true;
 		}
+	}
+	public File exportBranch(String branchName, EXTRACT_TYPE extractType) {
+		throw new NotImplementedException("Endpoint for branch export not yet determined");
+	}
+	
+	public File exportVersion(String version, EXTRACT_TYPE extractType) throws Exception {
+		//Note that version could be "MAIN" to extract latest unversioned content
+		String exportVersionUrl = snowOwlUrl + SNOMED_TERMINOLOGY_URL + "/" + version + EXPORTS_URL;
+		return export (exportVersionUrl, extractType);
+	}
+	
+	private File export(String exportURL, EXTRACT_TYPE extractType) throws Exception {
+		
+		String jsonString = "{\"moduleIds\":[\"900000000000207008\"]," + 
+				"\"type\":\"" + extractType.toString() + "\"," +
+				"\"deltaStartEffectiveTime\":\"\"," + 
+				"\"deltaEndEffectiveTime\":\"\"," + 
+				"\"namespaceId\":\"1000154\"}";
+				
+		resty.withHeader("Accept", SNOWOWL_V1_CONTENT_TYPE);
+
+		logger.info("Initiating export from {}", exportURL);
+		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(new JSONObject(jsonString), SNOWOWL_V1_CONTENT_TYPE));
+
+		Object exportLocationURL = jsonResponse.getUrlConnection().getHeaderField("Location");
+		logger.info("Recovering export from {}", exportLocationURL.toString());
+		BinaryResource archiveResource = resty.bytes(exportLocationURL.toString());
+		File archive = File.createTempFile("ts-extract", ".zip");
+		archiveResource.save(archive);
+		return archive;
 	}
 
 	private boolean waitForCompleteStatus(String url, Date timeoutDate, final String waitingFor) throws SnowOwlRestClientException, InterruptedException {

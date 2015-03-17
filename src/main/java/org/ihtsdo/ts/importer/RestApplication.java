@@ -1,5 +1,6 @@
 package org.ihtsdo.ts.importer;
 
+import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -14,6 +15,10 @@ public class RestApplication {
 
 		// Uncomment next line to trigger import on startup (useful for testing)
 //		applicationContext.getBean(ImporterService.class).importCompletedWBContent();
+
+//		applicationContext.getBean(SnowOwlRestClient.class).classify("test");
+
+		// applicationContext.getBean(SnowOwlRestClient.class).exportVersion(SnowOwlRestClient.MAIN, SnowOwlRestClient.EXTRACT_TYPE.DELTA);
 	}
 
 }

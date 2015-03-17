@@ -6,6 +6,11 @@ snowowl.username =
 snowowl.password =
 snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
 
+#SRS Server
+srs.url = http://localhost:8080/snowowl/
+srs.username =
+srs.password =
+
 # Jira
 jira.url = http://localhost:8080/jira
 jira.username =
