@@ -1,13 +1,12 @@
 package org.ihtsdo.ts.workflow;
 
-import java.io.File;
-import java.util.List;
-
 import net.rcarz.jiraclient.Comment;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
-
 import org.apache.commons.lang.NotImplementedException;
+import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
+import org.ihtsdo.srs.client.SRSRestClient;
+import org.ihtsdo.srs.client.SRSRestClientHelper;
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JQLBuilder;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
@@ -18,11 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.File;
+import java.util.List;
 import javax.annotation.Resource;
-
-import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
-import org.ihtsdo.srs.client.SRSRestClient;
-import org.ihtsdo.srs.client.SRSRestClientHelper;
 
 @Resource
 public class DailyDeltaTicketWorkflow implements TicketWorkflow {
@@ -69,37 +66,54 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	@Override
 	public void processChangedTicket(Issue issue) {
 		State currentState = getState(issue);
-		try{
+		try {
 			switch (currentState) {
-				case IMPORTED:	runClassifier(issue);
-								break;
+				case IMPORTED:
+					runClassifier(issue);
+					break;
 
-				case CLASSIFIED_WITH_QUERIES:	logger.info("Ticket {} has classification queries.  Awaiting user action", issue.getKey());
-												break;
+				case CLASSIFIED_WITH_QUERIES:
+					logger.info("Ticket {} has classification queries.  Awaiting user action", issue.getKey());
+					break;
 
-				case CLASSIFIED_SUCCESSFULLY:	exportTask(issue);
-												break;
+				case CONTENT_REJECTED:
+					revertImport(issue);
+					break;
 
-				case EXPORTED:	callSRS(issue);
-								break;
+				case CLASSIFIED_SUCCESSFULLY:
+					exportTask(issue);
+					break;
 
-				case BUILT:		awaitRVFResults(issue);
-								break;
+				case EXPORTED:
+					callSRS(issue);
+					break;
 
-				case VALIDATED: logger.info("Ticket {} is awaiting user acceptance of validation.", issue.getKey());
-								break;
+				case BUILT:
+					awaitRVFResults(issue);
+					break;
 
-				case REJECTED:	revertImport(issue);
+				case VALIDATED:
+					logger.info("Ticket {} is awaiting user acceptance of validation.", issue.getKey());
+					break;
 
-				case ACCEPTED:	mergeTaskToMain(issue);
-								break;
+				case ACCEPTED:
+					mergeTaskToMain(issue);
+					break;
 
-				case PROMOTED:	versionMain(issue);
-								break;
+				case PROMOTED:
+					versionMain(issue);
+					break;
 
 				case FAILED:
+					break;
+
 				case PUBLISHED:
-				case CLOSED:	logger.debug("Ticket {} is in final state {}", issue.getKey(), currentState);
+					break;
+
+				case CLOSED:
+					logger.debug("Ticket {} is in final state {}", issue.getKey(), currentState);
+					break;
+
 			}
 		} catch (Exception e) {
 			String errMsg = "Exception while processing ticket " + issue.getKey() + " at state " + currentState + ": " + e.getMessage();
@@ -180,13 +194,13 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	private static enum State {
 		CREATED,
 		IMPORTED,
-		CLASSIFIED_SUCCESSFULLY,
 		CLASSIFIED_WITH_QUERIES,
+		CONTENT_REJECTED,
+		CLASSIFIED_SUCCESSFULLY,
 		EXPORTED,
 		BUILT,
 		VALIDATED,
 		ACCEPTED,
-		REJECTED,
 		PROMOTED,
 		PUBLISHED,
 		FAILED,
@@ -201,7 +215,6 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		String targetWorkflowDataId = getWorkflowDataId(key);
 		List<Comment> comments = issue.getComments();
 		for (Comment thisComment : comments) {
-			// TODO We could filter on the Author to be more efficient
 			String commentText = thisComment.getBody();
 			if (commentText.startsWith(targetWorkflowDataId)) {
 				return commentText.substring(targetWorkflowDataId.length());
