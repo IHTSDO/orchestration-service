@@ -1,6 +1,5 @@
 package org.ihtsdo.ts.workflow;
 
-import net.rcarz.jiraclient.Comment;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.NotImplementedException;
@@ -9,6 +8,7 @@ import org.ihtsdo.srs.client.SRSRestClient;
 import org.ihtsdo.srs.client.SRSRestClientHelper;
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JQLBuilder;
+import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.ClassificationResults;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
@@ -16,9 +16,9 @@ import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
 import java.io.File;
-import java.util.List;
 import javax.annotation.Resource;
 
 @Resource
@@ -30,9 +30,24 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	@Autowired
 	private JiraProjectSync jiraProjectSync;
 
+	@Autowired
+	private SnowOwlRestClient tsClient;
+
+	@Autowired
+	private SRSRestClient srsClient;
+
+	private final JiraDataHelper jiraDataHelper;
+
 	private final String interestingTicketsJQL;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	public static final String JIRA_DATA_MARKER = "WORKFLOW_DATA:";
+	public static final String EXPORT_ARCHIVE_LOCATION = "Export File Location";
+
+	public static final String TRANSITION_TO_EXPORTED = "Export Content";
+	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
+	public static final String TRANSITION_TO_FAILED = "Failed";
 
 	@Autowired
 	public DailyDeltaTicketWorkflow(String jiraProjectKey) {
@@ -43,20 +58,8 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 				.statusNot(State.PUBLISHED.toString())
 				.statusNot(State.CLOSED.toString())
 				.toString();
+		jiraDataHelper = new JiraDataHelper(JIRA_DATA_MARKER);
 	}
-	
-	public static final String JIRA_DATA_MARKER = "WORKFLOW_DATA:";
-	public static final String EXPORT_ARCHIVE_LOCATION = "Export File Location";
-
-	public static final String TRANSITION_TO_EXPORTED = "Export Content";
-	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
-	public static final String TRANSITION_TO_FAILED = "Failed";
-
-	@Autowired
-	private SnowOwlRestClient tsClient;
-
-	@Autowired
-	private SRSRestClient srsClient;
 
 	@Override
 	public String getInterestingTicketJQLSelectStatement() {
@@ -169,7 +172,8 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	}
 
 	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException {
-		String exportArchiveLocation = getWorkflowData(issue, EXPORT_ARCHIVE_LOCATION);
+		String exportArchiveLocation = jiraDataHelper.getData(issue, EXPORT_ARCHIVE_LOCATION);
+		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
 		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive);
 		SRSRestClient.runDailyBuild(srsFilesDir);
@@ -179,7 +183,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	private void exportTask(Issue issue) throws Exception {
 		// SnowOwl does not yes support extracts from branches, so we'll just code for Main for now
 		File exportArchive = tsClient.exportVersion(SnowOwlRestClient.MAIN, SnowOwlRestClient.EXTRACT_TYPE.DELTA);
-		putWorkflowData(issue, EXPORT_ARCHIVE_LOCATION, exportArchive.getAbsolutePath());
+		jiraDataHelper.putData(issue, EXPORT_ARCHIVE_LOCATION, exportArchive.getAbsolutePath());
 		issue.transition().execute(TRANSITION_TO_EXPORTED);
 	}
 
@@ -207,23 +211,4 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		CLOSED
 	}
 
-	protected void putWorkflowData(Issue issue, String key, String value) throws JiraException {
-		issue.addComment(getWorkflowDataId(key) + value);
-	}
-
-	protected String getWorkflowData(Issue issue, String key) throws JiraException, ProcessWorkflowException {
-		String targetWorkflowDataId = getWorkflowDataId(key);
-		List<Comment> comments = issue.getComments();
-		for (Comment thisComment : comments) {
-			String commentText = thisComment.getBody();
-			if (commentText.startsWith(targetWorkflowDataId)) {
-				return commentText.substring(targetWorkflowDataId.length());
-			}
-		}
-		throw new ProcessWorkflowException("Unable to find essential worklow datum: " + key);
-	}
-	
-	private String getWorkflowDataId(final String key) {
-		return JIRA_DATA_MARKER + key + ": ";
-	}
 }
