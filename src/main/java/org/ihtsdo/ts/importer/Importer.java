@@ -3,6 +3,7 @@ package org.ihtsdo.ts.importer;
 import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClientException;
+import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
@@ -20,6 +21,7 @@ import java.util.Set;
 
 public class Importer {
 
+	public static final String SELECTED_ARCHIVE_VERSION = "SelectedArchiveVersion";
 	@Autowired
 	private WorkbenchWorkflowClient workbenchWorkflowClient;
 
@@ -31,6 +33,9 @@ public class Importer {
 
 	@Autowired
 	private SnowOwlRestClient tsClient;
+
+	@Autowired
+	private JiraDataHelper jiraDataHelper;
 
 	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
@@ -58,8 +63,10 @@ public class Importer {
 					tsClient.getCreateBranch(taskKey);
 
 					// Stream selection archive into TS import process
-					logger.info("Filter version {}", selectionResult.getSelectedArchiveVersion());
-					InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectionResult.getSelectedArchiveVersion());
+					String selectedArchiveVersion = selectionResult.getSelectedArchiveVersion();
+					jiraDataHelper.putData(jiraContentProjectSync.findIssue(taskKey), SELECTED_ARCHIVE_VERSION, selectedArchiveVersion);
+					logger.info("Filter version {}", selectedArchiveVersion);
+					InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectedArchiveVersion);
 					boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
 					if (importSuccessful) {
 						importResult.setImportCompletedSuccessfully(true);

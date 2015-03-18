@@ -6,6 +6,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.ihtsdo.srs.client.SRSRestClient;
 import org.ihtsdo.srs.client.SRSRestClientHelper;
+import org.ihtsdo.ts.importer.Importer;
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JQLBuilder;
 import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
@@ -13,12 +14,14 @@ import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.ClassificationResults;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.ts.importfilter.ImportFilterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import java.io.File;
+import java.io.IOException;
 import javax.annotation.Resource;
 
 @Resource
@@ -36,7 +39,11 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	@Autowired
 	private SRSRestClient srsClient;
 
-	private final JiraDataHelper jiraDataHelper;
+	@Autowired
+	private ImportFilterService importFilterService;
+
+	@Autowired
+	private JiraDataHelper jiraDataHelper;
 
 	private final String interestingTicketsJQL;
 
@@ -48,17 +55,18 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	public static final String TRANSITION_TO_EXPORTED = "Export Content";
 	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
 	public static final String TRANSITION_TO_FAILED = "Failed";
+	public static final String TRANSITION_TO_CLOSED = "Close task";
 
 	@Autowired
 	public DailyDeltaTicketWorkflow(String jiraProjectKey) {
 		interestingTicketsJQL = new JQLBuilder()
 				.project(jiraProjectKey)
+				.statusNot(State.CREATED.toString())
 				.statusNot(State.FAILED.toString())
 				.statusNot(State.PROMOTED.toString())
 				.statusNot(State.PUBLISHED.toString())
 				.statusNot(State.CLOSED.toString())
 				.toString();
-		jiraDataHelper = new JiraDataHelper(JIRA_DATA_MARKER);
 	}
 
 	@Override
@@ -158,17 +166,15 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue.getKey(), newStatus);
 	}
 
-	private void doImport(Issue issue) {
-		throw new NotImplementedException("Code not yet written to doImport");
-	}
-
-
 	private void versionMain(Issue issue) {
 		throw new NotImplementedException("Code not yet written to versionMain");
 	}
 
-	private void revertImport(Issue issue) {
-		throw new NotImplementedException("Code not yet written to revertImport");
+	private void revertImport(Issue issue) throws JiraException, IOException {
+		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
+		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
+		importFilterService.putSelectionArchiveBackInBacklog(selectedArchiveVersion);
+		issue.transition().execute(TRANSITION_TO_CLOSED);
 	}
 
 	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException {
