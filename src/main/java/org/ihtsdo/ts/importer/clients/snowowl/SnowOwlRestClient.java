@@ -210,22 +210,23 @@ public class SnowOwlRestClient {
 	
 	private File export(String exportURL, EXTRACT_TYPE extractType) throws Exception {
 		
-		String jsonString = "{\"moduleIds\":[\"900000000000207008\"]," + 
-				"\"type\":\"" + extractType.toString() + "\"," +
-				"\"deltaStartEffectiveTime\":\"\"," + 
-				"\"deltaEndEffectiveTime\":\"\"," + 
-				"\"namespaceId\":\"1000154\"}";
-				
-		resty.withHeader("Accept", SNOWOWL_V1_CONTENT_TYPE);
+		/*
+		 * String jsonString = "{\"moduleIds\":[\"900000000000207008\"]," + "\"type\":\"" + extractType.toString() + "\"," +
+		 * "\"deltaStartEffectiveTime\":\"\"," + "\"deltaEndEffectiveTime\":\"\"," + "\"namespaceId\":\"1000154\"}";
+		 */
+		String jsonString = "{\"type\":\"DELTA\"}";
 
-		logger.info("Initiating export from {}", exportURL);
+		logger.debug("Initiating export from {} with json: {}", exportURL, jsonString);
 		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(new JSONObject(jsonString), SNOWOWL_V1_CONTENT_TYPE));
+		Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
+		String exportLocationURL = exportLocationURLObj.toString() + "/archive";
 
-		Object exportLocationURL = jsonResponse.getUrlConnection().getHeaderField("Location");
-		logger.info("Recovering export from {}", exportLocationURL.toString());
-		BinaryResource archiveResource = resty.bytes(exportLocationURL.toString());
+		logger.debug("Recovering export from {}", exportLocationURL);
+		resty.withHeader("Accept", ANY_CONTENT_TYPE);
+		BinaryResource archiveResource = resty.bytes(exportLocationURL);
 		File archive = File.createTempFile("ts-extract", ".zip");
 		archiveResource.save(archive);
+		logger.debug("Extract saved to {}", archive.getAbsolutePath());
 		return archive;
 	}
 

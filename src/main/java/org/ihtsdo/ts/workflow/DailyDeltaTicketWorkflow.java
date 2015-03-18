@@ -177,13 +177,19 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		issue.transition().execute(TRANSITION_TO_CLOSED);
 	}
 
-	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException {
+	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException, IOException {
 		String exportArchiveLocation = jiraDataHelper.getData(issue, EXPORT_ARCHIVE_LOCATION);
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
-		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive);
-		SRSRestClient.runDailyBuild(srsFilesDir);
+		callSRS(exportArchive);
 		issue.transition().execute(TRANSITION_TO_BUILT);
+	}
+
+	// Pulled out this section so it can be tested in isolation from Jira Issue
+	public void callSRS(File exportArchive) throws ProcessWorkflowException, IOException {
+		String releaseDate = SRSRestClientHelper.recoverReleaseDate(exportArchive);
+		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive, releaseDate);
+		SRSRestClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 
 	private void exportTask(Issue issue) throws Exception {
