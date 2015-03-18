@@ -1,5 +1,8 @@
 package org.ihtsdo.ts.workflow;
 
+import java.io.File;
+import java.io.IOException;
+
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.NotImplementedException;
@@ -18,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
-import java.io.File;
 import javax.annotation.Resource;
 
 @Resource
@@ -158,11 +160,6 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue.getKey(), newStatus);
 	}
 
-	private void doImport(Issue issue) {
-		throw new NotImplementedException("Code not yet written to doImport");
-	}
-
-
 	private void versionMain(Issue issue) {
 		throw new NotImplementedException("Code not yet written to versionMain");
 	}
@@ -171,13 +168,19 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		throw new NotImplementedException("Code not yet written to revertImport");
 	}
 
-	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException {
+	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException, IOException {
 		String exportArchiveLocation = jiraDataHelper.getData(issue, EXPORT_ARCHIVE_LOCATION);
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
-		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive);
-		SRSRestClient.runDailyBuild(srsFilesDir);
+		callSRS(exportArchive);
 		issue.transition().execute(TRANSITION_TO_BUILT);
+	}
+
+	// Pulled out this section so it can be tested in isolation from Jira Issue
+	public void callSRS(File exportArchive) throws ProcessWorkflowException, IOException {
+		String releaseDate = SRSRestClientHelper.recoverReleaseDate(exportArchive);
+		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive, releaseDate);
+		SRSRestClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 
 	private void exportTask(Issue issue) throws Exception {

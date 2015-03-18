@@ -25,7 +25,7 @@ public class SRSRestClient {
 		resty.authenticate(srsURL, username, password.toCharArray());
 	}
 
-	public static void runDailyBuild(File srsFilesDir) {
+	public static void runDailyBuild(File srsFilesDir, String releaseDate) {
 		// TODO Auto-generated method stub
 
 	}
