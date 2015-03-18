@@ -5,25 +5,34 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.util.Assert;
 
 import com.google.common.io.Files;
 
 public class SRSRestClientHelper {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SRSRestClientHelper.class);
+
+	private static final String FILE_TYPE_INSERT = "****";
+	private static final String RELEASE_DATE_INSERT = "########";
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
@@ -78,8 +87,65 @@ public class SRSRestClientHelper {
 
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
+		mergeRefsets(extractDir, "Delta", releaseDate);
+
+		// Now rename files to make the import compatible
+		renameFiles(extractDir, "sct2", "rel2");
+		renameFiles(extractDir, "der2", "rel2");
 
 		return extractDir;
+	}
+
+	private static void mergeRefsets(File extractDir, String fileType, String releaseDate) throws IOException {
+		// Loop through our map of refsets required, and see what contributing files we can match
+		for (Map.Entry<String, RefsetCombiner> refset : refsetMap.entrySet()) {
+
+			RefsetCombiner rc = (RefsetCombiner) refset.getValue();
+			String combinedRefset = getFilename(rc.targetFilePattern, fileType, releaseDate);
+			// Now can we find any of the contributing files to add to that file?
+			boolean isFirstContributor = true;
+			for (String contributorPattern : rc.sourceFilePatterns) {
+				String contributorFilename = getFilename(contributorPattern, fileType, releaseDate);
+				File contributorFile = new File(extractDir, contributorFilename);
+				File combinedRefsetFile = new File(extractDir, combinedRefset);
+				if (contributorFile.exists()) {
+					List<String> fileLines = FileUtils.readLines(contributorFile, StandardCharsets.UTF_8);
+					// Don't need the header line for any subsequent files
+					if (!isFirstContributor) {
+						fileLines.remove(0);
+					}
+					boolean append = !isFirstContributor;
+					FileUtils.writeLines(combinedRefsetFile, fileLines, append);
+					isFirstContributor = false;
+					// Now we can delete the contributor so it doesn't get uploaded as another input file
+					contributorFile.delete();
+				}
+			}
+			if (isFirstContributor) {
+				LOGGER.warn("Failed to find any files to contribute to {}", combinedRefset);
+			} else {
+				LOGGER.debug("Created combined refset {}", combinedRefset);
+			}
+		}
+	}
+
+	private static String getFilename(String filenamePattern, String fileType, String date) {
+		return filenamePattern.replace(FILE_TYPE_INSERT, fileType).replace(RELEASE_DATE_INSERT, date);
+	}
+
+	private static void renameFiles(File targetDirectory, String find, String replace) {
+		Assert.isTrue(targetDirectory.isDirectory(), targetDirectory.getAbsolutePath()
+				+ " must be a directory in order to rename files from " + find + " to " + replace);
+		for (File thisFile : targetDirectory.listFiles()) {
+			if (thisFile.exists() && !thisFile.isDirectory()) {
+				String currentName = thisFile.getName();
+				String newName = currentName.replace(find, replace);
+				if (!newName.equals(currentName)) {
+					File newFile = new File(targetDirectory, newName);
+					thisFile.renameTo(newFile);
+				}
+			}
+		}
 	}
 
 	public static String recoverReleaseDate(File archive) throws ProcessWorkflowException, IOException {
