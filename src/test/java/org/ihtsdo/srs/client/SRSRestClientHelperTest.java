@@ -46,8 +46,8 @@ public class SRSRestClientHelperTest {
 	public void testPrepareFiles() throws ProcessWorkflowException, IOException {
 		File location = SRSRestClientHelper.readyInputFiles(testArchive, TEST_DATE);
 		logger.debug("Test archive made ready for SRS input at {}", location.getAbsolutePath());
-		// logger.debug("Tidying up folder at {}", location.getAbsolutePath());
-		// FileUtils.deleteDirectory(location);
+		logger.debug("Tidying up folder at {}", location.getAbsolutePath());
+		FileUtils.deleteDirectory(location);
 	}
 
 
