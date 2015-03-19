@@ -54,12 +54,19 @@ public class Importer {
 			importResult.setTaskKey(taskKey);
 
 			try {
+				importFilterService.importNewWorkbenchArchives();
+
 				List<Long> completedConceptIds = workbenchWorkflowClient.getCompletedConceptSctids();
 
 				// Create selection archive (automatically pulls in any new daily exports first)
 				SelectionResult selectionResult = importFilterService.createSelectionArchive(completedConceptIds.toArray(new Long[]{}));
 
 				if (selectionResult.isSuccess()) {
+
+					if (selectionResult.isMissingDependencies()) {
+						handleWarning("The concepts marked as complete are dependent on the following concepts which are not marked as complete: " + selectionResult.getMissingDependencies(), importResult);
+					}
+
 					// Create TS branch
 					tsClient.getCreateBranch(taskKey);
 
@@ -79,9 +86,7 @@ public class Importer {
 
 					return importResult;
 				} else {
-					if (selectionResult.isMissingDependencies()) {
-						return handleError("The concept selection should be extended to include the following dependencies: " + selectionResult.getMissingDependencies(), importResult);
-					} else if (selectionResult.isEmptySelection()) {
+					if (selectionResult.isEmptySelection()) {
 						return handleError("The current selection did not match anything in the backlog.", importResult);
 					} else {
 						return handleError("Unknown selection problem.", importResult);
@@ -99,17 +104,24 @@ public class Importer {
 		}
 	}
 
+	private void handleWarning(String message, ImportResult importResult) {
+		addComment(message, importResult, "Warning");
+	}
+
 	private ImportResult handleError(String message, ImportResult importResult, Exception e) {
-		logger.error(message, e);
 		return handleError(message, importResult);
 	}
 	private ImportResult handleError(String message, ImportResult importResult) {
-		try {
-			jiraContentProjectSync.addComment(importResult.getTaskKey(), "Error: " + message);
-		} catch (JiraException e) {
-			logger.error("Failed to add error comment to issue.", e);
-		}
+		addComment(message, importResult, "Error");
 		return importResult.setMessage(message);
+	}
+
+	private void addComment(String message, ImportResult importResult, String messageLevel) {
+		try {
+			jiraContentProjectSync.addComment(importResult.getTaskKey(), messageLevel + ": " + message);
+		} catch (JiraException e) {
+			logger.error("Failed to add {} comment to issue.", messageLevel, e);
+		}
 	}
 
 	private String toString(Set<Long> sctids) {

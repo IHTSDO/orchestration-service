@@ -32,6 +32,7 @@ public class JiraProjectSync {
 	}
 
 	public void addComment(String taskKey, String commentString) throws JiraException {
+		logger.info("Adding comment to '{}': [{}]", taskKey, commentString);
 		findIssue(taskKey).addComment(commentString);
 	}
 
