@@ -189,7 +189,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	public void callSRS(File exportArchive) throws ProcessWorkflowException, IOException {
 		String releaseDate = SRSRestClientHelper.recoverReleaseDate(exportArchive);
 		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive, releaseDate);
-		SRSRestClient.runDailyBuild(srsFilesDir, releaseDate);
+		srsClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 
 	private void exportTask(Issue issue) throws Exception {
