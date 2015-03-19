@@ -113,7 +113,9 @@ public class Importer {
 			throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
 		}
 
-		if (!conceptsWithMissingDependencies.isEmpty()) {
+		if (conceptsWithMissingDependencies.isEmpty()) {
+			addComment("No incomplete dependencies found.", importResult, "Info");
+		} else {
 			// Remove concepts with incomplete dependencies from the selection list
 			completedConceptIds.removeAll(conceptsWithMissingDependencies);
 
