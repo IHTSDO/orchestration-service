@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 public class Importer {
@@ -53,7 +54,7 @@ public class Importer {
 			importResult.setTaskKey(taskKey);
 
 			try {
-				Set<Long> completedConceptIds = workbenchWorkflowClient.getCompletedConceptSctids();
+				List<Long> completedConceptIds = workbenchWorkflowClient.getCompletedConceptSctids();
 
 				// Create selection archive (automatically pulls in any new daily exports first)
 				SelectionResult selectionResult = importFilterService.createSelectionArchive(completedConceptIds.toArray(new Long[]{}));
