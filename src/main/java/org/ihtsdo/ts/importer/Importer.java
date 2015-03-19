@@ -7,22 +7,24 @@ import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
-import org.ihtsdo.ts.importfilter.ImportFilterService;
-import org.ihtsdo.ts.importfilter.ImportFilterServiceException;
-import org.ihtsdo.ts.importfilter.SelectionResult;
+import org.ihtsdo.ts.importfilter.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 public class Importer {
 
 	public static final String SELECTED_ARCHIVE_VERSION = "SelectedArchiveVersion";
+
+	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+
 	@Autowired
 	private WorkbenchWorkflowClient workbenchWorkflowClient;
 
@@ -38,7 +40,11 @@ public class Importer {
 	@Autowired
 	private JiraDataHelper jiraDataHelper;
 
-	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+	@Autowired
+	private BacklogContentService backlogContentService;
+
+	@Autowired
+	private ImportFilter importFilter;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -56,17 +62,12 @@ public class Importer {
 			try {
 				importFilterService.importNewWorkbenchArchives();
 
-				List<Long> completedConceptIds = workbenchWorkflowClient.getCompletedConceptSctids();
+				Set<Long> completedConceptIds = new HashSet<>(workbenchWorkflowClient.getCompletedConceptSctids());
 
-				// Create selection archive (automatically pulls in any new daily exports first)
-				SelectionResult selectionResult = importFilterService.createSelectionArchive(completedConceptIds.toArray(new Long[]{}));
+				// Create selection archive (automatically pulls in any new daily exports first and skips concepts with incomplete dependencies)
+				SelectionResult selectionResult = createSelectionArchive(completedConceptIds, importResult);
 
 				if (selectionResult.isSuccess()) {
-
-					if (selectionResult.isMissingDependencies()) {
-						handleWarning("The concepts marked as complete are dependent on the following concepts which are not marked as complete: " + selectionResult.getMissingDependencies(), importResult);
-					}
-
 					// Create TS branch
 					tsClient.getCreateBranch(taskKey);
 
@@ -78,7 +79,7 @@ public class Importer {
 					boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
 					if (importSuccessful) {
 						importResult.setImportCompletedSuccessfully(true);
-						jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toString(selectionResult.getFoundConceptIds()));
+						jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toJiraSearchableIdList(selectionResult.getFoundConceptIds()));
 						jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
 					} else {
 						handleError("Import process failed, see SnowOwl logs for details.", importResult);
@@ -104,14 +105,41 @@ public class Importer {
 		}
 	}
 
+	public SelectionResult createSelectionArchive(Set<Long> completedConceptIds, ImportResult importResult) throws ImportFilterServiceException {
+		Set<Long> conceptsWithMissingDependencies;
+		try {
+			conceptsWithMissingDependencies = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds);
+		} catch (IOException | LoadException e) {
+			throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
+		}
+
+		if (!conceptsWithMissingDependencies.isEmpty()) {
+			// Remove concepts with incomplete dependencies from the selection list
+			completedConceptIds.removeAll(conceptsWithMissingDependencies);
+
+			handleWarning("The following concepts are complete but will not be imported " +
+					"because they are dependent on others which are not complete: \n" +
+					toJiraSearchableIdList(conceptsWithMissingDependencies), importResult);
+		}
+
+		try {
+			return importFilter.createFilteredImport(completedConceptIds);
+		} catch (IOException e) {
+			throw new ImportFilterServiceException("Error during creation of filtered archive.", e);
+		}
+	}
+
 	private void handleWarning(String message, ImportResult importResult) {
 		addComment(message, importResult, "Warning");
 	}
 
 	private ImportResult handleError(String message, ImportResult importResult, Exception e) {
+		// If we have an Exception then it's an application error which needs logging as such.
+		logger.error(message, e);
 		return handleError(message, importResult);
 	}
 	private ImportResult handleError(String message, ImportResult importResult) {
+		// No Exception here so must just be a user/content error.. no error logging needed.
 		addComment(message, importResult, "Error");
 		return importResult.setMessage(message);
 	}
@@ -124,10 +152,10 @@ public class Importer {
 		}
 	}
 
-	private String toString(Set<Long> sctids) {
+	private String toJiraSearchableIdList(Set<Long> sctids) {
 		StringBuilder builder = new StringBuilder();
 		for (Long sctid : sctids) {
-			if (builder.length() > 0) builder.append(",");
+			if (builder.length() > 0) builder.append(", ");
 			builder.append("|");
 			builder.append(sctid.toString());
 			builder.append("|");
