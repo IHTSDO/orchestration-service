@@ -3,16 +3,25 @@ package org.ihtsdo.ts.workflow;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.NotImplementedException;
+import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
+import org.ihtsdo.srs.client.SRSRestClient;
+import org.ihtsdo.srs.client.SRSRestClientHelper;
+import org.ihtsdo.ts.importer.Importer;
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JQLBuilder;
+import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.ClassificationResults;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.ts.importfilter.ImportFilterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
+import java.io.File;
+import java.io.IOException;
 import javax.annotation.Resource;
 
 @Resource
@@ -24,14 +33,35 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	@Autowired
 	private JiraProjectSync jiraProjectSync;
 
+	@Autowired
+	private SnowOwlRestClient tsClient;
+
+	@Autowired
+	private SRSRestClient srsClient;
+
+	@Autowired
+	private ImportFilterService importFilterService;
+
+	@Autowired
+	private JiraDataHelper jiraDataHelper;
+
 	private final String interestingTicketsJQL;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	public static final String JIRA_DATA_MARKER = "WORKFLOW_DATA:";
+	public static final String EXPORT_ARCHIVE_LOCATION = "Export File Location";
+
+	public static final String TRANSITION_TO_EXPORTED = "Export Content";
+	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
+	public static final String TRANSITION_TO_FAILED = "Failed";
+	public static final String TRANSITION_TO_CLOSED = "Close task";
 
 	@Autowired
 	public DailyDeltaTicketWorkflow(String jiraProjectKey) {
 		interestingTicketsJQL = new JQLBuilder()
 				.project(jiraProjectKey)
+				.statusNot(State.CREATED.toString())
 				.statusNot(State.FAILED.toString())
 				.statusNot(State.PROMOTED.toString())
 				.statusNot(State.PUBLISHED.toString())
@@ -47,37 +77,54 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	@Override
 	public void processChangedTicket(Issue issue) {
 		State currentState = getState(issue);
-		try{
+		try {
 			switch (currentState) {
-				case IMPORTED:	runClassifier(issue);
-								break;
+				case IMPORTED:
+					runClassifier(issue);
+					break;
 
-				case CLASSIFIED_WITH_QUERIES:	logger.info("Ticket {} has classification queries.  Awaiting user action", issue.getKey());
-												break;
+				case CLASSIFIED_WITH_QUERIES:
+					logger.info("Ticket {} has classification queries.  Awaiting user action", issue.getKey());
+					break;
 
-				case CLASSIFIED_SUCCESSFULLY:	exportTask();
-												break;
+				case CONTENT_REJECTED:
+					revertImport(issue);
+					break;
 
-				case EXPORTED:	callSRS();
-								break;
+				case CLASSIFIED_SUCCESSFULLY:
+					exportTask(issue);
+					break;
 
-				case BUILT:		awaitRVFResults();
-								break;
+				case EXPORTED:
+					callSRS(issue);
+					break;
 
-				case VALIDATED: logger.info("Ticket {} is awaiting user acceptance of validation.", issue.getKey());
-								break;
+				case BUILT:
+					awaitRVFResults(issue);
+					break;
 
-				case REJECTED:	revertImport();
+				case VALIDATED:
+					logger.info("Ticket {} is awaiting user acceptance of validation.", issue.getKey());
+					break;
 
-				case ACCEPTED:	mergeTaskToMain();
-								break;
+				case ACCEPTED:
+					mergeTaskToMain(issue);
+					break;
 
-				case PROMOTED:	versionMain();
-								break;
+				case PROMOTED:
+					versionMain(issue);
+					break;
 
 				case FAILED:
+					break;
+
 				case PUBLISHED:
-				case CLOSED:	logger.debug("Ticket {} is in final state {}", issue.getKey(), currentState);
+					break;
+
+				case CLOSED:
+					logger.debug("Ticket {} is in final state {}", issue.getKey(), currentState);
+					break;
+
 			}
 		} catch (Exception e) {
 			String errMsg = "Exception while processing ticket " + issue.getKey() + " at state " + currentState + ": " + e.getMessage();
@@ -86,6 +133,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 			try {
 				issue.addComment(errMsg);
 				issue.transition().execute(JiraTransitions.FAILED);
+
 			} catch (Exception e2) {
 				logger.error("Additional exception while trying to record previous exception in Jira.", e2);
 			}
@@ -118,43 +166,61 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue.getKey(), newStatus);
 	}
 
-	private void versionMain() {
+	private void versionMain(Issue issue) {
 		throw new NotImplementedException("Code not yet written to versionMain");
 	}
 
-	private void revertImport() {
-		throw new NotImplementedException("Code not yet written to revertImport");
+	private void revertImport(Issue issue) throws JiraException, IOException {
+		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
+		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
+		importFilterService.putSelectionArchiveBackInBacklog(selectedArchiveVersion);
+		issue.transition().execute(TRANSITION_TO_CLOSED);
 	}
 
-	private void callSRS() {
-		throw new NotImplementedException("Code not yet written to callSRS");
+	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException, IOException {
+		String exportArchiveLocation = jiraDataHelper.getData(issue, EXPORT_ARCHIVE_LOCATION);
+		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
+		File exportArchive = new File(exportArchiveLocation);
+		callSRS(exportArchive);
+		issue.transition().execute(TRANSITION_TO_BUILT);
 	}
 
-	private void exportTask() {
-		throw new NotImplementedException("Code not yet written to exportTask");
+	// Pulled out this section so it can be tested in isolation from Jira Issue
+	public void callSRS(File exportArchive) throws ProcessWorkflowException, IOException {
+		String releaseDate = SRSRestClientHelper.recoverReleaseDate(exportArchive);
+		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive, releaseDate);
+		srsClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 
-	private void awaitRVFResults() {
+	private void exportTask(Issue issue) throws Exception {
+		// SnowOwl does not yes support extracts from branches, so we'll just code for Main for now
+		File exportArchive = tsClient.exportVersion(SnowOwlRestClient.MAIN, SnowOwlRestClient.EXTRACT_TYPE.DELTA);
+		jiraDataHelper.putData(issue, EXPORT_ARCHIVE_LOCATION, exportArchive.getAbsolutePath());
+		issue.transition().execute(TRANSITION_TO_EXPORTED);
+	}
+
+	private void awaitRVFResults(Issue issue) {
 		throw new NotImplementedException("Code not yet written to awaitRVFResults");
 	}
 	
-	private void mergeTaskToMain() {
+	private void mergeTaskToMain(Issue issue) {
 		throw new NotImplementedException("Code not yet written to mergeTaskToMain");
 	}
 
 	private static enum State {
 		CREATED,
 		IMPORTED,
-		CLASSIFIED_SUCCESSFULLY,
 		CLASSIFIED_WITH_QUERIES,
+		CONTENT_REJECTED,
+		CLASSIFIED_SUCCESSFULLY,
 		EXPORTED,
 		BUILT,
 		VALIDATED,
 		ACCEPTED,
-		REJECTED,
 		PROMOTED,
 		PUBLISHED,
 		FAILED,
 		CLOSED
 	}
+
 }

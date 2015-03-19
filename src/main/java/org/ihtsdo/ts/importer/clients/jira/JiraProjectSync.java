@@ -32,6 +32,7 @@ public class JiraProjectSync {
 	}
 
 	public void addComment(String taskKey, String commentString) throws JiraException {
+		logger.info("Adding comment to '{}': [{}]", taskKey, commentString);
 		findIssue(taskKey).addComment(commentString);
 	}
 
@@ -51,6 +52,6 @@ public class JiraProjectSync {
 	 * @throws JiraException
 	 */
 	public List<Issue> findIssues(String jqlSelectStatement) throws JiraException {
-		return jiraClient.searchIssues(jqlSelectStatement).issues;
+		return jiraClient.searchIssues(jqlSelectStatement, "*all").issues;
 	}
 }
