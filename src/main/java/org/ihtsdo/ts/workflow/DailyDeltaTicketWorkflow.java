@@ -2,8 +2,10 @@ package org.ihtsdo.ts.workflow;
 
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
+
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
+import org.ihtsdo.rvf.client.RVFRestClient;
 import org.ihtsdo.srs.client.SRSRestClient;
 import org.ihtsdo.srs.client.SRSRestClientHelper;
 import org.ihtsdo.ts.importer.Importer;
@@ -22,6 +24,8 @@ import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
+
 import javax.annotation.Resource;
 
 @Resource
@@ -40,6 +44,9 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	private SRSRestClient srsClient;
 
 	@Autowired
+	private RVFRestClient rvfClient;
+
+	@Autowired
 	private ImportFilterService importFilterService;
 
 	@Autowired
@@ -51,11 +58,13 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 
 	public static final String JIRA_DATA_MARKER = "WORKFLOW_DATA:";
 	public static final String EXPORT_ARCHIVE_LOCATION = "Export File Location";
+	public static final String RVF_RESPONSE_URL = "RVF Response URL";
 
 	public static final String TRANSITION_TO_EXPORTED = "Export Content";
 	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
 	public static final String TRANSITION_TO_FAILED = "Failed";
 	public static final String TRANSITION_TO_CLOSED = "Close task";
+	public static final String TRANSITION_TO_VALIDATED = "Run through RVF";
 
 	@Autowired
 	public DailyDeltaTicketWorkflow(String jiraProjectKey) {
@@ -174,33 +183,43 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
 		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
 		importFilterService.putSelectionArchiveBackInBacklog(selectedArchiveVersion);
-		issue.transition().execute(TRANSITION_TO_CLOSED);
+		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_TO_CLOSED);
 	}
 
-	private void callSRS(Issue issue) throws JiraException, ProcessWorkflowException, IOException {
+	private void callSRS(Issue issue) throws Exception {
 		String exportArchiveLocation = jiraDataHelper.getData(issue, EXPORT_ARCHIVE_LOCATION);
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
-		callSRS(exportArchive);
-		issue.transition().execute(TRANSITION_TO_BUILT);
+		Map<String, String> srsResponse = callSRS(exportArchive);
+		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_TO_BUILT);
+		// Can we store the RVF location for the next step in the process to poll?
+		if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
+			jiraDataHelper.putData(issue, RVF_RESPONSE_URL, srsResponse.get(SRSRestClient.RVF_RESPONSE));
+		} else {
+			logger.warn("Did not find RVF Response location in SRS Client Response");
+		}
+		jiraProjectSync.addComment(issue.getKey(), "The build process returned the following items of interest: ", srsResponse);
 	}
 
 	// Pulled out this section so it can be tested in isolation from Jira Issue
-	public void callSRS(File exportArchive) throws ProcessWorkflowException, IOException {
+	public Map<String, String> callSRS(File exportArchive) throws Exception {
 		String releaseDate = SRSRestClientHelper.recoverReleaseDate(exportArchive);
 		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive, releaseDate);
-		srsClient.runDailyBuild(srsFilesDir, releaseDate);
+		return srsClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 
 	private void exportTask(Issue issue) throws Exception {
 		// SnowOwl does not yes support extracts from branches, so we'll just code for Main for now
 		File exportArchive = tsClient.exportVersion(SnowOwlRestClient.MAIN, SnowOwlRestClient.EXTRACT_TYPE.DELTA);
 		jiraDataHelper.putData(issue, EXPORT_ARCHIVE_LOCATION, exportArchive.getAbsolutePath());
-		issue.transition().execute(TRANSITION_TO_EXPORTED);
+		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_TO_EXPORTED);
 	}
 
-	private void awaitRVFResults(Issue issue) {
-		throw new NotImplementedException("Code not yet written to awaitRVFResults");
+	private void awaitRVFResults(Issue issue) throws Exception {
+		String rvfResponseURL = jiraDataHelper.getData(issue, RVF_RESPONSE_URL);
+		rvfClient.waitForResults(rvfResponseURL);
+		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_TO_VALIDATED);
+		issue.addComment("Release validation ready to vies at: " + rvfResponseURL);
 	}
 	
 	private void mergeTaskToMain(Issue issue) {

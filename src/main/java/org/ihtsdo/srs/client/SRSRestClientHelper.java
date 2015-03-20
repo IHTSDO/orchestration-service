@@ -9,6 +9,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,6 @@ import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.util.Assert;
 
 import com.google.common.io.Files;
@@ -33,6 +33,9 @@ public class SRSRestClientHelper {
 
 	private static final String FILE_TYPE_INSERT = "****";
 	private static final String RELEASE_DATE_INSERT = "########";
+
+	public static final String UNKNOWN_EFFECTIVE_DATE = "Unpublished";
+	public static final int EFFECTIVE_DATE_COLUMN = 1;
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
@@ -88,6 +91,7 @@ public class SRSRestClientHelper {
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
 		mergeRefsets(extractDir, "Delta", releaseDate);
+		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
 
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
@@ -144,6 +148,33 @@ public class SRSRestClientHelper {
 					File newFile = new File(targetDirectory, newName);
 					thisFile.renameTo(newFile);
 				}
+			}
+		}
+	}
+
+	/**
+	 * @param targetDirectory
+	 * @param find
+	 * @param replace
+	 * @param columnNum
+	 *            searched for term must match in this column
+	 * @throws IOException
+	 */
+	protected static void replaceInFiles(File targetDirectory, String find, String replace, int columnNum) throws IOException {
+		Assert.isTrue(targetDirectory.isDirectory(), targetDirectory.getAbsolutePath()
+				+ " must be a directory in order to replace text from " + find + " to " + replace);
+		for (File thisFile : targetDirectory.listFiles()) {
+			if (thisFile.exists() && !thisFile.isDirectory()) {
+				List<String> oldLines = FileUtils.readLines(thisFile, StandardCharsets.UTF_8);
+				List<String> newLines = new ArrayList<String>();
+				for (String thisLine : oldLines) {
+					String[] columns = thisLine.split("\t");
+					if (columns.length > columnNum & columns[columnNum].equals(find)) {
+						thisLine = thisLine.replaceFirst(find, replace); // Would be more generic to rebuild from columns
+					}
+					newLines.add(thisLine);
+				}
+				FileUtils.writeLines(thisFile, newLines);
 			}
 		}
 	}

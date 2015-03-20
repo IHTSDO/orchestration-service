@@ -4,10 +4,13 @@ import net.rcarz.jiraclient.BasicCredentials;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
+
+import org.ihtsdo.srs.client.RefsetCombiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 public class JiraProjectSync {
 
@@ -15,6 +18,7 @@ public class JiraProjectSync {
 	private final String projectKey;
 	private final JiraClient jiraClient;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final String NEW_LINE = "\n";
 
 	public JiraProjectSync(String projectKey, String jiraUrl, String jiraUsername, String jiraPassword) throws JiraSyncException {
 		this.projectKey = projectKey;
@@ -53,5 +57,14 @@ public class JiraProjectSync {
 	 */
 	public List<Issue> findIssues(String jqlSelectStatement) throws JiraException {
 		return jiraClient.searchIssues(jqlSelectStatement, "*all").issues;
+	}
+
+	public void addComment(String issueKey, String introduction, Map<String, String> itemMap) throws JiraException {
+		StringBuffer buffer = new StringBuffer();
+		buffer.append(introduction);
+		for (Map.Entry<String, String> item : itemMap.entrySet()) {
+			buffer.append(NEW_LINE).append(item.getKey()).append(": ").append(item.getValue());
+		}
+		addComment(issueKey, buffer.toString());
 	}
 }

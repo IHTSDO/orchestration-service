@@ -51,9 +51,15 @@
 	</bean>
 	
 	<bean class="org.ihtsdo.srs.client.SRSRestClient">
-		<constructor-arg value="${srs.url}"/>
+		<constructor-arg value="${srs.root.url}"/>
+		<constructor-arg value="${srs.product}"/>
 		<constructor-arg value="${srs.username}"/>
 		<constructor-arg value="${srs.password}"/>
+	</bean>
+	
+	<bean class="org.ihtsdo.rvf.client.RVFRestClient" >
+		<constructor-arg value="${rvf.pollPeriod}"/>
+		<constructor-arg value="${rvf.timeout}"/>
 	</bean>
 
 	<!--<bean class="org.ihtsdo.otf.dao.s3.OfflineS3ClientImpl"/>-->
