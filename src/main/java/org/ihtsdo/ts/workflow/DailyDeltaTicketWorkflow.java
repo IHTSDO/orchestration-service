@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import us.monoid.json.JSONException;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -65,6 +67,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	public static final String TRANSITION_TO_FAILED = "Failed";
 	public static final String TRANSITION_TO_CLOSED = "Close task";
 	public static final String TRANSITION_TO_VALIDATED = "Run through RVF";
+	public static final String TRANSITION_TO_PROMOTED = "Promote content to MAIN";
 
 	@Autowired
 	public DailyDeltaTicketWorkflow(String jiraProjectKey) {
@@ -88,6 +91,9 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		State currentState = getState(issue);
 		try {
 			switch (currentState) {
+				case CREATED:
+					logger.info("DailyDelta Workflow ignoring ticket at status CREATED: {}", issue.getKey());
+					break;
 				case IMPORTED:
 					runClassifier(issue);
 					break;
@@ -217,8 +223,9 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		issue.addComment("Release validation ready to vies at: " + rvfResponseURL);
 	}
 	
-	private void mergeTaskToMain(Issue issue) {
-		throw new NotImplementedException("Code not yet written to mergeTaskToMain");
+	private void mergeTaskToMain(Issue issue) throws IOException, JSONException, JiraException {
+		snowOwlRestClient.promoteBranch(issue.getKey());
+		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_TO_PROMOTED);
 	}
 
 	private void versionMain(Issue issue) {

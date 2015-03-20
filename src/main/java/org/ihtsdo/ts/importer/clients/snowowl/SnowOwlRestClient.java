@@ -48,6 +48,10 @@ public class SnowOwlRestClient {
 		DELTA, SNAPSHOT, FULL
 	};
 
+	public static enum BRANCH_STATE {
+		NOT_SYNCHRONIZED, SYNCHRONIZED, PROMOTED
+	}
+
 	private final String snowOwlUrl;
 	private final Resty resty;
 	private String reasonerId;
@@ -237,6 +241,16 @@ public class SnowOwlRestClient {
 		archiveResource.save(archive);
 		logger.debug("Extract saved to {}", archive.getAbsolutePath());
 		return archive;
+	}
+
+	public void promoteBranch(String branchName) throws IOException, JSONException {
+
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("state", BRANCH_STATE.PROMOTED.name());
+		String promotionURL = snowOwlUrl + TASKS_URL + "/" + branchName;
+		logger.info("Promoting branch via URL: {} with JSON: {}", promotionURL, jsonObj.toString());
+		resty.json(promotionURL, RestyHelper.putContent(jsonObj, SNOWOWL_V1_CONTENT_TYPE));
+
 	}
 
 	private boolean waitForCompleteStatus(String url, Date timeoutDate, final String waitingFor) throws SnowOwlRestClientException, InterruptedException {
