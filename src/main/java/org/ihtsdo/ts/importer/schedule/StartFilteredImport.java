@@ -15,7 +15,7 @@ public class StartFilteredImport implements Runnable {
 	@Override
 	public void run() {
 		logger.info("Scheduled import triggered");
-		importerService.importCompletedWBContentAsync();
+		importerService.importCompletedWBContentAsync(null);
 	}
 
 }

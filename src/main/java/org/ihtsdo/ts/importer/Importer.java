@@ -48,7 +48,7 @@ public class Importer {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public ImportResult importSelectedWBContent() throws ImporterException {
+	public ImportResult importSelectedWBContent(Set<Long> selectConceptIdsOverride) throws ImporterException {
 		logger.info("Started");
 		Date startDate = new Date();
 
@@ -62,7 +62,12 @@ public class Importer {
 			try {
 				importFilterService.importNewWorkbenchArchives();
 
-				Set<Long> completedConceptIds = new HashSet<>(workbenchWorkflowClient.getCompletedConceptSctids());
+				Set<Long> completedConceptIds;
+				if (selectConceptIdsOverride != null) {
+					completedConceptIds = selectConceptIdsOverride;
+				} else {
+					completedConceptIds = new HashSet<>(workbenchWorkflowClient.getCompletedConceptSctids());
+				}
 
 				// Create selection archive (automatically pulls in any new daily exports first and skips concepts with incomplete dependencies)
 				SelectionResult selectionResult = createSelectionArchive(completedConceptIds, importResult);

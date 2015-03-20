@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -19,10 +20,10 @@ public class ImporterService {
 		executorService = Executors.newSingleThreadExecutor();
 	}
 
-	public void importCompletedWBContent() {
+	public void importCompletedWBContent(Set<Long> selectConceptIdsOverride) {
 		// Run importer
 		try {
-			ImportResult importResult = importer.importSelectedWBContent();
+			ImportResult importResult = importer.importSelectedWBContent(selectConceptIdsOverride);
 			if (importResult.isImportCompletedSuccessfully()) {
 				logger.info("Completed successfully");
 			} else {
@@ -34,11 +35,11 @@ public class ImporterService {
 
 	}
 
-	public void importCompletedWBContentAsync() {
+	public void importCompletedWBContentAsync(final Set<Long> selectConceptIdsOverride) {
 		executorService.submit(new Runnable() {
 			@Override
 			public void run() {
-				importCompletedWBContent();
+				importCompletedWBContent(selectConceptIdsOverride);
 			}
 		});
 	}
