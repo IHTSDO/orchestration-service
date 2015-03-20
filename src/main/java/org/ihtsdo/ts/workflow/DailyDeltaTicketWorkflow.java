@@ -175,10 +175,6 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue.getKey(), newStatus);
 	}
 
-	private void versionMain(Issue issue) {
-		throw new NotImplementedException("Code not yet written to versionMain");
-	}
-
 	private void revertImport(Issue issue) throws JiraException, IOException {
 		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
 		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
@@ -209,8 +205,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	}
 
 	private void exportTask(Issue issue) throws Exception {
-		// SnowOwl does not yes support extracts from branches, so we'll just code for Main for now
-		File exportArchive = tsClient.exportVersion(SnowOwlRestClient.MAIN, SnowOwlRestClient.EXTRACT_TYPE.DELTA);
+		File exportArchive = tsClient.exportBranch(issue.getKey(), SnowOwlRestClient.EXTRACT_TYPE.DELTA);
 		jiraDataHelper.putData(issue, EXPORT_ARCHIVE_LOCATION, exportArchive.getAbsolutePath());
 		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_TO_EXPORTED);
 	}
@@ -224,6 +219,10 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	
 	private void mergeTaskToMain(Issue issue) {
 		throw new NotImplementedException("Code not yet written to mergeTaskToMain");
+	}
+
+	private void versionMain(Issue issue) {
+		throw new NotImplementedException("Code not yet written to versionMain");
 	}
 
 	private static enum State {

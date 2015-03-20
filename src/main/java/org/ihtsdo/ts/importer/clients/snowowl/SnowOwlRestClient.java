@@ -11,6 +11,7 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -198,30 +199,38 @@ public class SnowOwlRestClient {
 			return true;
 		}
 	}
-	public File exportBranch(String branchName, EXTRACT_TYPE extractType) {
-		throw new NotImplementedException("Endpoint for branch export not yet determined");
+
+	public File exportBranch(String branchName, EXTRACT_TYPE extractType) throws Exception {
+		return export(null, branchName, extractType);
 	}
 	
 	public File exportVersion(String version, EXTRACT_TYPE extractType) throws Exception {
-		//Note that version could be "MAIN" to extract latest unversioned content
-		String exportVersionUrl = snowOwlUrl + SNOMED_TERMINOLOGY_URL + "/" + version + EXPORTS_URL;
-		return export (exportVersionUrl, extractType);
+		// Note that version could be "MAIN" to extract latest unversioned content on the main branch
+		return export(version, null, extractType);
 	}
 	
-	private File export(String exportURL, EXTRACT_TYPE extractType) throws Exception {
-		
-		/*
-		 * String jsonString = "{\"moduleIds\":[\"900000000000207008\"]," + "\"type\":\"" + extractType.toString() + "\"," +
-		 * "\"deltaStartEffectiveTime\":\"\"," + "\"deltaEndEffectiveTime\":\"\"," + "\"namespaceId\":\"1000154\"}";
-		 */
-		String jsonString = "{\"type\":\"DELTA\"}";
+	private File export(String version, String branchName, EXTRACT_TYPE extractType) throws Exception {
 
-		logger.debug("Initiating export from {} with json: {}", exportURL, jsonString);
-		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(new JSONObject(jsonString), SNOWOWL_V1_CONTENT_TYPE));
+		String exportURL = snowOwlUrl + SNOMED_TERMINOLOGY_URL + EXPORTS_URL;
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("type", extractType);
+
+		if (version != null) {
+			jsonObj.put("version", version);
+		} else {
+			jsonObj.put("version", MAIN);
+		}
+
+		if (branchName != null) {
+			jsonObj.put("taskId", branchName);
+		}
+
+		logger.info("Initiating export from {} with json: {}", exportURL, jsonObj.toString());
+		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(jsonObj, SNOWOWL_V1_CONTENT_TYPE));
 		Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 		String exportLocationURL = exportLocationURLObj.toString() + "/archive";
 
-		logger.debug("Recovering export from {}", exportLocationURL);
+		logger.debug("Recovering exported archive from {}", exportLocationURL);
 		resty.withHeader("Accept", ANY_CONTENT_TYPE);
 		BinaryResource archiveResource = resty.bytes(exportLocationURL);
 		File archive = File.createTempFile("ts-extract", ".zip");

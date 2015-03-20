@@ -5,7 +5,6 @@ import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
 
-import org.ihtsdo.srs.client.RefsetCombiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
