@@ -11,7 +11,7 @@ public class RestApplication {
 		ConfigurableApplicationContext applicationContext = SpringApplication.run(Config.class, "server.port=9000");
 
 		// Uncomment next line to trigger import on startup (useful for testing)
-		applicationContext.getBean(ImporterService.class).importCompletedWBContent(null);
+//		applicationContext.getBean(ImporterService.class).importCompletedWBContent(null);
 
 //		applicationContext.getBean(SnowOwlRestClient.class).classify("test");
 
