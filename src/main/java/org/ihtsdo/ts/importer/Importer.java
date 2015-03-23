@@ -10,6 +10,7 @@ import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
 import org.ihtsdo.ts.importfilter.*;
+import org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,6 +97,7 @@ public class Importer {
 						jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
 					} else {
 						handleError("Import process failed, see SnowOwl logs for details.", importResult);
+						jiraContentProjectSync.updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_REJECTED);
 					}
 
 					return importResult;

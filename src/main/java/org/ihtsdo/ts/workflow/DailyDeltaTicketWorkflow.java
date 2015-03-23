@@ -2,9 +2,7 @@ package org.ihtsdo.ts.workflow;
 
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
-
 import org.apache.commons.lang.NotImplementedException;
-import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.ihtsdo.rvf.client.RVFRestClient;
 import org.ihtsdo.srs.client.SRSRestClient;
 import org.ihtsdo.srs.client.SRSRestClientHelper;
@@ -21,13 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
-
 import us.monoid.json.JSONException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-
 import javax.annotation.Resource;
 
 @Resource
@@ -62,6 +58,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	public static final String EXPORT_ARCHIVE_LOCATION = "Export File Location";
 	public static final String RVF_RESPONSE_URL = "RVF Response URL";
 
+	public static final String TRANSITION_FROM_CREATED_TO_REJECTED = "Reject inconsistent data";
 	public static final String TRANSITION_TO_EXPORTED = "Export Content";
 	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
 	public static final String TRANSITION_TO_FAILED = "Failed";
@@ -149,7 +146,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 				issue.addComment(errMsg);
 				issue.transition().execute(JiraTransitions.FAILED);
 
-			} catch (Exception e2) {
+			} catch (JiraException e2) {
 				logger.error("Additional exception while trying to record previous exception in Jira.", e2);
 			}
 		}
