@@ -62,6 +62,10 @@
 		<constructor-arg value="${rvf.timeout}"/>
 	</bean>
 
+	<bean class="org.ihtsdo.ts.importer.clients.googledocs.GooglePublishedSheetsClient">
+		<constructor-arg value="${google.docs.concept.blacklist.url}"/>
+	</bean>
+
 	<!--<bean class="org.ihtsdo.otf.dao.s3.OfflineS3ClientImpl"/>-->
 
 	<bean class="org.ihtsdo.otf.dao.s3.S3ClientImpl" >

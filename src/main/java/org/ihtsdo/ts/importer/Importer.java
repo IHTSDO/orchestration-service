@@ -3,6 +3,8 @@ package org.ihtsdo.ts.importer;
 import net.rcarz.jiraclient.JiraException;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClientException;
+import org.ihtsdo.ts.importer.clients.googledocs.GooglePublishedSheetsClient;
+import org.ihtsdo.ts.importer.clients.googledocs.GooglePublishedSheetsClientException;
 import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
@@ -15,9 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Importer {
 
@@ -27,6 +27,9 @@ public class Importer {
 
 	@Autowired
 	private WorkbenchWorkflowClient workbenchWorkflowClient;
+
+	@Autowired
+	private GooglePublishedSheetsClient sheetsClient;
 
 	@Autowired
 	private ImportFilterService importFilterService;
@@ -67,6 +70,11 @@ public class Importer {
 					completedConceptIds = selectConceptIdsOverride;
 				} else {
 					completedConceptIds = new HashSet<>(workbenchWorkflowClient.getCompletedConceptSctids());
+					List<String> conceptBlacklistStrings = sheetsClient.getColumnValues();
+					if (conceptBlacklistStrings != null) {
+						logger.info("Concept Blacklist is {}", conceptBlacklistStrings.toString());
+						completedConceptIds.removeAll(stringsToLongs(conceptBlacklistStrings, new ArrayList<Long>()));
+					}
 				}
 
 				// Create selection archive (automatically pulls in any new daily exports first and skips concepts with incomplete dependencies)
@@ -104,6 +112,8 @@ public class Importer {
 				return handleError("Error using Snow Owl Terminology Server.", importResult, e);
 			} catch (WorkbenchWorkflowClientException e) {
 				return handleError(e.getMessage(), importResult, e);
+			} catch (GooglePublishedSheetsClientException e) {
+				return handleError("Failed to retrieve concept blacklist from Google Docs.", importResult, e);
 			}
 		} catch (JiraException e) {
 			throw new ImporterException("Error using Jira.", e);
@@ -168,6 +178,13 @@ public class Importer {
 			builder.append("|");
 		}
 		return builder.toString();
+	}
+
+	private Collection<Long> stringsToLongs(Collection<String> strings, Collection<Long> longs) {
+		for (String string : strings) {
+			longs.add(Long.parseLong(string));
+		}
+		return longs;
 	}
 
 }

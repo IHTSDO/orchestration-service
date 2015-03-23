@@ -28,6 +28,8 @@ aws.secretKey =
 aws.bucket.archives =
 aws.bucket.filter =
 
+google.docs.concept.blacklist.url =
+
 import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
 
 schedule.startDailyImport.cron = 0 0 2 * * *
