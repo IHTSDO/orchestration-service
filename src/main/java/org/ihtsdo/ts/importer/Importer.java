@@ -69,6 +69,7 @@ public class Importer {
 				Set<Long> completedConceptIds;
 				if (selectConceptIdsOverride != null) {
 					completedConceptIds = selectConceptIdsOverride;
+					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: " + toJiraSearchableIdList(selectConceptIdsOverride));
 				} else {
 					completedConceptIds = new HashSet<>(workbenchWorkflowClient.getCompletedConceptSctids());
 					List<String> conceptBlacklistStrings = sheetsClient.getColumnValues();
