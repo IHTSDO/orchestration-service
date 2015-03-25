@@ -1,7 +1,6 @@
 package org.ihtsdo.ts.importer.clients.snowowl;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -11,7 +10,6 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -167,6 +165,7 @@ public class SnowOwlRestClient {
 			String requestJson = "{ reasonerId: \"" + reasonerId + "\" }";
 			JSONResource jsonResponse = resty.json(snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL, RestyHelper.content(new JSONObject(requestJson), SNOWOWL_V1_CONTENT_TYPE));
 			classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
+			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 		} catch (IOException | JSONException e) {
 			throw new SnowOwlRestClientException("Create classification failed.", e);
 		}

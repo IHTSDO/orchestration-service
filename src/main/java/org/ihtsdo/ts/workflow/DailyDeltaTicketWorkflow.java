@@ -57,6 +57,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	public static final String JIRA_DATA_MARKER = "WORKFLOW_DATA:";
 	public static final String EXPORT_ARCHIVE_LOCATION = "Export File Location";
 	public static final String RVF_RESPONSE_URL = "RVF Response URL";
+	public static final String CLASSIFICATION_ID = "Classification ID";
 
 	public static final String TRANSITION_FROM_CREATED_TO_REJECTED = "Reject inconsistent data";
 	public static final String TRANSITION_TO_EXPORTED = "Export content";
@@ -179,6 +180,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 			}
 		}
 		issue.addComment(comment);
+		jiraDataHelper.putData(issue, CLASSIFICATION_ID, results.getClassificationId());
 		jiraProjectSync.updateStatus(issue.getKey(), newStatus);
 	}
 
