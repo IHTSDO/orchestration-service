@@ -84,7 +84,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	}
 
 	@Override
-	public void processChangedTicket(Issue issue) {
+	synchronized public void processChangedTicket(Issue issue) {
 		State currentState = getState(issue);
 		try {
 			switch (currentState) {
