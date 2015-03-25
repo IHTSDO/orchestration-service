@@ -16,10 +16,13 @@ import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.ts.importer.clients.resty.HttpEntityContent;
+import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
+import org.ihtsdo.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import us.monoid.json.JSONObject;
 import us.monoid.web.Content;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
@@ -32,6 +35,7 @@ public class SRSRestClient {
 
 	protected static final String CONTENT_TYPE_ANY = "*/*";
 	protected static final String CONTENT_TYPE_XML = "text/xml";
+	protected static final String CONTENT_TYPE_JSON = "application/json";
 	protected static final String CONTENT_TYPE_MULTIPART = "multipart/form-data";
 	protected static final String CONTENT_TYPE_TEXT = "text/plain;charset=UTF-8";
 
@@ -95,6 +99,12 @@ public class SRSRestClient {
 		uploadFile(srsProductURL + MANIFEST_ENDPOINT, configuredManifest);
 		configuredManifest.delete();
 
+		// Need to tell the product what release date it's targeting
+		String releaseDateISO = DateUtils.formatAsISO(releaseDate);
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("effectiveTime", releaseDateISO);
+		resty.json(srsProductURL, RestyHelper.putContent(jsonObj, CONTENT_TYPE_JSON));
+
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
 		resty.json(srsProductURL + INPUT_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
@@ -122,7 +132,7 @@ public class SRSRestClient {
 				Object value = json.get(item);
 				response.put(item, value.toString());
 			} catch (Exception e) {
-				logger.debug("Failed to recover item of interest from SRS Trigger Response: {} ", item);
+				logger.error("Failed to recover item of interest from SRS Trigger Response: {} ", item, e);
 			}
 		}
 		return response;

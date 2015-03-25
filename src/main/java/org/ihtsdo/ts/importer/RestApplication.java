@@ -1,5 +1,6 @@
 package org.ihtsdo.ts.importer;
 
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -20,8 +21,8 @@ public class RestApplication {
 
 //		applicationContext.getBean(SnowOwlRestClient.class).exportBranch("pgw_test2", SnowOwlRestClient.EXTRACT_TYPE.DELTA);
 
-//		String testInputFilesDir = "/Users/Peter/git/srs-script-client/ts_daily_build/tmp/srs_input_files";
-//		applicationContext.getBean(SRSRestClient.class).runDailyBuild(new File(testInputFilesDir), "20150319");
+		// String testInputFilesDir = "/Users/Peter/git/srs-script-client/tmp/srs_input_files";
+		// applicationContext.getBean(SRSRestClient.class).runDailyBuild(new File(testInputFilesDir), "20150319");
 
 //		applicationContext.getBean(SnowOwlRestClient.class).promoteBranch("pgw_test2");
 
