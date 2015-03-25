@@ -14,7 +14,10 @@ import java.util.Map;
 public class JiraProjectSync {
 
 	public static final String SUMMARY_FIELD = "summary";
+	public static final String PRIORITY_FIELD = "priority";
+	public static final String PRIORITY_CRITICAL = "Critical";
 	private static final String NEW_LINE = "\n";
+
 	private final String projectKey;
 	private final String jiraUrl;
 	private final String jiraUsername;
@@ -31,6 +34,7 @@ public class JiraProjectSync {
 	public String createTask(String taskLabel) throws JiraException {
 		Issue issue = getJiraClient().createIssue(projectKey, "Task")
 				.field(SUMMARY_FIELD, taskLabel)
+				.field(PRIORITY_FIELD, PRIORITY_CRITICAL)
 				.execute();
 		String key = issue.getKey();
 		logger.info("Created issue '{}'", key);
