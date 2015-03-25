@@ -141,11 +141,15 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		} catch (Exception e) {
 			String errMsg = "Exception while processing ticket " + issue.getKey() + " at state " + currentState + ": " + e.getMessage();
 			logger.error(errMsg, e);
+			// Is there a cause that we could add to the ticket?
+			Throwable cause = e.getCause();
+			if (cause != null) {
+				errMsg += "\nCaused by: " + cause.getMessage();
+			}
 			//Attempt to put the ticket into the failed State with a comment to that effect
 			try {
 				issue.addComment(errMsg);
 				issue.transition().execute(JiraTransitions.FAILED);
-
 			} catch (JiraException e2) {
 				logger.error("Additional exception while trying to record previous exception in Jira.", e2);
 			}
