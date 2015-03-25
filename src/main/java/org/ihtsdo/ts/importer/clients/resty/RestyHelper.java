@@ -22,4 +22,8 @@ public class RestyHelper {
 	public static AbstractContent putContent(JSONObject jsonObj, String aMimeType) {
 		return Resty.put(content(jsonObj, aMimeType));
 	}
+
+	public static AbstractContent patchContent(JSONObject jsonObj, String aMimeType) {
+		return Resty.patch(content(jsonObj, aMimeType));
+	}
 }
