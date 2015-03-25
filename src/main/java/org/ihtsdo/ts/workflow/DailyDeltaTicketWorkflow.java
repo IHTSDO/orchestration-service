@@ -59,7 +59,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	public static final String RVF_RESPONSE_URL = "RVF Response URL";
 
 	public static final String TRANSITION_FROM_CREATED_TO_REJECTED = "Reject inconsistent data";
-	public static final String TRANSITION_TO_EXPORTED = "Export Content";
+	public static final String TRANSITION_TO_EXPORTED = "Export content";
 	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
 	public static final String TRANSITION_TO_FAILED = "Failed";
 	public static final String TRANSITION_TO_CLOSED = "Close task";
