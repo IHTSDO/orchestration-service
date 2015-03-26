@@ -51,14 +51,14 @@ public class SnowOwlRestClient {
 	}
 
 	private final String snowOwlUrl;
-	private final Resty resty;
+	private final RestyHelper resty;
 	private String reasonerId;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public SnowOwlRestClient(String snowOwlUrl, String username, String password) {
 		this.snowOwlUrl = snowOwlUrl;
-		this.resty = new RestyMod(new Resty.Option() {
+		this.resty = new RestyHelper(new Resty.Option() {
 			@Override
 			public void apply(URLConnection aConnection) {
 				aConnection.addRequestProperty("Accept", SNOWOWL_V1_CONTENT_TYPE);
@@ -247,7 +247,7 @@ public class SnowOwlRestClient {
 		jsonObj.put("state", BRANCH_STATE.PROMOTED.name());
 		String promotionURL = snowOwlUrl + TASKS_URL + "/" + branchName;
 		logger.info("Promoting branch via URL: {} with JSON: {}", promotionURL, jsonObj.toString());
-		resty.json(promotionURL, RestyHelper.putContent(jsonObj, SNOWOWL_V1_CONTENT_TYPE));
+		resty.put(promotionURL, jsonObj, SNOWOWL_V1_CONTENT_TYPE);
 	}
 
 	private boolean waitForCompleteStatus(String url, Date timeoutDate, final String waitingFor) throws SnowOwlRestClientException, InterruptedException {

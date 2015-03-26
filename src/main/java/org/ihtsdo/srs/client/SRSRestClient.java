@@ -22,11 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.Content;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
-import us.monoid.web.RestyMod;
 import us.monoid.web.mime.MultipartContent;
 
 public class SRSRestClient {
@@ -47,6 +47,7 @@ public class SRSRestClient {
 	private static final String BUILD_ENDPOINT = "builds";
 	private static final String AUTHENTICATE_ENDPOINT = "login";
 	private static final String TRIGGER_BUILD_ENDPOINT = "/trigger";
+	private static final String PRODUCT_CONFIGURATION_ENDPOINT = "/configuration";
 	private static final String AUTHENTICATION_TOKEN = "authenticationToken";
 	private static final String ID = "id";
 	private static final char[] BLANK_PASSWORD = "".toCharArray();
@@ -58,17 +59,17 @@ public class SRSRestClient {
 	private final String username;
 	private final String password;
 
-	private final RestyMod resty;
+	private final RestyHelper resty;
 
-	public static final String RVF_RESPONSE = "buildReport/RVF Response";
-	private static final String[] ITEMS_OF_INTEREST = { "ouputfiles_url", "status", "logs_url", RVF_RESPONSE, "buildReport/Message" };
+	public static final String RVF_RESPONSE = "buildReport.rvf_response";
+	protected static final String[] ITEMS_OF_INTEREST = { "outputfiles_url", "status", "logs_url", RVF_RESPONSE, "buildReport.Message" };
 
 	public SRSRestClient(String srsRootURL, String srsProduct, String username, String password) {
 		this.srsRootURL = srsRootURL;
 		this.srsProductURL = srsRootURL + srsProduct;
 		this.username = username;
 		this.password = password;
-		this.resty = new RestyMod();
+		this.resty = new RestyHelper();
 	}
 
 	/**
@@ -99,11 +100,14 @@ public class SRSRestClient {
 		uploadFile(srsProductURL + MANIFEST_ENDPOINT, configuredManifest);
 		configuredManifest.delete();
 
+		boolean ensureSuccess = true;
+
 		// Need to tell the product what release date it's targeting
 		String releaseDateISO = DateUtils.formatAsISO(releaseDate);
+		logger.debug("Setting product effective time to {}", releaseDateISO);
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("effectiveTime", releaseDateISO);
-		resty.json(srsProductURL, RestyHelper.putContent(jsonObj, CONTENT_TYPE_JSON));
+		resty.json(srsProductURL + PRODUCT_CONFIGURATION_ENDPOINT, jsonObj, CONTENT_TYPE_JSON);
 
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
@@ -125,15 +129,29 @@ public class SRSRestClient {
 		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
 		logger.debug("Build trigger returned: {}", json.object().toString(2));
 
+		return recoverItemsOfInterest(json);
+	}
+
+	protected Map<String, String> recoverItemsOfInterest(JSONResource json) throws JSONException, IOException {
 		// Recover some things the users might be interested in, to store in the Jira Ticket
 		Map<String, String> response = new HashMap<String, String>();
+		int itemsFound = 0;
 		for (String item : ITEMS_OF_INTEREST) {
 			try {
 				Object value = json.get(item);
 				response.put(item, value.toString());
+				itemsFound++;
 			} catch (Exception e) {
 				logger.error("Failed to recover item of interest from SRS Trigger Response: {} ", item, e);
 			}
+		}
+
+		if (itemsFound < ITEMS_OF_INTEREST.length) {
+			logger.warn("Items of interest issues encountered with JSON: {}", json.object().toString(2));
+		}
+
+		if (itemsFound == 0) {
+			response.put("Error", "Failed to recover any items of interest from the SRS Response");
 		}
 		return response;
 	}
@@ -151,6 +169,7 @@ public class SRSRestClient {
 
 		Assert.isTrue(file.exists(), "File for upload to " + url + " was found to not exist at location: " + file.getAbsolutePath());
 		Assert.isTrue(!file.isDirectory(), "File for upload to " + url + " was found to be a directory: " + file.getAbsolutePath());
+		boolean ensureSuccess = true;
 		try {
 			logger.debug("Uploading file to {} : {} ", url, file.getAbsolutePath());
 			MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
