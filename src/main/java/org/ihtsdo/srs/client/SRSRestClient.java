@@ -69,7 +69,7 @@ public class SRSRestClient {
 		this.srsProductURL = srsRootURL + srsProduct;
 		this.username = username;
 		this.password = password;
-		this.resty = new RestyHelper();
+		this.resty = new RestyHelper(CONTENT_TYPE_ANY);
 	}
 
 	/**

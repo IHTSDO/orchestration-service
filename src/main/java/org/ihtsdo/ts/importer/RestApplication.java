@@ -1,5 +1,6 @@
 package org.ihtsdo.ts.importer;
 
+import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -16,7 +17,7 @@ public class RestApplication {
 
 //		applicationContext.getBean(ImporterService.class).importCompletedWBContent(null);
 
-//		applicationContext.getBean(SnowOwlRestClient.class).classify("test");
+		applicationContext.getBean(SnowOwlRestClient.class).classify("test");
 
 //		applicationContext.getBean(SnowOwlRestClient.class).exportBranch("pgw_test2", SnowOwlRestClient.EXTRACT_TYPE.DELTA);
 

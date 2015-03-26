@@ -10,16 +10,14 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
-import us.monoid.web.Resty;
-import us.monoid.web.RestyMod;
 
 import java.io.*;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.util.Calendar;
 import java.util.Date;
@@ -58,12 +56,7 @@ public class SnowOwlRestClient {
 
 	public SnowOwlRestClient(String snowOwlUrl, String username, String password) {
 		this.snowOwlUrl = snowOwlUrl;
-		this.resty = new RestyHelper(new Resty.Option() {
-			@Override
-			public void apply(URLConnection aConnection) {
-				aConnection.addRequestProperty("Accept", SNOWOWL_V1_CONTENT_TYPE);
-			}
-		});
+		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 		resty.authenticate(snowOwlUrl, username, password.toCharArray());
 	}
 

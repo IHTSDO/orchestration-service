@@ -1,32 +1,34 @@
 package org.ihtsdo.ts.importer.clients.resty;
 
-import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.AbstractContent;
 import us.monoid.web.Content;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
-import us.monoid.web.Resty.Option;
+import us.monoid.web.RestyMod;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RestyHelper extends Resty {
+public class RestyHelper extends RestyMod {
 
 	public static final String UTF_8 = "UTF-8";
 	private static final Logger LOGGER = LoggerFactory.getLogger(RestyHelper.class);
 
-	public RestyHelper(Option option) {
-		super(option);
-	}
+	public RestyHelper(final String defaultAcceptableContent) {
 
-	public RestyHelper() {
-		super();
+		super(new Resty.Option() {
+			@Override
+			public void apply(URLConnection aConnection) {
+				aConnection.addRequestProperty("Accept", defaultAcceptableContent);
+			}
+		});
 	}
 
 	public static Content content(JSONObject someJson, String aMimeType) {
