@@ -47,6 +47,10 @@ public class RVFRestClient {
 
 		Assert.notNull(pollURL, "Unable to check for RVF results - location not known.");
 
+		if (!pollURL.startsWith("http")) {
+			throw new ProcessingException("RVF location not available to check.  Instead we have: " + pollURL);
+		}
+
 		while (!isFinalState) {
 			JSONResource json = resty.json(pollURL);
 			Object responseState = json.get(JSON_FIELD_STATUS);
