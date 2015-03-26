@@ -37,21 +37,27 @@ public class RestyHelper extends Resty {
 		}
 	}
 
-	public JSONResource put(String url, JSONObject jsonObj, String contentType) throws IOException, JSONException {
+	public JSONResource put(String url, JSONObject jsonObj, String contentType) throws IOException {
 		return json(url, put(content(jsonObj, contentType)));
 
 	}
 
-	public JSONResource json(String url, JSONObject jsonObj, String contentType) throws IOException, JSONException {
+	public JSONResource json(String url, JSONObject jsonObj, String contentType) throws IOException {
 		return json(url, content(jsonObj, contentType));
 
 	}
 
-	public JSONResource json(String url, AbstractContent content) throws IOException, JSONException {
+	public JSONResource json(String url, AbstractContent content) throws IOException {
 		JSONResource response = super.json(url, content);
 		String statusCode = response.getUrlConnection().getHeaderField("Status-Code");
 		if (statusCode != null && !statusCode.startsWith("2")) {
-			throw new IOException("Call to " + url + " returned status " + statusCode + " and body " + response.object().toString(2));
+			String body = "Unable to parse body: ";
+			try {
+				body = response.object().toString(2);
+			} catch (Exception e) {
+				body += e.getMessage();
+			}
+			throw new IOException("Call to " + url + " returned status " + statusCode + " and body " + body);
 		} else {
 			LOGGER.debug("Call to " + url + " returned headers: ");
 			for (Entry<String, List<String>> header : response.getUrlConnection().getHeaderFields().entrySet()) {
