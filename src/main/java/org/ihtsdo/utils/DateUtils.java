@@ -1,5 +1,8 @@
 package org.ihtsdo.utils;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 //TODO When this class is mature, move it to OTF Common
 public class DateUtils {
 	
@@ -16,5 +19,11 @@ public class DateUtils {
 			.append(DATE_SEPARATOR)
 			.append(dateAsYYYYMMDD.substring(6));
 		return buff.toString();
+	}
+
+	public static String today(String formatStr) {
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat format = new SimpleDateFormat(formatStr);
+		return format.format(cal.getTime());
 	}
 }
