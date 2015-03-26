@@ -93,6 +93,16 @@ public class SRSRestClientHelper {
 		mergeRefsets(extractDir, "Delta", releaseDate);
 		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
 
+		// The description file is currently named sct2_Description_${extractType}-en-gb_INT_<date>.txt
+		// and we need it to be sct2_Description_${extractType}-en_INT_<date>.txt
+		File descriptionFileWrongName = new File(extractDir, "sct2_Description_Delta-en-gb_INT_" + releaseDate + ".txt");
+		File descriptionFileRightName = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
+		if (descriptionFileWrongName.exists()) {
+			descriptionFileWrongName.renameTo(descriptionFileRightName);
+		} else {
+			LOGGER.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
+		}
+
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
 		renameFiles(extractDir, "der2", "rel2");
