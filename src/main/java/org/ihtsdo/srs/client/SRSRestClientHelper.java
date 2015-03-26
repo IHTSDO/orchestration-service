@@ -36,6 +36,8 @@ public class SRSRestClientHelper {
 
 	public static final String UNKNOWN_EFFECTIVE_DATE = "Unpublished";
 	public static final int EFFECTIVE_DATE_COLUMN = 1;
+	public static final int CHARACTERISTIC_TYPE_ID_COLUMN = 8;
+	public static final String STATED_RELATIONSHIP_SCTID = "900000000000010007";
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
@@ -102,6 +104,11 @@ public class SRSRestClientHelper {
 		} else {
 			LOGGER.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
 		}
+
+		// We don't get a Stated Relationship file. We'll form it instead as a subset of the Inferred RelationshipFile
+		File inferred = new File(extractDir, "sct2_Relationship_Snapshot_INT_" + releaseDate + ".txt");
+		File stated = new File(extractDir, "sct2_StatedRelationship_Snapshot_INT_" + releaseDate + ".txt");
+		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID);
 
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
@@ -186,6 +193,27 @@ public class SRSRestClientHelper {
 				}
 				FileUtils.writeLines(thisFile, newLines);
 			}
+		}
+	}
+
+	/*
+	 * Creates a file containing all the rows which have "mustMatch" in columnNum. Plus the header row.
+	 */
+	protected static void createSubsetFile(File source, File target, int columnNum, String mustMatch) throws IOException {
+		if (source.exists() && !source.isDirectory()) {
+			List<String> allLines = FileUtils.readLines(source, StandardCharsets.UTF_8);
+			List<String> newLines = new ArrayList<String>();
+			int lineCount = 1;
+			for (String thisLine : allLines) {
+				String[] columns = thisLine.split("\t");
+				if (lineCount == 1 || (columns.length > columnNum && columns[columnNum].equals(mustMatch))) {
+					newLines.add(thisLine);
+				}
+				lineCount++;
+			}
+			FileUtils.writeLines(target, newLines);
+		} else {
+			LOGGER.warn("Did not find file {} needed to create subset {}", source, target);
 		}
 	}
 
