@@ -4,6 +4,7 @@ package org.ihtsdo.rvf.client;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.Assert;
 
 import us.monoid.web.JSONResource;
 import us.monoid.web.RestyMod;
@@ -43,6 +44,8 @@ public class RVFRestClient {
 		//Poll the URL and see what status the results are in
 		boolean isFinalState = false;
 		long msElapsed = 0;
+
+		Assert.notNull(pollURL, "Unable to check for RVF results - location not known.");
 
 		while (!isFinalState) {
 			JSONResource json = resty.json(pollURL);
