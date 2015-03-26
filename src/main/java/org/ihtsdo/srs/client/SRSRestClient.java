@@ -107,7 +107,7 @@ public class SRSRestClient {
 		logger.debug("Setting product effective time to {}", releaseDateISO);
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("effectiveTime", releaseDateISO);
-		resty.json(srsProductURL + PRODUCT_CONFIGURATION_ENDPOINT, jsonObj, CONTENT_TYPE_JSON);
+		resty.put(srsProductURL + PRODUCT_CONFIGURATION_ENDPOINT, jsonObj, CONTENT_TYPE_JSON);
 
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
