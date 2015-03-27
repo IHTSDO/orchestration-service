@@ -5,6 +5,7 @@ import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClientException;
 import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
+import org.ihtsdo.ts.importer.clients.snowowl.ImportError;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
 import org.ihtsdo.ts.importfilter.*;
@@ -67,7 +68,7 @@ public class Importer {
 				Set<Long> completedConceptIds;
 				if (selectConceptIdsOverride != null) {
 					completedConceptIds = selectConceptIdsOverride;
-					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: " + toJiraSearchableIdList(selectConceptIdsOverride));
+					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: \n" + toJiraSearchableIdList(selectConceptIdsOverride));
 					importSelection(taskKey, completedConceptIds, importResult, true);
 				} else {
 					logger.info("Fetching Workbench workflow completed concept IDs.");
@@ -81,11 +82,12 @@ public class Importer {
 						importFilterService.putSelectionArchiveBackInBacklog(importResult.getSelectionResult().getSelectedArchiveVersion());
 						importResult = new ImportResult(taskKey);
 						try {
-							List<Long> blacklist = importBlacklistService.createBlacklistFromLatestImportErrors();
-							if (!blacklist.isEmpty()) {
-								jiraContentProjectSync.addComment(taskKey, "Blacklist:\n" + toJiraSearchableIdList(blacklist));
-								logger.info("Import blacklist ({}): {}", blacklist.size(), blacklist);
-								completedConceptIds.removeAll(blacklist);
+							ImportBlacklistResults blacklistResults = importBlacklistService.createBlacklistFromLatestImportErrors();
+							List<Long> blacklistedConcepts = blacklistResults.getBlacklistedConcepts();
+							if (!blacklistedConcepts.isEmpty()) {
+								jiraContentProjectSync.addComment(taskKey, "Concepts which failed import (blacklist):\n" + toJiraTable(blacklistResults.getImportErrors()));
+								logger.info("Import blacklist ({}): {}", blacklistedConcepts.size(), blacklistedConcepts);
+								completedConceptIds.removeAll(blacklistedConcepts);
 								logger.info("Completed concepts minus blacklist ({}): {}", completedConceptIds.size(), completedConceptIds);
 								jiraContentProjectSync.addComment(taskKey, "Reimporting content using new blacklist.");
 								importSelection(taskKey, completedConceptIds, importResult, true);
@@ -125,7 +127,7 @@ public class Importer {
 			boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
 			if (importSuccessful) {
 				importResult.setImportCompletedSuccessfully(true);
-				jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: " + toJiraSearchableIdList(selectionResult.getFoundConceptIds()));
+				jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: \n" + toJiraSearchableIdList(selectionResult.getFoundConceptIds()));
 				jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
 			} else {
 				if (updateJiraOnImportError) {
@@ -179,12 +181,12 @@ public class Importer {
 		logger.error(message, e);
 		return handleError(message, importResult);
 	}
+
 	private ImportResult handleError(String message, ImportResult importResult) {
 		// No Exception here so must just be a user/content error.. no error logging needed.
 		addComment(message, importResult, "Error");
 		return importResult.setMessage(message);
 	}
-
 	private void addComment(String message, ImportResult importResult, String messageLevel) {
 		try {
 			jiraContentProjectSync.addComment(importResult.getTaskKey(), messageLevel + ": " + message);
@@ -196,12 +198,21 @@ public class Importer {
 	private String toJiraSearchableIdList(Collection<Long> sctids) {
 		StringBuilder builder = new StringBuilder();
 		for (Long sctid : sctids) {
-			if (builder.length() > 0) builder.append(", ");
-			builder.append("|");
+			if (builder.length() > 0) builder.append("|");
 			builder.append(sctid.toString());
 			builder.append("|");
 		}
 		return builder.toString();
+	}
+
+	private String toJiraTable(List<ImportError> importErrors) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("||Concept ID||Import error message||\n");
+		for (ImportError importError : importErrors) {
+			builder.append("|").append(importError.getConceptId()).append("|");
+			builder.append(importError.getMessage().replace("|", "-")).append("|\n");
+		}
+		return null;
 	}
 
 }

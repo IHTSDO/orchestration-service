@@ -18,14 +18,14 @@ public class ImportBlacklistService {
 	@Autowired
 	private SnowOwlRestClient tsClient;
 
-	public List<Long> createBlacklistFromLatestImportErrors() throws ImportBlacklistServiceException {
+	public ImportBlacklistResults createBlacklistFromLatestImportErrors() throws ImportBlacklistServiceException {
 		try {
 			List<ImportError> importErrors = importErrorParser.parseLogForLatestImportErrors(tsClient.getRolloverLogStream(), tsClient.getLogStream());
 			List<Long> blacklistedConcepts = new ArrayList<>();
 			for (ImportError importError : importErrors) {
 				blacklistedConcepts.add(Long.parseLong(importError.getConceptId()));
 			}
-			return blacklistedConcepts;
+			return new ImportBlacklistResults(importErrors, blacklistedConcepts);
 		} catch (IOException | ImportErrorParserException e) {
 			throw new ImportBlacklistServiceException("Failed to parse import error log.", e);
 		}
