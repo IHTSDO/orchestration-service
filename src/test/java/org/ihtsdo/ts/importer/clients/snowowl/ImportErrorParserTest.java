@@ -23,7 +23,7 @@ public class ImportErrorParserTest {
 
 		int errorIndex = 0;
 		for (ImportError importError : importErrors) {
-			Assert.assertNotNull("Concept id should not be null. Index: " + errorIndex, importError.getType());
+			Assert.assertNotNull("Message should not be null. Index: " + errorIndex, importError.getMessage());
 			String conceptId = importError.getConceptId();
 			Assert.assertNotNull("Concept id should not be null. Index: " + errorIndex, conceptId);
 			Assert.assertNotEquals("Concept id should not be empty. Index: " + errorIndex, "", conceptId);
@@ -32,16 +32,15 @@ public class ImportErrorParserTest {
 			errorIndex++;
 		}
 
-		assertTypeAndConceptId(importErrors.get(0), ImportError.ImportErrorType.DESCRIPTION_IDENTIFIER_NOT_UNIQUE, "700000001");
-		assertTypeAndConceptId(importErrors.get(13), ImportError.ImportErrorType.DESCRIPTION_CONCEPT_DOES_NOT_EXIST, "10676111000119102");
-		assertTypeAndConceptId(importErrors.get(96), ImportError.ImportErrorType.RELATIONSHIP_DESTINATION_CONCEPT_DOES_NOT_EXIST, "707142008");
-		assertTypeAndConceptId(importErrors.get(130), ImportError.ImportErrorType.CONCEPT_INACTIVATION_WHEN_REFERENCED_IN_ACTIVE_RELATIONSHIPS, "214178009");
-		assertTypeAndConceptId(importErrors.get(130), ImportError.ImportErrorType.CONCEPT_INACTIVATION_WHEN_REFERENCED_IN_ACTIVE_RELATIONSHIPS, "214178009");
-		assertTypeAndConceptId(importErrors.get(337), ImportError.ImportErrorType.RELATIONSHIP_SOURCE_CONCEPT_DOES_NOT_EXIST, "707548000");
+		assertTypeAndConceptId(importErrors.get(0), "700000001");
+		assertTypeAndConceptId(importErrors.get(13), "10676111000119102");
+		assertTypeAndConceptId(importErrors.get(96), "707142008");
+		assertTypeAndConceptId(importErrors.get(130), "214178009");
+		assertTypeAndConceptId(importErrors.get(130), "214178009");
+		assertTypeAndConceptId(importErrors.get(337), "707548000");
 	}
 
-	private void assertTypeAndConceptId(ImportError importError, ImportError.ImportErrorType expectedType, String expectedConceptId) {
-		Assert.assertEquals(expectedType, importError.getType());
+	private void assertTypeAndConceptId(ImportError importError, String expectedConceptId) {
 		Assert.assertEquals(expectedConceptId, importError.getConceptId());
 	}
 

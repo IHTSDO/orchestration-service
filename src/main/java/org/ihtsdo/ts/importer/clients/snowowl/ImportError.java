@@ -2,24 +2,20 @@ package org.ihtsdo.ts.importer.clients.snowowl;
 
 public class ImportError {
 
-	private final ImportErrorType type;
 	private final String conceptId;
+	private final String message;
 
-	public ImportError(ImportErrorType type, String conceptId) {
-		this.type = type;
+	public ImportError(String conceptId, String message) {
 		this.conceptId = conceptId;
-	}
-
-	public ImportErrorType getType() {
-		return type;
+		this.message = message;
 	}
 
 	public String getConceptId() {
 		return conceptId;
 	}
 
-	public enum ImportErrorType {
-		DESCRIPTION_CONCEPT_DOES_NOT_EXIST, RELATIONSHIP_DESTINATION_CONCEPT_DOES_NOT_EXIST, CONCEPT_INACTIVATION_WHEN_REFERENCED_IN_ACTIVE_RELATIONSHIPS, RELATIONSHIP_SOURCE_CONCEPT_DOES_NOT_EXIST, DESCRIPTION_IDENTIFIER_NOT_UNIQUE
+	public String getMessage() {
+		return message;
 	}
 
 }

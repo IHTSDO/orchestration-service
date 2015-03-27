@@ -17,16 +17,13 @@ public class ImportErrorParser {
 	public static final String IMPORT_UTIL = " com.b2international.snowowl.snomed.importer.rf2.util.ImportUtil ";
 	public static final String ERROR = " ERROR ";
 	public static final String CONCEPT_ID = "concept ID ";
+	public static final String PART_OF_CONCEPT_ID = "part of concept ID ";
 	public static final String SOURCE_CONCEPT = "Source concept '";
-	public static final String DESCRIPTION_IDENTIFIER_IS_NOT_UNIQUE = "Description identifier is not unique ";
-	public static final String DESCRIPTION_REFERS_TO_A_NON_EXISTING_CONCEPT = "Description refers to a non-existing concept ";
-	public static final String RELATIONSHIP_REFERS_TO_A_NON_EXISTING_CONCEPT_IN_COLUMN_DESTINATION_ID = "Relationship refers to a non-existing concept in column 'destinationId' ";
-	public static final String RELATIONSHIP_REFERS_TO_A_NON_EXISTING_CONCEPT_IN_COLUMN_SOURCE_ID = "Relationship refers to a non-existing concept in column 'sourceId' ";
-	public static final String THE_CONCEPTS_BELOW_ARE_REFERENCED_IN_ACTIVE_RELATIONSHIPS = "The concepts below are referenced in active relationships. ";
 	public static final String VALIDATION_ENCOUNTERED = "Validation encountered ";
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
+	// TODO: Persist collected import errors in S3 for review
 	public List<ImportError> parseLogForLatestImportErrors(InputStream snowOwlRolloverLogStream, InputStream snowOwlLogStream) throws ImportErrorParserException {
 		Path tempFile;
 		try {
@@ -66,25 +63,31 @@ public class ImportErrorParser {
 		logger.debug("Error message [{}]", message);
 		if (message.startsWith(VALIDATION_ENCOUNTERED)) {
 			importError = null;
-		} else if (message.startsWith(DESCRIPTION_IDENTIFIER_IS_NOT_UNIQUE)) {
-			importError = new ImportError(ImportError.ImportErrorType.DESCRIPTION_IDENTIFIER_NOT_UNIQUE, getConceptIdFromEndOfLine(message));
-		} else if (message.startsWith(DESCRIPTION_REFERS_TO_A_NON_EXISTING_CONCEPT)) {
-			importError = new ImportError(ImportError.ImportErrorType.DESCRIPTION_CONCEPT_DOES_NOT_EXIST, getConceptIdFromEndOfLine(message));
-		} else if (message.startsWith(RELATIONSHIP_REFERS_TO_A_NON_EXISTING_CONCEPT_IN_COLUMN_DESTINATION_ID)) {
-			importError = new ImportError(ImportError.ImportErrorType.RELATIONSHIP_DESTINATION_CONCEPT_DOES_NOT_EXIST, getConceptIdFromEndOfLine(message));
-		} else if (message.startsWith(RELATIONSHIP_REFERS_TO_A_NON_EXISTING_CONCEPT_IN_COLUMN_SOURCE_ID)) {
-			importError = new ImportError(ImportError.ImportErrorType.RELATIONSHIP_SOURCE_CONCEPT_DOES_NOT_EXIST, getConceptIdFromEndOfLine(message));
-		} else if (message.startsWith(THE_CONCEPTS_BELOW_ARE_REFERENCED_IN_ACTIVE_RELATIONSHIPS)) {
+		} else if (message.contains(PART_OF_CONCEPT_ID)) {
+			importError = new ImportError(getConceptId(message, PART_OF_CONCEPT_ID), message);
+		} else if (message.contains(CONCEPT_ID)) {
+			importError = new ImportError(getConceptId(message, CONCEPT_ID), message);
+		} else if (message.contains(SOURCE_CONCEPT)) {
 			int conceptIdStartIndex = message.indexOf(SOURCE_CONCEPT) + SOURCE_CONCEPT.length();
 			int conceptIdEndIndexQuote = message.indexOf("'", conceptIdStartIndex);
 			int conceptIdEndIndexPipe = message.indexOf("|", conceptIdStartIndex);
 			int conceptIdEndIndex = conceptIdEndIndexPipe != -1 && conceptIdEndIndexPipe < conceptIdEndIndexQuote ? conceptIdEndIndexPipe : conceptIdEndIndexQuote;
-			importError = new ImportError(ImportError.ImportErrorType.CONCEPT_INACTIVATION_WHEN_REFERENCED_IN_ACTIVE_RELATIONSHIPS, message.substring(conceptIdStartIndex, conceptIdEndIndex));
+			importError = new ImportError(message.substring(conceptIdStartIndex, conceptIdEndIndex), message);
 		} else {
-			logger.warn("Did not recognise import error message [{}]", message);
+			logger.warn("Not sure how to parse import error message [{}]", message);
 			importError = null;
 		}
 		return importError;
+	}
+
+	private String getConceptId(String message, String beforeConceptId) {
+		int beginIndex = message.indexOf(beforeConceptId) + beforeConceptId.length();
+		int endIndex = message.indexOf(" ", beginIndex);
+		if (endIndex != -1) {
+			return message.substring(beginIndex, endIndex).trim();
+		} else {
+			return message.substring(beginIndex).trim();
+		}
 	}
 
 	private String getConceptIdFromEndOfLine(String message) {
