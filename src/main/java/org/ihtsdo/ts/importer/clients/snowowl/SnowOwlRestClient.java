@@ -280,7 +280,12 @@ public class SnowOwlRestClient {
 			}
 			Thread.sleep(1000 * 10);
 		}
-		return "COMPLETED".equals(status);
+
+		boolean completed = "COMPLETED".equals(status);
+		if (!completed) {
+			logger.warn("TS reported non-complete status {} from URL {}", status, url);
+		}
+		return completed;
 	}
 
 	private Date getTimeoutDate(int importTimeoutMinutes) {
