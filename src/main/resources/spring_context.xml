@@ -48,6 +48,8 @@
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>
 		<property name="reasonerId" value="${snowowl.reasonerId}"/>
+		<property name="logPath" value="${snowowl.log.path}"/>
+		<property name="rolloverLogPath" value="${snowowl.rolloverLog.path}"/>
 	</bean>
 	
 	<bean class="org.ihtsdo.srs.client.SRSRestClient">
@@ -60,10 +62,6 @@
 	<bean class="org.ihtsdo.rvf.client.RVFRestClient" >
 		<constructor-arg value="${rvf.pollPeriod}"/>
 		<constructor-arg value="${rvf.timeout}"/>
-	</bean>
-
-	<bean class="org.ihtsdo.ts.importer.clients.googledocs.GooglePublishedSheetsClient">
-		<constructor-arg value="${google.docs.concept.blacklist.url}"/>
 	</bean>
 
 	<!--<bean class="org.ihtsdo.otf.dao.s3.OfflineS3ClientImpl"/>-->
@@ -95,6 +93,9 @@
 	</bean>
 
 	<bean class="org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient"/>
+
+	<bean class="org.ihtsdo.ts.importer.clients.snowowl.ImportErrorParser"/>
+	<bean class="org.ihtsdo.ts.importer.ImportBlacklistService"/>
 
 	<bean class="org.ihtsdo.ts.importer.DevTestTool"/>
 

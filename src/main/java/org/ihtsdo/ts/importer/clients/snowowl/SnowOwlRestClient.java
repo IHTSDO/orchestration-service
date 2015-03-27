@@ -51,6 +51,8 @@ public class SnowOwlRestClient {
 	private final String snowOwlUrl;
 	private final RestyHelper resty;
 	private String reasonerId;
+	private String logPath;
+	private String rolloverLogPath;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -243,6 +245,26 @@ public class SnowOwlRestClient {
 		resty.put(promotionURL, jsonObj, SNOWOWL_V1_CONTENT_TYPE);
 	}
 
+	/**
+	 * Warning - this only works when the SnowOwl log is on the same machine.
+	 */
+	public InputStream getLogStream() throws FileNotFoundException {
+		return new FileInputStream(logPath);
+	}
+
+	/**
+	 * Returns stream from rollover log or null.
+	 * @return
+	 * @throws FileNotFoundException
+	 */
+	public InputStream getRolloverLogStream() throws FileNotFoundException {
+		if (new File(rolloverLogPath).isFile()) {
+			return new FileInputStream(rolloverLogPath);
+		} else {
+			return null;
+		}
+	}
+
 	private boolean waitForCompleteStatus(String url, Date timeoutDate, final String waitingFor) throws SnowOwlRestClientException, InterruptedException {
 		String status = "";
 		boolean complete = false;
@@ -274,4 +296,13 @@ public class SnowOwlRestClient {
 	public String getReasonerId() {
 		return reasonerId;
 	}
+
+	public void setLogPath(String logPath) {
+		this.logPath = logPath;
+	}
+
+	public void setRolloverLogPath(String rolloverLogPath) {
+		this.rolloverLogPath = rolloverLogPath;
+	}
+
 }

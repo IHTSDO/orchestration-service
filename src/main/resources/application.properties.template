@@ -5,6 +5,8 @@ snowowl.url = http://localhost:8080/snowowl/
 snowowl.username =
 snowowl.password =
 snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
+snowowl.log.path = /opt/termserver/serviceability/logs/log.log
+snowowl.rolloverLog.path = /opt/termserver/serviceability/logs/log_1.log
 
 #SRS Server
 srs.root.url = https://localhost/api/v1/

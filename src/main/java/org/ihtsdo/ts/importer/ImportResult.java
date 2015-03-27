@@ -1,10 +1,20 @@
 package org.ihtsdo.ts.importer;
 
+import org.ihtsdo.ts.importfilter.SelectionResult;
+
 public class ImportResult {
 
 	private boolean importCompletedSuccessfully;
 	private String message;
 	private String taskKey;
+	private SelectionResult selectionResult;
+
+	public ImportResult() {
+	}
+
+	public ImportResult(String taskKey) {
+		this.taskKey = taskKey;
+	}
 
 	public void setImportCompletedSuccessfully(boolean importCompletedSuccessfully) {
 		this.importCompletedSuccessfully = importCompletedSuccessfully;
@@ -29,5 +39,13 @@ public class ImportResult {
 
 	public String getTaskKey() {
 		return taskKey;
+	}
+
+	public void setSelectionResult(SelectionResult selectionResult) {
+		this.selectionResult = selectionResult;
+	}
+
+	public SelectionResult getSelectionResult() {
+		return selectionResult;
 	}
 }

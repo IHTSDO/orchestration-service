@@ -15,6 +15,7 @@ import org.ihtsdo.ts.importer.clients.snowowl.ClassificationResults;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
 import org.ihtsdo.ts.importfilter.ImportFilterService;
+import org.ihtsdo.ts.importfilter.ImportFilterServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -184,7 +185,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue.getKey(), newStatus);
 	}
 
-	private void revertImport(Issue issue) throws JiraException, IOException {
+	private void revertImport(Issue issue) throws JiraException, ImportFilterServiceException {
 		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
 		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
 		importFilterService.putSelectionArchiveBackInBacklog(selectedArchiveVersion);
