@@ -75,7 +75,6 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 				.statusNot(State.CREATED.toString())
 				.statusNot(State.FAILED.toString())
 				.statusNot(State.PROMOTED.toString())
-				.statusNot(State.PUBLISHED.toString())
 				.statusNot(State.CLOSED.toString())
 				.toString();
 	}
@@ -121,7 +120,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 					logger.info("Ticket {} is awaiting user acceptance of validation.", issue.getKey());
 					break;
 
-				case ACCEPTED:
+			case VALIDATION_ACCEPTED:
 					mergeTaskToMain(issue);
 					break;
 
@@ -130,9 +129,6 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 					break;
 
 				case FAILED:
-					break;
-
-				case PUBLISHED:
 					break;
 
 				case CLOSED:
@@ -245,11 +241,25 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		EXPORTED,
 		BUILT,
 		VALIDATED,
-		ACCEPTED,
+		VALIDATION_ACCEPTED,
 		PROMOTED,
-		PUBLISHED,
 		FAILED,
 		CLOSED
+	}
+
+	private static State[] COMPLETE_STATES = { State.PROMOTED, State.FAILED, State.CLOSED };
+
+	@Override
+	public boolean isComplete(Issue issue) {
+		boolean isComplete = false;
+		// Loop through to see if we're currently in a complete state
+		State currentState = getState(issue);
+		for (State thisCompleteState : COMPLETE_STATES) {
+			if (currentState == thisCompleteState) {
+				isComplete = true;
+			}
+		}
+		return isComplete;
 	}
 
 }
