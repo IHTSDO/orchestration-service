@@ -106,8 +106,8 @@ public class SRSRestClientHelper {
 		}
 
 		// We don't get a Stated Relationship file. We'll form it instead as a subset of the Inferred RelationshipFile
-		File inferred = new File(extractDir, "sct2_Relationship_Snapshot_INT_" + releaseDate + ".txt");
-		File stated = new File(extractDir, "sct2_StatedRelationship_Snapshot_INT_" + releaseDate + ".txt");
+		File inferred = new File(extractDir, "sct2_Relationship_Delta_INT_" + releaseDate + ".txt");
+		File stated = new File(extractDir, "sct2_StatedRelationship_Delta_INT_" + releaseDate + ".txt");
 		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID);
 
 		// Now rename files to make the import compatible
