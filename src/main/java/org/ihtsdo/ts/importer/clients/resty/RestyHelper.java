@@ -50,22 +50,31 @@ public class RestyHelper extends RestyMod {
 	}
 
 	public JSONResource json(String url, AbstractContent content) throws IOException {
+		boolean allowErrors = false;
+		return json(url, content, allowErrors);
+	}
+
+	public JSONResource json(String url, AbstractContent content, boolean allowErrors) throws IOException {
 		JSONResource response = super.json(url, content);
-		String statusCode = response.getUrlConnection().getHeaderField("Status-Code");
-		if (statusCode != null && !statusCode.startsWith("2")) {
-			String body = "Unable to parse body: ";
-			try {
-				body = response.object().toString(2);
-			} catch (Exception e) {
-				body += e.getMessage();
-			}
-			throw new IOException("Call to " + url + " returned status " + statusCode + " and body " + body);
-		} else {
-			LOGGER.debug("Call to " + url + " returned headers: ");
-			for (Entry<String, List<String>> header : response.getUrlConnection().getHeaderFields().entrySet()) {
-				LOGGER.debug(header.getKey());
-				for (String item : header.getValue()) {
-					LOGGER.debug("\t" + item);
+		if (!allowErrors) {
+			String statusCode = response.getUrlConnection().getHeaderField("Status-Code");
+
+			if (statusCode != null && !statusCode.startsWith("2")) {
+				String body = "";
+				try {
+					body = response.object().toString(2);
+				} catch (Exception e) {
+					body = "Unable to parse body: ";
+					body += e.getMessage();
+				}
+				throw new IOException("Call to " + url + " returned non-acceptable status " + statusCode + " and body " + body);
+			} else {
+				LOGGER.debug("Call to " + url + " returned headers without Status-Code: ");
+				for (Entry<String, List<String>> header : response.getUrlConnection().getHeaderFields().entrySet()) {
+					LOGGER.debug(header.getKey());
+					for (String item : header.getValue()) {
+						LOGGER.debug("\t" + item);
+					}
 				}
 			}
 		}
