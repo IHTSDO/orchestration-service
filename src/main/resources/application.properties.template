@@ -5,11 +5,18 @@ snowowl.url = http://localhost:8080/snowowl/
 snowowl.username =
 snowowl.password =
 snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
+snowowl.log.path = /opt/termserver/serviceability/logs/log.log
+snowowl.rolloverLog.path = /opt/termserver/serviceability/logs/log_1.log
 
 #SRS Server
-srs.url = http://localhost:8080/snowowl/
+srs.root.url = https://localhost/api/v1/
+srs.product = centers/international/products/snomed_ct_release/
 srs.username =
 srs.password =
+
+#RVF Server
+rvf.pollPeriod = 60  #Polling interval in seconds
+rvf.timeout = 120 #Timeout in minutes
 
 # Jira
 jira.url = http://localhost:8080/jira
@@ -22,6 +29,8 @@ aws.key =
 aws.secretKey =
 aws.bucket.archives =
 aws.bucket.filter =
+
+google.docs.concept.blacklist.url =
 
 import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
 

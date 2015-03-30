@@ -9,6 +9,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,6 @@ import org.apache.commons.io.IOUtils;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.util.Assert;
 
 import com.google.common.io.Files;
@@ -33,6 +33,11 @@ public class SRSRestClientHelper {
 
 	private static final String FILE_TYPE_INSERT = "****";
 	private static final String RELEASE_DATE_INSERT = "########";
+
+	public static final String UNKNOWN_EFFECTIVE_DATE = "Unpublished";
+	public static final int EFFECTIVE_DATE_COLUMN = 1;
+	public static final int CHARACTERISTIC_TYPE_ID_COLUMN = 8;
+	public static final String STATED_RELATIONSHIP_SCTID = "900000000000010007";
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
@@ -88,6 +93,22 @@ public class SRSRestClientHelper {
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
 		mergeRefsets(extractDir, "Delta", releaseDate);
+		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
+
+		// The description file is currently named sct2_Description_${extractType}-en-gb_INT_<date>.txt
+		// and we need it to be sct2_Description_${extractType}-en_INT_<date>.txt
+		File descriptionFileWrongName = new File(extractDir, "sct2_Description_Delta-en-gb_INT_" + releaseDate + ".txt");
+		File descriptionFileRightName = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
+		if (descriptionFileWrongName.exists()) {
+			descriptionFileWrongName.renameTo(descriptionFileRightName);
+		} else {
+			LOGGER.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
+		}
+
+		// We don't get a Stated Relationship file. We'll form it instead as a subset of the Inferred RelationshipFile
+		File inferred = new File(extractDir, "sct2_Relationship_Delta_INT_" + releaseDate + ".txt");
+		File stated = new File(extractDir, "sct2_StatedRelationship_Delta_INT_" + releaseDate + ".txt");
+		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID);
 
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
@@ -145,6 +166,54 @@ public class SRSRestClientHelper {
 					thisFile.renameTo(newFile);
 				}
 			}
+		}
+	}
+
+	/**
+	 * @param targetDirectory
+	 * @param find
+	 * @param replace
+	 * @param columnNum
+	 *            searched for term must match in this column
+	 * @throws IOException
+	 */
+	protected static void replaceInFiles(File targetDirectory, String find, String replace, int columnNum) throws IOException {
+		Assert.isTrue(targetDirectory.isDirectory(), targetDirectory.getAbsolutePath()
+				+ " must be a directory in order to replace text from " + find + " to " + replace);
+		for (File thisFile : targetDirectory.listFiles()) {
+			if (thisFile.exists() && !thisFile.isDirectory()) {
+				List<String> oldLines = FileUtils.readLines(thisFile, StandardCharsets.UTF_8);
+				List<String> newLines = new ArrayList<String>();
+				for (String thisLine : oldLines) {
+					String[] columns = thisLine.split("\t");
+					if (columns.length > columnNum & columns[columnNum].equals(find)) {
+						thisLine = thisLine.replaceFirst(find, replace); // Would be more generic to rebuild from columns
+					}
+					newLines.add(thisLine);
+				}
+				FileUtils.writeLines(thisFile, newLines);
+			}
+		}
+	}
+
+	/*
+	 * Creates a file containing all the rows which have "mustMatch" in columnNum. Plus the header row.
+	 */
+	protected static void createSubsetFile(File source, File target, int columnNum, String mustMatch) throws IOException {
+		if (source.exists() && !source.isDirectory()) {
+			List<String> allLines = FileUtils.readLines(source, StandardCharsets.UTF_8);
+			List<String> newLines = new ArrayList<String>();
+			int lineCount = 1;
+			for (String thisLine : allLines) {
+				String[] columns = thisLine.split("\t");
+				if (lineCount == 1 || (columns.length > columnNum && columns[columnNum].equals(mustMatch))) {
+					newLines.add(thisLine);
+				}
+				lineCount++;
+			}
+			FileUtils.writeLines(target, newLines);
+		} else {
+			LOGGER.warn("Did not find file {} needed to create subset {}", source, target);
 		}
 	}
 

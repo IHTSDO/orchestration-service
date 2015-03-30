@@ -8,4 +8,6 @@ public interface TicketWorkflow {
 
 	public void processChangedTicket(Issue issue);
 
+	public boolean isComplete(Issue issue);
+
 }

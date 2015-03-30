@@ -9,7 +9,7 @@
 
 	<groupId>org.ihtsdo.ts</groupId>
 	<artifactId>ts-delta-import-process</artifactId>
-	<version>1.2</version>
+	<version>1.3</version>
 	<packaging>jar</packaging>
 
 	<name>ts-delta-import-process</name>
@@ -32,7 +32,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.ts</groupId>
 			<artifactId>import-filter</artifactId>
-			<version>1.2</version>
+			<version>1.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
@@ -73,6 +73,11 @@
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>1.10</version>
+		</dependency>
+		<dependency>
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.8.1</version>
 		</dependency>
 	</dependencies>
 

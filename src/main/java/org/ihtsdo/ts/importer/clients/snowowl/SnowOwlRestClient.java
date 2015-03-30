@@ -1,7 +1,6 @@
 package org.ihtsdo.ts.importer.clients.snowowl;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -11,16 +10,14 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
-import us.monoid.web.Resty;
-import us.monoid.web.RestyMod;
 
 import java.io.*;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.util.Calendar;
 import java.util.Date;
@@ -47,20 +44,21 @@ public class SnowOwlRestClient {
 		DELTA, SNAPSHOT, FULL
 	};
 
+	public static enum BRANCH_STATE {
+		NOT_SYNCHRONIZED, SYNCHRONIZED, PROMOTED
+	}
+
 	private final String snowOwlUrl;
-	private final Resty resty;
+	private final RestyHelper resty;
 	private String reasonerId;
+	private String logPath;
+	private String rolloverLogPath;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public SnowOwlRestClient(String snowOwlUrl, String username, String password) {
 		this.snowOwlUrl = snowOwlUrl;
-		this.resty = new RestyMod(new Resty.Option() {
-			@Override
-			public void apply(URLConnection aConnection) {
-				aConnection.addRequestProperty("Accept", SNOWOWL_V1_CONTENT_TYPE);
-			}
-		});
+		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 		resty.authenticate(snowOwlUrl, username, password.toCharArray());
 	}
 
@@ -162,6 +160,7 @@ public class SnowOwlRestClient {
 			String requestJson = "{ reasonerId: \"" + reasonerId + "\" }";
 			JSONResource jsonResponse = resty.json(snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL, RestyHelper.content(new JSONObject(requestJson), SNOWOWL_V1_CONTENT_TYPE));
 			classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
+			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 		} catch (IOException | JSONException e) {
 			throw new SnowOwlRestClientException("Create classification failed.", e);
 		}
@@ -198,36 +197,72 @@ public class SnowOwlRestClient {
 			return true;
 		}
 	}
-	public File exportBranch(String branchName, EXTRACT_TYPE extractType) {
-		throw new NotImplementedException("Endpoint for branch export not yet determined");
+
+	public File exportBranch(String branchName, EXTRACT_TYPE extractType) throws Exception {
+		return export(null, branchName, extractType);
 	}
 	
 	public File exportVersion(String version, EXTRACT_TYPE extractType) throws Exception {
-		//Note that version could be "MAIN" to extract latest unversioned content
-		String exportVersionUrl = snowOwlUrl + SNOMED_TERMINOLOGY_URL + "/" + version + EXPORTS_URL;
-		return export (exportVersionUrl, extractType);
+		// Note that version could be "MAIN" to extract latest unversioned content on the main branch
+		return export(version, null, extractType);
 	}
 	
-	private File export(String exportURL, EXTRACT_TYPE extractType) throws Exception {
-		
-		/*
-		 * String jsonString = "{\"moduleIds\":[\"900000000000207008\"]," + "\"type\":\"" + extractType.toString() + "\"," +
-		 * "\"deltaStartEffectiveTime\":\"\"," + "\"deltaEndEffectiveTime\":\"\"," + "\"namespaceId\":\"1000154\"}";
-		 */
-		String jsonString = "{\"type\":\"DELTA\"}";
+	private File export(String version, String branchName, EXTRACT_TYPE extractType) throws Exception {
 
-		logger.debug("Initiating export from {} with json: {}", exportURL, jsonString);
-		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(new JSONObject(jsonString), SNOWOWL_V1_CONTENT_TYPE));
+		String exportURL = snowOwlUrl + SNOMED_TERMINOLOGY_URL + EXPORTS_URL;
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("type", extractType);
+
+		if (version != null) {
+			jsonObj.put("version", version);
+		} else {
+			jsonObj.put("version", MAIN);
+		}
+
+		if (branchName != null) {
+			jsonObj.put("taskId", branchName);
+		}
+
+		logger.info("Initiating export from {} with json: {}", exportURL, jsonObj.toString());
+		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(jsonObj, SNOWOWL_V1_CONTENT_TYPE));
 		Object exportLocationURLObj = jsonResponse.getUrlConnection().getHeaderField("Location");
 		String exportLocationURL = exportLocationURLObj.toString() + "/archive";
 
-		logger.debug("Recovering export from {}", exportLocationURL);
+		logger.debug("Recovering exported archive from {}", exportLocationURL);
 		resty.withHeader("Accept", ANY_CONTENT_TYPE);
 		BinaryResource archiveResource = resty.bytes(exportLocationURL);
 		File archive = File.createTempFile("ts-extract", ".zip");
 		archiveResource.save(archive);
 		logger.debug("Extract saved to {}", archive.getAbsolutePath());
 		return archive;
+	}
+
+	public void promoteBranch(String branchName) throws IOException, JSONException {
+		JSONObject jsonObj = new JSONObject();
+		jsonObj.put("state", BRANCH_STATE.PROMOTED.name());
+		String promotionURL = snowOwlUrl + TASKS_URL + "/" + branchName;
+		logger.info("Promoting branch via URL: {} with JSON: {}", promotionURL, jsonObj.toString());
+		resty.put(promotionURL, jsonObj, SNOWOWL_V1_CONTENT_TYPE);
+	}
+
+	/**
+	 * Warning - this only works when the SnowOwl log is on the same machine.
+	 */
+	public InputStream getLogStream() throws FileNotFoundException {
+		return new FileInputStream(logPath);
+	}
+
+	/**
+	 * Returns stream from rollover log or null.
+	 * @return
+	 * @throws FileNotFoundException
+	 */
+	public InputStream getRolloverLogStream() throws FileNotFoundException {
+		if (new File(rolloverLogPath).isFile()) {
+			return new FileInputStream(rolloverLogPath);
+		} else {
+			return null;
+		}
 	}
 
 	private boolean waitForCompleteStatus(String url, Date timeoutDate, final String waitingFor) throws SnowOwlRestClientException, InterruptedException {
@@ -245,7 +280,12 @@ public class SnowOwlRestClient {
 			}
 			Thread.sleep(1000 * 10);
 		}
-		return "COMPLETED".equals(status);
+
+		boolean completed = "COMPLETED".equals(status);
+		if (!completed) {
+			logger.warn("TS reported non-complete status {} from URL {}", status, url);
+		}
+		return completed;
 	}
 
 	private Date getTimeoutDate(int importTimeoutMinutes) {
@@ -261,4 +301,13 @@ public class SnowOwlRestClient {
 	public String getReasonerId() {
 		return reasonerId;
 	}
+
+	public void setLogPath(String logPath) {
+		this.logPath = logPath;
+	}
+
+	public void setRolloverLogPath(String rolloverLogPath) {
+		this.rolloverLogPath = rolloverLogPath;
+	}
+
 }
