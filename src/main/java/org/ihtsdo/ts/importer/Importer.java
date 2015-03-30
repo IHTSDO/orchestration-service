@@ -212,7 +212,7 @@ public class Importer {
 			builder.append("|").append(importError.getConceptId()).append("|");
 			builder.append(importError.getMessage().replace("|", "-")).append("|\n");
 		}
-		return null;
+		return builder.toString();
 	}
 
 }
