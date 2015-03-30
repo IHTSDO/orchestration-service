@@ -51,6 +51,9 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	@Autowired
 	private JiraDataHelper jiraDataHelper;
 
+	@Autowired
+	private String exportDeltaStartEffectiveTime;
+
 	private final String interestingTicketsJQL;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -211,7 +214,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	}
 
 	private void exportTask(Issue issue) throws Exception {
-		File exportArchive = tsClient.exportBranch(issue.getKey(), SnowOwlRestClient.EXTRACT_TYPE.DELTA);
+		File exportArchive = tsClient.exportBranch(issue.getKey(), SnowOwlRestClient.ExtractType.DELTA, exportDeltaStartEffectiveTime);
 		jiraDataHelper.putData(issue, EXPORT_ARCHIVE_LOCATION, exportArchive.getAbsolutePath());
 		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_TO_EXPORTED);
 	}

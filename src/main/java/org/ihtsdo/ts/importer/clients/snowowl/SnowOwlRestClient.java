@@ -19,10 +19,7 @@ import us.monoid.web.JSONResource;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.List;
+import java.util.*;
 
 public class SnowOwlRestClient {
 
@@ -40,11 +37,11 @@ public class SnowOwlRestClient {
 	public static final String EQUIVALENT_CONCEPTS_URL = "/equivalent-concepts";
 	public static final String RELATIONSHIP_CHANGES_URL = "/relationship-changes";
 
-	public static enum EXTRACT_TYPE {
+	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL
 	};
 
-	public static enum BRANCH_STATE {
+	public enum BranchState {
 		NOT_SYNCHRONIZED, SYNCHRONIZED, PROMOTED
 	}
 
@@ -198,16 +195,16 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public File exportBranch(String branchName, EXTRACT_TYPE extractType) throws Exception {
-		return export(null, branchName, extractType);
+	public File exportBranch(String branchName, ExtractType extractType, String deltaStartEffectiveTime) throws Exception {
+		return export(null, branchName, extractType, deltaStartEffectiveTime);
 	}
-	
-	public File exportVersion(String version, EXTRACT_TYPE extractType) throws Exception {
+
+	public File exportVersion(String version, ExtractType extractType) throws Exception {
 		// Note that version could be "MAIN" to extract latest unversioned content on the main branch
-		return export(version, null, extractType);
+		return export(version, null, extractType, null);
 	}
 	
-	private File export(String version, String branchName, EXTRACT_TYPE extractType) throws Exception {
+	private File export(String version, String branchName, ExtractType extractType, String deltaStartEffectiveTime) throws Exception {
 
 		String exportURL = snowOwlUrl + SNOMED_TERMINOLOGY_URL + EXPORTS_URL;
 		JSONObject jsonObj = new JSONObject();
@@ -221,6 +218,10 @@ public class SnowOwlRestClient {
 
 		if (branchName != null) {
 			jsonObj.put("taskId", branchName);
+		}
+
+		if (deltaStartEffectiveTime != null) {
+			jsonObj.put("deltaStartEffectiveTime", deltaStartEffectiveTime);
 		}
 
 		logger.info("Initiating export from {} with json: {}", exportURL, jsonObj.toString());
@@ -239,7 +240,7 @@ public class SnowOwlRestClient {
 
 	public void promoteBranch(String branchName) throws IOException, JSONException {
 		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("state", BRANCH_STATE.PROMOTED.name());
+		jsonObj.put("state", BranchState.PROMOTED.name());
 		String promotionURL = snowOwlUrl + TASKS_URL + "/" + branchName;
 		logger.info("Promoting branch via URL: {} with JSON: {}", promotionURL, jsonObj.toString());
 		resty.put(promotionURL, jsonObj, SNOWOWL_V1_CONTENT_TYPE);

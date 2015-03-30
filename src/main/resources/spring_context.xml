@@ -99,4 +99,8 @@
 
 	<bean class="org.ihtsdo.ts.importer.DevTestTool"/>
 
+	<bean name="exportDeltaStartEffectiveTime" class="java.lang.String" >
+		<constructor-arg value="${snowowl.export.fromDate}"/>
+	</bean>
+
 </beans>
