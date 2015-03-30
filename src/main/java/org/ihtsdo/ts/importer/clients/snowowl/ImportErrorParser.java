@@ -81,6 +81,7 @@ public class ImportErrorParser {
 	}
 
 	private String getConceptId(String message, String beforeConceptId) {
+		message = message.replace(",", " ");
 		int beginIndex = message.indexOf(beforeConceptId) + beforeConceptId.length();
 		int endIndex = message.indexOf(" ", beginIndex);
 		if (endIndex != -1) {
