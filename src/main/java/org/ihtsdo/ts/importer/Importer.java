@@ -198,7 +198,7 @@ public class Importer {
 	private String toJiraSearchableIdList(Collection<Long> sctids) {
 		StringBuilder builder = new StringBuilder();
 		for (Long sctid : sctids) {
-			if (builder.length() > 0) builder.append("|");
+			if (builder.length() == 0) builder.append("|");
 			builder.append(sctid.toString());
 			builder.append("|");
 		}
