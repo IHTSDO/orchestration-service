@@ -24,6 +24,7 @@ jira.url = http://localhost:8080/jira
 jira.username =
 jira.password =
 jira.contentProjectKey =
+jira.dailyExportProjectKey =
 
 aws.key =
 aws.secretKey =

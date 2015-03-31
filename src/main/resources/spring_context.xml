@@ -39,6 +39,9 @@
 				<entry key="DailyDelta">
 					<bean class="org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow"/>
 				</entry>
+				<entry key="DailyExport">
+					<bean class="org.ihtsdo.ts.workflow.DailyExportTicketWorkflow"/>
+				</entry>
 			</map>
 		</constructor-arg>
 	</bean>
@@ -85,10 +88,14 @@
 	<bean name="jiraProjectKey" class="java.lang.String" >
 		<constructor-arg value="${jira.contentProjectKey}"/>
 	</bean>
+	
+	<bean name="jiraDailyExportProjectKey" class="java.lang.String" >
+		<constructor-arg value="${jira.dailyExportProjectKey}"/>
+	</bean>
 
 	<bean class="org.ihtsdo.ts.importer.clients.jira.JiraDataHelper" >
 		<constructor-arg>
-			<util:constant static-field="org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow.JIRA_DATA_MARKER"/>
+			<util:constant static-field="org.ihtsdo.ts.workflow.TSAbstractTicketWorkflow.JIRA_DATA_MARKER"/>
 		</constructor-arg>
 	</bean>
 

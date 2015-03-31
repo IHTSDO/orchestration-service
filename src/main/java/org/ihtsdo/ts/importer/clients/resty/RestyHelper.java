@@ -46,7 +46,6 @@ public class RestyHelper extends RestyMod {
 
 	public JSONResource json(String url, JSONObject jsonObj, String contentType) throws IOException {
 		return json(url, content(jsonObj, contentType));
-
 	}
 
 	public JSONResource json(String url, AbstractContent content) throws IOException {

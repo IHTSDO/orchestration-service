@@ -10,4 +10,6 @@ public interface TicketWorkflow {
 
 	public boolean isComplete(Issue issue);
 
+	public String getProjectKey();
+
 }

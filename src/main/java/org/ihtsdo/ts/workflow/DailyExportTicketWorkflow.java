@@ -3,47 +3,32 @@ package org.ihtsdo.ts.workflow;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 
-import org.ihtsdo.ts.importer.Importer;
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JQLBuilder;
-import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
-import org.ihtsdo.ts.importfilter.ImportFilterService;
-import org.ihtsdo.ts.importfilter.ImportFilterServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.Assert;
 
 import javax.annotation.Resource;
 
 @Resource
-public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implements TicketWorkflow {
-
-	@Autowired
-	private ImportFilterService importFilterService;
-
-	@Autowired
-	private JiraDataHelper jiraDataHelper;
-
-	@Autowired
-	private String exportDeltaStartEffectiveTime;
-
-	private final String interestingTicketsJQL;
+public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implements TicketWorkflow {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
+	private final String interestingTicketsJQL;
+	
 	private final String jiraProjectKey;
 
 	@Autowired
-	public DailyDeltaTicketWorkflow(String jiraProjectKey) {
-		this.jiraProjectKey = jiraProjectKey;
+	public DailyExportTicketWorkflow(String jiraDailyExportProjectKey) {
+		this.jiraProjectKey = jiraDailyExportProjectKey;
 		interestingTicketsJQL = new JQLBuilder()
-				.project(jiraProjectKey)
-				.statusNot(DDState.CREATED.toString())
-				.statusNot(DDState.FAILED.toString())
-				.statusNot(DDState.PROMOTED.toString())
-				.statusNot(DDState.CLOSED.toString())
+				.project(jiraDailyExportProjectKey)
+				//TODO .statusNot(jiraState(DEState.VALIDATION_ACCEPTED))  Not happy with states with name in them.
+				.statusNot(DEState.FAILED.toString())
+				.statusNot(DEState.CLOSED.toString())
 				.toString();
 	}
 
@@ -54,26 +39,19 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 
 	@Override
 	synchronized public void processChangedTicket(Issue issue) {
-		DDState currentState = getState(issue);
+		DEState currentState = (DEState) getState(issue);
 		try {
 			switch (currentState) {
 				case CREATED:
-					logger.info("DailyDelta Workflow ignoring ticket at status CREATED: {}", issue.getKey());
-					break;
-				case IMPORTED:
-					runClassifier(issue, SnowOwlRestClient.BranchType.BRANCH);
+				runClassifier(issue, SnowOwlRestClient.BranchType.MAIN);
 					break;
 
 				case CLASSIFIED_WITH_QUERIES:
 					logger.info("Ticket {} has classification queries.  Awaiting user action", issue.getKey());
 					break;
 
-				case CONTENT_REJECTED:
-					revertImport(issue);
-					break;
-
 				case CLASSIFIED_SUCCESSFULLY:
-					export(issue, SnowOwlRestClient.BranchType.BRANCH);
+				export(issue, SnowOwlRestClient.BranchType.MAIN);
 					break;
 
 				case EXPORTED:
@@ -89,16 +67,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 					break;
 
 				case VALIDATION_ACCEPTED:
-					mergeTaskToMain(issue);
-					break;
-
-				case PROMOTED:
-					versionMain(issue);
-					break;
-
 				case FAILED:
-					break;
-
 				case CLOSED:
 					logger.debug("Ticket {} is in final state {}", issue.getKey(), currentState);
 					break;
@@ -122,37 +91,30 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 		}
 	}
 
-	protected DDState getState(Issue issue) {
-		return DDState.valueOf(issue.getStatus().getName().toUpperCase().replace(" ", "_"));
-	}
-
-	private void revertImport(Issue issue) throws JiraException, ImportFilterServiceException {
-		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
-		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
-		importFilterService.putSelectionArchiveBackInBacklog(selectedArchiveVersion);
-		jiraProjectSync.updateStatus(issue, TRANSITION_TO_CLOSED);
-	}
-
-	private static enum DDState {
+	
+	private static enum DEState {
 		CREATED,
-		IMPORTED,
 		CLASSIFIED_WITH_QUERIES,
-		CONTENT_REJECTED,
 		CLASSIFIED_SUCCESSFULLY,
 		EXPORTED,
 		BUILT,
 		VALIDATED,
 		VALIDATION_ACCEPTED,
-		PROMOTED,
 		FAILED,
 		CLOSED
 	}
 
-	private static DDState[] COMPLETE_STATES = { DDState.PROMOTED, DDState.FAILED, DDState.CLOSED };
+	private static DEState[] COMPLETE_STATES = { DEState.VALIDATION_ACCEPTED, DEState.FAILED, DEState.CLOSED };
+
 
 	@Override
 	protected Enum[] getCompleteStates() {
 		return COMPLETE_STATES;
+	}
+
+	@Override
+	protected Enum getState(Issue issue) {
+		return DEState.valueOf(issue.getStatus().getName().toUpperCase().replace(" ", "_"));
 	}
 
 	@Override

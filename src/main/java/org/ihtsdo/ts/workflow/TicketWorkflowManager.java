@@ -28,6 +28,12 @@ public class TicketWorkflowManager {
 	public TicketWorkflowManager(Map<String, TicketWorkflow> workflows) {
 		this.workflows = workflows;
 		issueStatuses = new HashMap<>();
+		String workflowsStr = "";
+		for (String workflowName : workflows.keySet()) {
+			TicketWorkflow workflow = workflows.get(workflowName);
+			workflowsStr += " " + workflowName + "[" + workflow.getProjectKey() + "]";
+		}
+		logger.info("TicketWorkflowManager configured to examine workflows:" + workflowsStr);
 	}
 
 	public void processIncompleteTickets() {
