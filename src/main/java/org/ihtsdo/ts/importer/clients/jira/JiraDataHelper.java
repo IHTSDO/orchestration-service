@@ -20,7 +20,7 @@ public class JiraDataHelper {
 	}
 
 	public void putData(Issue issue, String key, String value) throws JiraException {
-		logger.debug("Writing data item '{}' to ticket {} with key {}", value, issue.getKey(), key);
+		logger.debug("Writing data item '{}' to ticket {} with key '{}'", value, issue.getKey(), key);
 		issue.addComment(getWorkflowDataId(key) + value);
 	}
 
