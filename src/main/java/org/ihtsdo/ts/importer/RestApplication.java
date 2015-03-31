@@ -10,6 +10,9 @@ public class RestApplication {
 
 		// Uncomment next line to trigger import on startup (useful for testing)
 //		applicationContext.getBean(ImporterService.class).importCompletedWBContent(null);
+
+//		applicationContext.getBean(TicketWorkflowManager.class).processIncompleteTickets();
+
 	}
 
 }

@@ -49,6 +49,9 @@ public class Importer {
 	@Autowired
 	private ImportBlacklistService importBlacklistService;
 
+	@Autowired
+	private String jiraProjectKey;
+
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public ImportResult importSelectedWBContent(Set<Long> selectConceptIdsOverride) throws ImporterException {
@@ -59,7 +62,7 @@ public class Importer {
 
 		try {
 			// Create Jira issue
-			String taskKey = jiraContentProjectSync.createTask(SIMPLE_DATE_FORMAT.format(startDate));
+			String taskKey = jiraContentProjectSync.createTask(jiraProjectKey, SIMPLE_DATE_FORMAT.format(startDate));
 			importResult.setTaskKey(taskKey);
 
 			try {

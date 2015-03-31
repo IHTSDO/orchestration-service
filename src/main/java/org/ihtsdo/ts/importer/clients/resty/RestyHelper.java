@@ -1,20 +1,15 @@
 package org.ihtsdo.ts.importer.clients.resty;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import us.monoid.json.JSONObject;
-import us.monoid.web.AbstractContent;
-import us.monoid.web.Content;
-import us.monoid.web.JSONResource;
-import us.monoid.web.Resty;
-import us.monoid.web.RestyMod;
+import us.monoid.web.*;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLConnection;
 import java.util.List;
 import java.util.Map.Entry;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class RestyHelper extends RestyMod {
 
@@ -46,7 +41,6 @@ public class RestyHelper extends RestyMod {
 
 	public JSONResource json(String url, JSONObject jsonObj, String contentType) throws IOException {
 		return json(url, content(jsonObj, contentType));
-
 	}
 
 	public JSONResource json(String url, AbstractContent content) throws IOException {

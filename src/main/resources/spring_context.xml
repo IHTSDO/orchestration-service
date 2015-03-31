@@ -21,6 +21,12 @@
 				</entry>
 				<entry>
 					<key>
+						<bean class="org.ihtsdo.ts.importer.schedule.StartDailyExport"/>
+					</key>
+					<value>${schedule.startDailyExport.cron}</value>
+				</entry>
+				<entry>
+					<key>
 						<bean class="org.ihtsdo.ts.importer.schedule.CheckJiraTickets"/>
 					</key>
 					<value>${schedule.pollJiraTickets.cron}</value>
@@ -28,7 +34,7 @@
 			</map>
 		</property>
 	</bean>
-
+	
 	<bean class="org.ihtsdo.ts.importer.ImporterService"/>
 	
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
@@ -37,6 +43,9 @@
 		<constructor-arg>
 			<map>
 				<entry key="DailyDelta" value-ref="dailyDeltaTicketWorkflow"/>
+				<entry key="DailyExport">
+					<bean class="org.ihtsdo.ts.workflow.DailyExportTicketWorkflow"/>
+				</entry>
 			</map>
 		</constructor-arg>
 	</bean>
@@ -75,8 +84,7 @@
 		</constructor-arg>
 	</bean>
 
-	<bean name="jiraContentProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync">
-		<constructor-arg value="${jira.contentProjectKey}"/>
+	<bean name="jiraContentProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync"> 
 		<constructor-arg value="${jira.url}"/>
 		<constructor-arg value="${jira.username}"/>
 		<constructor-arg value="${jira.password}"/>
@@ -85,10 +93,14 @@
 	<bean name="jiraProjectKey" class="java.lang.String" >
 		<constructor-arg value="${jira.contentProjectKey}"/>
 	</bean>
+	
+	<bean name="jiraDailyExportProjectKey" class="java.lang.String" >
+		<constructor-arg value="${jira.dailyExportProjectKey}"/>
+	</bean>
 
 	<bean class="org.ihtsdo.ts.importer.clients.jira.JiraDataHelper" >
 		<constructor-arg>
-			<util:constant static-field="org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow.JIRA_DATA_MARKER"/>
+			<util:constant static-field="org.ihtsdo.ts.workflow.TSAbstractTicketWorkflow.JIRA_DATA_MARKER"/>
 		</constructor-arg>
 	</bean>
 

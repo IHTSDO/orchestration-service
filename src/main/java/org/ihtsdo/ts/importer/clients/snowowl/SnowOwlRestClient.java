@@ -53,6 +53,10 @@ public class SnowOwlRestClient {
 		NOT_SYNCHRONIZED, SYNCHRONIZED, PROMOTED
 	}
 
+	public enum BranchType {
+		MAIN, BRANCH
+	}
+
 	private final String snowOwlUrl;
 	private final RestyHelper resty;
 	private String reasonerId;
@@ -158,12 +162,25 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public ClassificationResults classify(String branchName) throws SnowOwlRestClientException, InterruptedException {
+	public ClassificationResults classify(String branchName, BranchType branchType) throws SnowOwlRestClientException, InterruptedException {
 		ClassificationResults results = new ClassificationResults();
 		String classificationLocation;
 		try {
-			String requestJson = "{ reasonerId: \"" + reasonerId + "\" }";
-			JSONResource jsonResponse = resty.json(getClassificationsUrl(branchName), RestyHelper.content(new JSONObject(requestJson), SNOWOWL_V1_CONTENT_TYPE));
+			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId);
+			String classifyURL;
+			switch (branchType) {
+				case MAIN:
+					classifyURL = snowOwlUrl + MAIN_BRANCH_URL + CLASSIFICATIONS_URL;
+					break;
+				case BRANCH:
+					classifyURL = snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL;
+					break;
+				default:
+					throw new SnowOwlRestClientException("Unexpected branch type: " + branchType.name());
+			}
+
+			logger.debug("Initiating classification via {}", classifyURL);
+			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_V1_CONTENT_TYPE);
 			classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 		} catch (IOException | JSONException e) {

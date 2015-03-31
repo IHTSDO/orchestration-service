@@ -6,7 +6,12 @@ import net.rcarz.jiraclient.JiraException;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class JiraDataHelper {
+
+	protected final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private String jiraDataMarker;
 
@@ -15,11 +20,14 @@ public class JiraDataHelper {
 	}
 
 	public void putData(Issue issue, String key, String value) throws JiraException {
+		logger.debug("Writing data item '{}' to ticket {} with key {}", value, issue.getKey(), key);
 		issue.addComment(getWorkflowDataId(key) + value);
 	}
 
 	public String getData(Issue issue, String key) throws JiraException {
 		String targetWorkflowDataId = getWorkflowDataId(key);
+		// Update our issue with Jira to pick up any new comments;
+		issue.refresh();
 		List<Comment> comments = issue.getComments();
 		for (Comment thisComment : comments) {
 			String commentText = thisComment.getBody();

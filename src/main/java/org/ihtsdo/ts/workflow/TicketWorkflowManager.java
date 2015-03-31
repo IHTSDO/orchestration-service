@@ -28,6 +28,12 @@ public class TicketWorkflowManager {
 	public TicketWorkflowManager(Map<String, TicketWorkflow> workflows) {
 		this.workflows = workflows;
 		issueStatuses = new HashMap<>();
+		String workflowsStr = "";
+		for (String workflowName : workflows.keySet()) {
+			TicketWorkflow workflow = workflows.get(workflowName);
+			workflowsStr += " " + workflowName + "[" + workflow.getProjectKey() + "]";
+		}
+		logger.info("TicketWorkflowManager configured to examine workflows:" + workflowsStr);
 	}
 
 	public void processIncompleteTickets() {
@@ -38,13 +44,8 @@ public class TicketWorkflowManager {
 				// This list should be returned so we process in time ascending order
 				List<Issue> issues = jiraProjectSync.findIssues(jqlSelectStatement);
 				for (Issue issue : issues) {
-					boolean ticketAwaitingIntervention = false;
-					while (!workflow.isComplete(issue) && !ticketAwaitingIntervention) {
-						if (hasStatusChanged(issue)) {
-							processChangedTicket(workflow, issue);
-						} else {
-							ticketAwaitingIntervention = true; // Ticket is stuck at some state
-						}
+					while (!workflow.isComplete(issue) && hasStatusChanged(issue)) {
+						processChangedTicket(workflow, issue);
 					}
 
 					// If the ticket is still incomplete, do not process any further tickets for this workflow
@@ -52,7 +53,6 @@ public class TicketWorkflowManager {
 						logger.warn("Ticket {} is incomplete. Skipping any further tickets for workflow {}.", issue.getKey(), workflowName);
 						break;
 					}
-
 				}
 			} catch (JiraException e) {
 				logger.error("Failed to find issues for workflow '{}'", workflowName, e);
