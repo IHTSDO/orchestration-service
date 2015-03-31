@@ -14,7 +14,7 @@ public class RVFRestClient {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	public static final String JSON_FIELD_STATUS = "Status";
-	public static enum RVF_STATE { RUNNING, FINISHED, FAILED, UNKNOWN };
+	public static enum RVF_STATE { RUNNING, COMPLETE, FAILED, UNKNOWN };
 
 	protected static final String CONTENT_TYPE_ANY = "*/*";
 	protected static final String CONTENT_TYPE_XML = "text/xml";
@@ -70,7 +70,7 @@ public class RVFRestClient {
 					break;
 				case FAILED:
 					throw new ProcessingException("RVF reported a technical failure: " + json.object().toString(INDENT));
-				case FINISHED:
+				case COMPLETE:
 					isFinalState = true;
 					break;
 				default:
