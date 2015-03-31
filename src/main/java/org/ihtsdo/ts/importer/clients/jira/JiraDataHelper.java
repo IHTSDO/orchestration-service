@@ -20,6 +20,8 @@ public class JiraDataHelper {
 
 	public String getData(Issue issue, String key) throws JiraException {
 		String targetWorkflowDataId = getWorkflowDataId(key);
+		// Update our issue with Jira to pick up any new comments;
+		issue.refresh();
 		List<Comment> comments = issue.getComments();
 		for (Comment thisComment : comments) {
 			String commentText = thisComment.getBody();

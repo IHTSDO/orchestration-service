@@ -18,20 +18,18 @@ public class JiraProjectSync {
 	public static final String PRIORITY_CRITICAL = "Critical";
 	private static final String NEW_LINE = "\n";
 
-	private final String projectKey;
 	private final String jiraUrl;
 	private final String jiraUsername;
 	private final String jiraPassword;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	public JiraProjectSync(String projectKey, String jiraUrl, String jiraUsername, String jiraPassword) throws JiraSyncException {
-		this.projectKey = projectKey;
+	public JiraProjectSync(String jiraUrl, String jiraUsername, String jiraPassword) throws JiraSyncException {
 		this.jiraUrl = jiraUrl;
 		this.jiraUsername = jiraUsername;
 		this.jiraPassword = jiraPassword;
 	}
 
-	public String createTask(String taskLabel) throws JiraException {
+	public String createTask(String projectKey, String taskLabel) throws JiraException {
 		Issue issue = getJiraClient().createIssue(projectKey, "Task")
 				.field(SUMMARY_FIELD, taskLabel)
 				.field(PRIORITY_FIELD, PRIORITY_CRITICAL)
@@ -41,9 +39,15 @@ public class JiraProjectSync {
 		return key;
 	}
 
+
 	public void addComment(String taskKey, String commentString) throws JiraException {
-		logger.info("Adding comment to '{}': [{}]", taskKey, commentString);
-		findIssue(taskKey).addComment(commentString);
+		addComment(findIssue(taskKey), commentString);
+	}
+
+	public void addComment(Issue issue, String commentString) throws JiraException {
+		logger.info("Adding comment to '{}': [{}]", issue.getKey(), commentString);
+		issue.addComment(commentString);
+		issue.update(); // Pick up new comment locally too
 	}
 
 	public void updateStatus(String taskKey, String statusName) throws JiraException {

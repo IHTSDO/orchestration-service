@@ -83,7 +83,7 @@ public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implemen
 			}
 			//Attempt to put the ticket into the failed State with a comment to that effect
 			try {
-				issue.addComment(errMsg);
+				jiraProjectSync.addComment(issue, errMsg);
 				jiraProjectSync.updateStatus(issue, JiraTransitions.FAILED);
 			} catch (JiraException e2) {
 				logger.error("Additional exception while trying to record previous exception in Jira.", e2);

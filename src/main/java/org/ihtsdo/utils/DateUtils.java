@@ -8,6 +8,8 @@ public class DateUtils {
 	
 	public static final String DATE_SEPARATOR = "-";
 
+	public static final String YYYYMMDD = "yyyyMMdd";
+
 	public static String formatAsISO (String dateAsYYYYMMDD) {
 		if (dateAsYYYYMMDD == null || dateAsYYYYMMDD.length() != 8) {
 			throw new NumberFormatException ("Date '" + dateAsYYYYMMDD + "' cannot be formatted as ISO YYYY-MM-DD");

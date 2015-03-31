@@ -21,6 +21,12 @@
 				</entry>
 				<entry>
 					<key>
+						<bean class="org.ihtsdo.ts.importer.schedule.StartDailyExport"/>
+					</key>
+					<value>${schedule.startDailyExport.cron}</value>
+				</entry>
+				<entry>
+					<key>
 						<bean class="org.ihtsdo.ts.importer.schedule.CheckJiraTickets"/>
 					</key>
 					<value>${schedule.pollJiraTickets.cron}</value>
@@ -28,7 +34,7 @@
 			</map>
 		</property>
 	</bean>
-
+	
 	<bean class="org.ihtsdo.ts.importer.ImporterService"/>
 	
 	<bean class="org.ihtsdo.ts.importer.Importer"/>
@@ -78,8 +84,7 @@
 		</constructor-arg>
 	</bean>
 
-	<bean name="jiraContentProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync">
-		<constructor-arg value="${jira.contentProjectKey}"/>
+	<bean name="jiraContentProjectSync" class="org.ihtsdo.ts.importer.clients.jira.JiraProjectSync"> 
 		<constructor-arg value="${jira.url}"/>
 		<constructor-arg value="${jira.username}"/>
 		<constructor-arg value="${jira.password}"/>
