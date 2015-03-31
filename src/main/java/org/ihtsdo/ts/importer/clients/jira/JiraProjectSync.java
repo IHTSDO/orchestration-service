@@ -47,8 +47,12 @@ public class JiraProjectSync {
 	}
 
 	public void updateStatus(String taskKey, String statusName) throws JiraException {
-		Issue issue = findIssue(taskKey);
+		updateStatus(findIssue(taskKey), statusName);
+	}
+
+	public void updateStatus(Issue issue, String statusName) throws JiraException {
 		issue.transition().execute(statusName);
+		issue.refresh(); // Synchronize the issue to pick up the new status.
 	}
 
 	public Issue findIssue(String taskKey) throws JiraException {
