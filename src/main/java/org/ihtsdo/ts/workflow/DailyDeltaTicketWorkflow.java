@@ -64,6 +64,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	public static final String CLASSIFICATION_ID = "Classification ID";
 
 	public static final String TRANSITION_FROM_CREATED_TO_REJECTED = "Reject inconsistent data";
+	public static final String TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS = "Classification Saved";
 	public static final String TRANSITION_TO_EXPORTED = "Export content";
 	public static final String TRANSITION_TO_BUILT = "Run SRS build process";
 	public static final String TRANSITION_TO_FAILED = "Failed";
@@ -101,6 +102,10 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 
 				case CLASSIFIED_WITH_QUERIES:
 					logger.info("Ticket {} has classification queries.  Awaiting user action", issue.getKey());
+					break;
+
+				case CLASSIFICATION_ACCEPTED:
+					saveClassification(issue);
 					break;
 
 				case CONTENT_REJECTED:
@@ -162,26 +167,31 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 	}
 
 	private void runClassifier(Issue issue) throws SnowOwlRestClientException, InterruptedException, JiraException {
-		ClassificationResults results = snowOwlRestClient.classify(issue.getKey());
+		String issueKey = issue.getKey();
+		ClassificationResults results = snowOwlRestClient.classify(issueKey);
 		boolean equivalentConceptsFound = results.isEquivalentConceptsFound();
 		boolean relationshipChangesFound = results.isRelationshipChangesFound();
-		String newStatus;
-		String comment = "";
+		String statusTransition;
 		if (!equivalentConceptsFound && !relationshipChangesFound) {
-			newStatus = JiraTransitions.CLASSIFY_WITHOUT_QUERIES;
-			comment = "No issues found by classifier.";
+			statusTransition = JiraTransitions.CLASSIFY_WITHOUT_QUERIES;
+			jiraProjectSync.addComment(issueKey, "No issues found by classifier.");
 		} else {
-			newStatus = JiraTransitions.CLASSIFY_WITH_QUERIES;
+			statusTransition = JiraTransitions.CLASSIFY_WITH_QUERIES;
 			if (equivalentConceptsFound) {
-				comment += "Equivalent concepts found by classifier. ";
+				jiraProjectSync.addComment(issueKey, "Equivalent concepts found by classifier.\n" + results.getEquivalentConceptsJson());
 			}
 			if (relationshipChangesFound) {
-				comment += "Redundant stated relationships found by classifier.";
+				jiraProjectSync.addComment(issueKey, "Redundant stated relationships found by classifier.\n" + results.getRelationshipChangesJson());
 			}
 		}
-		issue.addComment(comment);
 		jiraDataHelper.putData(issue, CLASSIFICATION_ID, results.getClassificationId());
-		jiraProjectSync.updateStatus(issue.getKey(), newStatus);
+		jiraProjectSync.updateStatus(issueKey, statusTransition);
+	}
+
+	private void saveClassification(Issue issue) throws JiraException, SnowOwlRestClientException {
+		String classificationId = jiraDataHelper.getData(issue, CLASSIFICATION_ID);
+		snowOwlRestClient.saveClassification(issue, classificationId);
+		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
 	}
 
 	private void revertImport(Issue issue) throws JiraException, ImportFilterServiceException {
@@ -239,6 +249,7 @@ public class DailyDeltaTicketWorkflow implements TicketWorkflow {
 		CREATED,
 		IMPORTED,
 		CLASSIFIED_WITH_QUERIES,
+		CLASSIFICATION_ACCEPTED,
 		CONTENT_REJECTED,
 		CLASSIFIED_SUCCESSFULLY,
 		EXPORTED,

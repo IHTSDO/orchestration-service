@@ -4,6 +4,8 @@ public class ClassificationResults {
 	private boolean equivalentConceptsFound;
 	private boolean relationshipChangesFound;
 	private String classificationId;
+	private String equivalentConceptsJson;
+	private String relationshipChangesJson;
 
 	public void setEquivalentConceptsFound(boolean equivalentConceptsFound) {
 		this.equivalentConceptsFound = equivalentConceptsFound;
@@ -27,5 +29,21 @@ public class ClassificationResults {
 
 	public String getClassificationId() {
 		return classificationId;
+	}
+
+	public void setEquivalentConceptsJson(String equivalentConceptsJson) {
+		this.equivalentConceptsJson = equivalentConceptsJson;
+	}
+
+	public String getEquivalentConceptsJson() {
+		return equivalentConceptsJson;
+	}
+
+	public void setRelationshipChangesJson(String relationshipChangesJson) {
+		this.relationshipChangesJson = relationshipChangesJson;
+	}
+
+	public String getRelationshipChangesJson() {
+		return relationshipChangesJson;
 	}
 }

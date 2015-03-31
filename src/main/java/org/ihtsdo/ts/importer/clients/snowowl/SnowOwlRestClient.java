@@ -1,5 +1,10 @@
 package org.ihtsdo.ts.importer.clients.snowowl;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import net.rcarz.jiraclient.Issue;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -10,16 +15,19 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.BinaryResource;
 import us.monoid.web.JSONResource;
+import us.monoid.web.Resty;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.List;
 
 public class SnowOwlRestClient {
 
@@ -155,7 +163,7 @@ public class SnowOwlRestClient {
 		String classificationLocation;
 		try {
 			String requestJson = "{ reasonerId: \"" + reasonerId + "\" }";
-			JSONResource jsonResponse = resty.json(snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL, RestyHelper.content(new JSONObject(requestJson), SNOWOWL_V1_CONTENT_TYPE));
+			JSONResource jsonResponse = resty.json(getClassificationsUrl(branchName), RestyHelper.content(new JSONObject(requestJson), SNOWOWL_V1_CONTENT_TYPE));
 			classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
 			results.setClassificationId(classificationLocation.substring(classificationLocation.lastIndexOf("/") + 1));
 		} catch (IOException | JSONException e) {
@@ -167,14 +175,18 @@ public class SnowOwlRestClient {
 		if (classifierCompleted) {
 			try {
 				// Check equivalent concepts
-				results.setEquivalentConceptsFound(!checkNoItems(classificationLocation + EQUIVALENT_CONCEPTS_URL));
+				JSONArray items = getItems(classificationLocation + EQUIVALENT_CONCEPTS_URL);
+				results.setEquivalentConceptsFound(items == null || items.length() == 0);
+				results.setEquivalentConceptsJson(toPrettyJson(items.toString()));
 			} catch (Exception e) {
 				throw new SnowOwlRestClientException("Failed to retrieve equivalent concepts of classification.", e);
 			}
 			try {
 				// Check relationship changes
-				Integer total = (Integer) resty.json(classificationLocation + RELATIONSHIP_CHANGES_URL).get("total");
+				JSONResource json = resty.json(classificationLocation + RELATIONSHIP_CHANGES_URL);
+				Integer total = (Integer) json.get("total");
 				results.setRelationshipChangesFound(total != 0);
+				results.setRelationshipChangesJson(toPrettyJson(json.object().toString()));
 			} catch (Exception e) {
 				throw new SnowOwlRestClientException("Failed to retrieve relationship changes of classification.", e);
 			}
@@ -184,15 +196,25 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	private boolean checkNoItems(String url) throws Exception {
-		JSONResource jsonResource = resty.json(url);
+	public void saveClassification(Issue issue, String classificationId) throws SnowOwlRestClientException {
+		String classificationUrl = getClassificationsUrl(issue.getKey()) + "/" + classificationId;
+		String json = "{ \"status\" : \"SAVED\" }";
 		try {
-			JSONArray items = (JSONArray) jsonResource.get("items");
-			return items == null || items.length() == 0;
+			resty.json(classificationUrl, Resty.put(RestyHelper.content(new JSONObject(json), SNOWOWL_V1_CONTENT_TYPE)));
+		} catch (IOException | JSONException e) {
+			throw new SnowOwlRestClientException("Failed to save classification. Branch '" + issue.getKey() + "', Classification ID '" + classificationId + "'", e);
+		}
+	}
+
+	private JSONArray getItems(String url) throws Exception {
+		JSONResource jsonResource = resty.json(url);
+		JSONArray items = null;
+		try {
+			items = (JSONArray) jsonResource.get("items");
 		} catch (JSONException e) {
 			// this gets thrown when the attribute does not exist
-			return true;
 		}
+		return items;
 	}
 
 	public File exportBranch(String branchName, ExtractType extractType, String deltaStartEffectiveTime) throws Exception {
@@ -293,6 +315,17 @@ public class SnowOwlRestClient {
 		GregorianCalendar timeoutCalendar = new GregorianCalendar();
 		timeoutCalendar.add(Calendar.MINUTE, importTimeoutMinutes);
 		return timeoutCalendar.getTime();
+	}
+
+	private String getClassificationsUrl(String branchName) {
+		return snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL;
+	}
+
+	private String toPrettyJson(String jsonString) {
+		JsonParser parser = new JsonParser();
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		JsonElement el = parser.parse(jsonString);
+		return gson.toJson(el);
 	}
 
 	public void setReasonerId(String reasonerId) {

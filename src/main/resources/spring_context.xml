@@ -36,12 +36,12 @@
 	<bean class="org.ihtsdo.ts.workflow.TicketWorkflowManager">
 		<constructor-arg>
 			<map>
-				<entry key="DailyDelta">
-					<bean class="org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow"/>
-				</entry>
+				<entry key="DailyDelta" value-ref="dailyDeltaTicketWorkflow"/>
 			</map>
 		</constructor-arg>
 	</bean>
+
+	<bean id="dailyDeltaTicketWorkflow" class="org.ihtsdo.ts.workflow.DailyDeltaTicketWorkflow"/>
 
 	<bean class="org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
