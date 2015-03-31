@@ -8,6 +8,7 @@ public class ImportResult {
 	private String message;
 	private String taskKey;
 	private SelectionResult selectionResult;
+	private boolean buildingBlacklistFailed;
 
 	public ImportResult() {
 	}
@@ -47,5 +48,13 @@ public class ImportResult {
 
 	public SelectionResult getSelectionResult() {
 		return selectionResult;
+	}
+
+	public void setBuildingBlacklistFailed(boolean buildingBlacklistFailed) {
+		this.buildingBlacklistFailed = buildingBlacklistFailed;
+	}
+
+	public boolean isBuildingBlacklistFailed() {
+		return buildingBlacklistFailed;
 	}
 }

@@ -77,24 +77,34 @@ public class Importer {
 
 					jiraContentProjectSync.addComment(taskKey, "Attempting to import all completed content without blacklist.");
 					importSelection(taskKey, completedConceptIds, importResult, false);
-					if (importResult.getSelectionResult().isSuccess() && !importResult.isImportCompletedSuccessfully()) {
+
+					// Iterate attempting import and adding to blacklist until import is successful
+					for (int blacklistRun = 1;
+						 importResult.getSelectionResult().isSuccess()
+								 && !importResult.isImportCompletedSuccessfully()
+								 && !importResult.isBuildingBlacklistFailed()
+								 && blacklistRun <= 10; blacklistRun++) {
+
 						jiraContentProjectSync.addComment(taskKey, "Import failed, rolling back selection and building blacklist from import errors.");
 						importFilterService.putSelectionArchiveBackInBacklog(importResult.getSelectionResult().getSelectedArchiveVersion());
 						importResult = new ImportResult(taskKey);
 						try {
 							ImportBlacklistResults blacklistResults = importBlacklistService.createBlacklistFromLatestImportErrors();
-							List<Long> blacklistedConcepts = blacklistResults.getBlacklistedConcepts();
-							if (!blacklistedConcepts.isEmpty()) {
-								jiraContentProjectSync.addComment(taskKey, "Concepts which failed import (blacklist):\n" + toJiraTable(blacklistResults.getImportErrors()));
-								logger.info("Import blacklist ({}): {}", blacklistedConcepts.size(), blacklistedConcepts);
-								completedConceptIds.removeAll(blacklistedConcepts);
+							List<Long> blacklistedConceptsFromThisRun = blacklistResults.getBlacklistedConcepts();
+							if (!blacklistedConceptsFromThisRun.isEmpty()) {
+								String blacklistMessage = (blacklistRun == 1 ? "Import blacklist" : "Additional import blacklist") + " (" + blacklistedConceptsFromThisRun.size() + " concepts):";
+								jiraContentProjectSync.addComment(taskKey, blacklistMessage + "\n" + toJiraTable(blacklistResults.getImportErrors()));
+								logger.info(blacklistMessage + " {}", blacklistedConceptsFromThisRun);
+								completedConceptIds.removeAll(blacklistedConceptsFromThisRun);
 								logger.info("Completed concepts minus blacklist ({}): {}", completedConceptIds.size(), completedConceptIds);
-								jiraContentProjectSync.addComment(taskKey, "Reimporting content using new blacklist.");
-								importSelection(taskKey, completedConceptIds, importResult, true);
+								jiraContentProjectSync.addComment(taskKey, "Reimporting content using new blacklist (attempt " + (blacklistRun + 1) + ").");
+								importSelection(taskKey, completedConceptIds, importResult, false);
 							} else {
+								importResult.setBuildingBlacklistFailed(true);
 								handleError("Import failed but no concept blacklist could be built.", importResult);
 							}
 						} catch (ImportBlacklistServiceException e) {
+							importResult.setBuildingBlacklistFailed(true);
 							handleError("Failed to parse import error log.", importResult, e);
 						}
 					}
@@ -127,7 +137,8 @@ public class Importer {
 			boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
 			if (importSuccessful) {
 				importResult.setImportCompletedSuccessfully(true);
-				jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list: \n" + toJiraSearchableIdList(selectionResult.getFoundConceptIds()));
+				Set<Long> foundConceptIds = selectionResult.getFoundConceptIds();
+				jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list (" + foundConceptIds.size() + " concepts): \n" + toJiraSearchableIdList(foundConceptIds));
 				jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
 			} else {
 				if (updateJiraOnImportError) {
