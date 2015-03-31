@@ -175,6 +175,6 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	}
 
 	protected String jiraState(Enum state) {
-		return state.name().replace("_", " ");
+		return "\"" + state.name().replace("_", " ") + "\"";
 	}
 }
