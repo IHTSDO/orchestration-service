@@ -16,6 +16,8 @@ public class RestyHelper extends RestyMod {
 	public static final String UTF_8 = "UTF-8";
 	private static final Logger LOGGER = LoggerFactory.getLogger(RestyHelper.class);
 
+	private static final int[] HTTP_SUCCESSFULL_ARRAY = { 200, 201, 202, 203, 204 };
+
 	public RestyHelper(final String defaultAcceptableContent) {
 
 		super(new Resty.Option() {
@@ -51,9 +53,16 @@ public class RestyHelper extends RestyMod {
 	public JSONResource json(String url, AbstractContent content, boolean allowErrors) throws IOException {
 		JSONResource response = super.json(url, content);
 		if (!allowErrors) {
-			String statusCode = response.getUrlConnection().getHeaderField("Status-Code");
+			boolean httpSuccessfull = false;
+			// Not easy to recover the status as header keys are inconsistent.
+			// Check against all known acceptable statuses instead.
+			for (int thisStatus : HTTP_SUCCESSFULL_ARRAY) {
+				if (response.status(thisStatus)) {
+					httpSuccessfull = true;
+				}
+			}
 
-			if (statusCode != null && !statusCode.startsWith("2")) {
+			if (!httpSuccessfull) {
 				String body = "";
 				try {
 					body = response.object().toString(2);
@@ -61,15 +70,7 @@ public class RestyHelper extends RestyMod {
 					body = "Unable to parse body: ";
 					body += e.getMessage();
 				}
-				throw new IOException("Call to " + url + " returned non-acceptable status " + statusCode + " and body " + body);
-			} else {
-				LOGGER.debug("Call to " + url + " returned headers without Status-Code: ");
-				for (Entry<String, List<String>> header : response.getUrlConnection().getHeaderFields().entrySet()) {
-					LOGGER.debug(header.getKey());
-					for (String item : header.getValue()) {
-						LOGGER.debug("\t" + item);
-					}
-				}
+				throw new IOException("Call to " + url + " returned unacceptable status with body " + body);
 			}
 		}
 		return response;
