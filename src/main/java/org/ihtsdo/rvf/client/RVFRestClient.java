@@ -51,22 +51,29 @@ public class RVFRestClient {
 			throw new ProcessingException("RVF location not available to check.  Instead we have: " + pollURL);
 		}
 
+		int pollCount = 0;
+		RVF_STATE lastState = RVF_STATE.UNKNOWN;
 		while (!isFinalState) {
 			JSONResource json = resty.json(pollURL);
 			Object responseState = json.get(JSON_FIELD_STATUS);
 			RVF_STATE currentState = RVF_STATE.UNKNOWN;
+
 			try {
 				currentState = RVF_STATE.valueOf(responseState.toString());
 			} catch (Exception e) {
 				throw new ProcessingException ("Failed to determine RVF Status from response: " + json.object().toString(INDENT));
 			}
 			
-			logger.debug("RVF Reported state: {}", currentState);
+			// We'll just report every 10th state and when the state changes to prevent excessive logging
+			if (logger.isDebugEnabled() && (pollCount % 10 == 0 || currentState != lastState)) {
+				logger.debug("RVF Reported state: {}", currentState);
+			}
 
 			switch (currentState){
 				case RUNNING:
 					Thread.sleep(pollPeriod);
-				msElapsed += pollPeriod;
+					msElapsed += pollPeriod;
+					pollCount++;
 					break;
 				case FAILED:
 					throw new ProcessingException("RVF reported a technical failure: " + json.object().toString(INDENT));
@@ -80,6 +87,8 @@ public class RVFRestClient {
 			if (msElapsed > maxElapsedTime) {
 				throw new ProcessingException("RVF did not complete within the allotted time ");
 			}
+
+			lastState = currentState;
 		}
 	}
 	

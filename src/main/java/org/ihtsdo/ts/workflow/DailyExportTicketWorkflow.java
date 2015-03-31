@@ -26,7 +26,7 @@ public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implemen
 		this.jiraProjectKey = jiraDailyExportProjectKey;
 		interestingTicketsJQL = new JQLBuilder()
 				.project(jiraDailyExportProjectKey)
-.statusNot(jiraState(DEState.VALIDATION_ACCEPTED))
+				.statusNot(jiraState(DEState.VALIDATION_ACCEPTED))
 				.statusNot(DEState.FAILED.toString())
 				.statusNot(DEState.CLOSED.toString())
 				.toString();

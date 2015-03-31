@@ -2,6 +2,7 @@ package org.ihtsdo.ts.workflow;
 
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
+
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
 import org.slf4j.Logger;
@@ -23,11 +24,14 @@ public class TicketWorkflowManager {
 
 	private final Map<String, String> issueStatuses;
 
+	private final Map<String, String> skippedTickets;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public TicketWorkflowManager(Map<String, TicketWorkflow> workflows) {
 		this.workflows = workflows;
 		issueStatuses = new HashMap<>();
+		skippedTickets = new HashMap<>();
 		String workflowsStr = "";
 		for (String workflowName : workflows.keySet()) {
 			TicketWorkflow workflow = workflows.get(workflowName);
@@ -50,7 +54,10 @@ public class TicketWorkflowManager {
 
 					// If the ticket is still incomplete, do not process any further tickets for this workflow
 					if (!workflow.isComplete(issue)) {
-						logger.warn("Ticket {} is incomplete. Skipping any further tickets for workflow {}.", issue.getKey(), workflowName);
+						if (!alreadyReported(workflowName, issue)) {
+							logger.warn("Ticket {} is incomplete. Skipping any further tickets for workflow {}.", issue.getKey(),
+									workflowName);
+						}
 						break;
 					}
 				}
@@ -58,6 +65,23 @@ public class TicketWorkflowManager {
 				logger.error("Failed to find issues for workflow '{}'", workflowName, e);
 			}
 		}
+	}
+
+	/*
+	 * Only log that we're skipping a ticket once for each workflow and issue state
+	 */
+	private boolean alreadyReported(String workflowName, Issue issue) {
+		// What was the last ticket + state we skipped for this workflow?
+		boolean alreadyReported = false;
+		String lastIssueState = skippedTickets.get(workflowName);
+		String thisIssueState = issue.getKey() + issue.getStatus().getName();
+
+		if (lastIssueState != null && lastIssueState.equals(thisIssueState)) {
+			alreadyReported = true;
+		}
+		skippedTickets.put(workflowName, thisIssueState);
+
+		return alreadyReported;
 	}
 
 	public Map<String, Object> processTicket(String workflowName, String ticketId) throws ResourceNotFoundException, JiraException {
