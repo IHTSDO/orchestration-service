@@ -114,8 +114,8 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 
 	protected void saveClassification(Issue issue, SnowOwlRestClient.BranchType branchType) throws JiraException, SnowOwlRestClientException {
 		String classificationId = jiraDataHelper.getData(issue, CLASSIFICATION_ID);
-		snowOwlRestClient.saveClassification(issue, classificationId);
-		jiraProjectSync.updateStatus(issue.getKey(), TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
+		snowOwlRestClient.saveClassification(issue, classificationId, branchType);
+		jiraProjectSync.updateStatus(issue, TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
 	}
 
 	protected void callSRS(Issue issue) throws Exception {

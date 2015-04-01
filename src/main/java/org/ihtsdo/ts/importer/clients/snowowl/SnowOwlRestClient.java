@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+
 import net.rcarz.jiraclient.Issue;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -15,6 +17,7 @@ import org.ihtsdo.ts.importer.clients.resty.RestyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -167,18 +170,7 @@ public class SnowOwlRestClient {
 		String classificationLocation;
 		try {
 			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId);
-			String classifyURL;
-			switch (branchType) {
-				case MAIN:
-					classifyURL = snowOwlUrl + MAIN_BRANCH_URL + CLASSIFICATIONS_URL;
-					break;
-				case BRANCH:
-					classifyURL = snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL;
-					break;
-				default:
-					throw new SnowOwlRestClientException("Unexpected branch type: " + branchType.name());
-			}
-
+			String classifyURL = getClassificationsUrl(branchName, branchType);
 			logger.debug("Initiating classification via {}", classifyURL);
 			JSONResource jsonResponse = resty.json(classifyURL, requestJson, SNOWOWL_V1_CONTENT_TYPE);
 			classificationLocation = jsonResponse.getUrlConnection().getHeaderField("Location");
@@ -193,8 +185,11 @@ public class SnowOwlRestClient {
 			try {
 				// Check equivalent concepts
 				JSONArray items = getItems(classificationLocation + EQUIVALENT_CONCEPTS_URL);
-				results.setEquivalentConceptsFound(items == null || items.length() == 0);
-				results.setEquivalentConceptsJson(toPrettyJson(items.toString()));
+				boolean equivalentConceptsFound = !(items == null || items.length() == 0);
+				results.setEquivalentConceptsFound(equivalentConceptsFound);
+				if (equivalentConceptsFound) {
+					results.setEquivalentConceptsJson(toPrettyJson(items.toString()));
+				}
 			} catch (Exception e) {
 				throw new SnowOwlRestClientException("Failed to retrieve equivalent concepts of classification.", e);
 			}
@@ -213,13 +208,14 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public void saveClassification(Issue issue, String classificationId) throws SnowOwlRestClientException {
-		String classificationUrl = getClassificationsUrl(issue.getKey()) + "/" + classificationId;
-		String json = "{ \"status\" : \"SAVED\" }";
+	public void saveClassification(Issue issue, String classificationId, BranchType branchType) throws SnowOwlRestClientException {
+		String classificationUrl = getClassificationsUrl(issue.getKey(), branchType) + "/" + classificationId;
 		try {
-			resty.json(classificationUrl, Resty.put(RestyHelper.content(new JSONObject(json), SNOWOWL_V1_CONTENT_TYPE)));
+			logger.debug("Saving classification via {}", classificationUrl);
+			JSONObject jsonObj = new JSONObject().put("status", "SAVED");
+			resty.put(classificationUrl, jsonObj, SNOWOWL_V1_CONTENT_TYPE);
 		} catch (IOException | JSONException e) {
-			throw new SnowOwlRestClientException("Failed to save classification. Branch '" + issue.getKey() + "', Classification ID '" + classificationId + "'", e);
+			throw new SnowOwlRestClientException("Failed to save classification via URL " + classificationUrl, e);
 		}
 	}
 
@@ -334,8 +330,20 @@ public class SnowOwlRestClient {
 		return timeoutCalendar.getTime();
 	}
 
-	private String getClassificationsUrl(String branchName) {
-		return snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL;
+	private String getClassificationsUrl(String branchName, BranchType branchType) throws SnowOwlRestClientException {
+		String classificationsUrl;
+		switch (branchType) {
+		case MAIN:
+			classificationsUrl = snowOwlUrl + MAIN_BRANCH_URL + CLASSIFICATIONS_URL;
+			break;
+		case BRANCH:
+			classificationsUrl = snowOwlUrl + TASKS_URL + "/" + branchName + CLASSIFICATIONS_URL;
+			break;
+		default:
+			throw new SnowOwlRestClientException("Unexpected branch type: " + branchType.name());
+		}
+
+		return classificationsUrl;
 	}
 
 	private String toPrettyJson(String jsonString) {
