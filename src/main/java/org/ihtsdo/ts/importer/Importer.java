@@ -161,22 +161,40 @@ public class Importer {
 	}
 
 	private SelectionResult createSelectionArchive(Set<Long> completedConceptIds, ImportResult importResult) throws ImportFilterServiceException {
-		Set<Long> conceptsWithMissingDependencies;
+		MissingDependencyReport missingDependencyReport;
 		try {
-			conceptsWithMissingDependencies = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds);
+			missingDependencyReport = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds);
 		} catch (IOException | LoadException e) {
 			throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
 		}
 
-		if (conceptsWithMissingDependencies.isEmpty()) {
+		if (!missingDependencyReport.anyMissingDependenciesFound()) {
 			addComment("No incomplete dependencies found.", importResult, "Info");
 		} else {
 			// Remove concepts with incomplete dependencies from the selection list
-			completedConceptIds.removeAll(conceptsWithMissingDependencies);
+			removeConceptsFromSelection(completedConceptIds, missingDependencyReport);
 
 			handleWarning("The following concepts are complete but will not be imported " +
-					"because they are dependent on others which are not complete: \n" +
-					toJiraSearchableIdList(conceptsWithMissingDependencies), importResult);
+					"because they are related to others which are not complete: \n" +
+					formatForJira(missingDependencyReport), importResult);
+
+			try {
+				List<MissingDependencyReport> exhaustiveReports = backlogContentService.getExhaustiveListOfConceptsWithMissingDependencies(completedConceptIds);
+
+				// Remove concepts with incomplete dependencies from the selection list
+				for (MissingDependencyReport exhaustiveReport : exhaustiveReports) {
+					removeConceptsFromSelection(completedConceptIds, exhaustiveReport);
+				}
+
+				if (!exhaustiveReports.isEmpty()) {
+					handleWarning("As a result of the exclusions above the following concepts will also not be included for the same " +
+							"reason. Each row represents exclusions from a new iteration based on the results of the last: \n" +
+							formatForJira(exhaustiveReports), importResult);
+				}
+			} catch (IOException | LoadException e) {
+				throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
+			}
+
 		}
 
 		try {
@@ -184,6 +202,52 @@ public class Importer {
 		} catch (IOException e) {
 			throw new ImportFilterServiceException("Error during creation of filtered archive.", e);
 		}
+	}
+
+	private void removeConceptsFromSelection(Set<Long> completedConceptIds, MissingDependencyReport missingDependencyReport) {
+		Map<Concept, List<Concept>> conceptToMissingDependencyMap = missingDependencyReport.getConceptToMissingDependencyMap();
+		for (Concept conceptWithMissingDependency : conceptToMissingDependencyMap.keySet()) {
+			completedConceptIds.remove(conceptWithMissingDependency.getSctid());
+		}
+	}
+
+	private String formatForJira(MissingDependencyReport missingDependencyReport) {
+		StringBuilder builder = new StringBuilder();
+
+		Map<Concept, List<Concept>> conceptToMissingDependencyMap = missingDependencyReport.getConceptToMissingDependencyMap();
+		builder.append("||Complete concept excluded from import||Related incomplete concepts (arrow indicates direction of relation)||\n");
+		for (Concept concept : conceptToMissingDependencyMap.keySet()) {
+			builder.append("|").append(concept.getSctid()).append("|");
+			boolean first = true;
+			for (Concept incompleteConcept : conceptToMissingDependencyMap.get(concept)) {
+				if (first) {
+					first = false;
+				} else {
+					builder.append("\n");
+				}
+				builder.append(concept.getPathToRelationAsString(incompleteConcept));
+			}
+			builder.append("|\n");
+		}
+
+		return builder.toString();
+	}
+
+	private String formatForJira(List<MissingDependencyReport> exhaustiveReports) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("||Further excluded concepts||\n");
+		for (MissingDependencyReport exhaustiveReport : exhaustiveReports) {
+			builder.append("|");
+			Set<Concept> concepts = exhaustiveReport.getConceptToMissingDependencyMap().keySet();
+			boolean first = true;
+			for (Concept concept : concepts) {
+				if (!first) builder.append(", ");
+				builder.append(concept.getSctid() + " ");
+				first = false;
+			}
+			builder.append("|\n");
+		}
+		return builder.toString();
 	}
 
 	private void handleWarning(String message, ImportResult importResult) {
