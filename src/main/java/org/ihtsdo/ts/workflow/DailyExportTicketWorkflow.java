@@ -43,15 +43,19 @@ public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implemen
 		try {
 			switch (currentState) {
 				case CREATED:
-				runClassifier(issue, SnowOwlRestClient.BranchType.MAIN);
+					runClassifier(issue, SnowOwlRestClient.BranchType.MAIN);
 					break;
 
 				case CLASSIFIED_WITH_QUERIES:
 					logger.info("Ticket {} has classification queries.  Awaiting user action", issue.getKey());
 					break;
 
+				case CLASSIFICATION_ACCEPTED:
+					saveClassification(issue, SnowOwlRestClient.BranchType.MAIN);
+					break;
+
 				case CLASSIFIED_SUCCESSFULLY:
-				export(issue, SnowOwlRestClient.BranchType.MAIN);
+					export(issue, SnowOwlRestClient.BranchType.MAIN);
 					break;
 
 				case EXPORTED:
@@ -95,6 +99,7 @@ public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implemen
 	private static enum DEState {
 		CREATED,
 		CLASSIFIED_WITH_QUERIES,
+		CLASSIFICATION_ACCEPTED,
 		CLASSIFIED_SUCCESSFULLY,
 		EXPORTED,
 		BUILT,
