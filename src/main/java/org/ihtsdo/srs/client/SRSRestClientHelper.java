@@ -37,7 +37,10 @@ public class SRSRestClientHelper {
 	public static final String UNKNOWN_EFFECTIVE_DATE = "Unpublished";
 	public static final int EFFECTIVE_DATE_COLUMN = 1;
 	public static final int CHARACTERISTIC_TYPE_ID_COLUMN = 8;
+	public static final int TYPE_ID_COLUMN = 6;
+
 	public static final String STATED_RELATIONSHIP_SCTID = "900000000000010007";
+	public static final String TEXT_DEFINITION_SCTID = "900000000000550004";
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
@@ -108,7 +111,15 @@ public class SRSRestClientHelper {
 		// We don't get a Stated Relationship file. We'll form it instead as a subset of the Inferred RelationshipFile
 		File inferred = new File(extractDir, "sct2_Relationship_Delta_INT_" + releaseDate + ".txt");
 		File stated = new File(extractDir, "sct2_StatedRelationship_Delta_INT_" + releaseDate + ".txt");
-		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID);
+		boolean removeFromOriginal = false;
+		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID, removeFromOriginal);
+
+		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
+		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
+		File description = new File(extractDir, "sct2_Description_Delta_INT_" + releaseDate + ".txt");
+		File definition = new File(extractDir, "sct2_TextDefinition_Delta_INT_" + releaseDate + ".txt");
+		removeFromOriginal = true;
+		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal);
 
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
@@ -199,19 +210,31 @@ public class SRSRestClientHelper {
 	/*
 	 * Creates a file containing all the rows which have "mustMatch" in columnNum. Plus the header row.
 	 */
-	protected static void createSubsetFile(File source, File target, int columnNum, String mustMatch) throws IOException {
+	protected static void createSubsetFile(File source, File target, int columnNum, String mustMatch, boolean removeFromOriginal)
+			throws IOException {
 		if (source.exists() && !source.isDirectory()) {
+			LOGGER.debug("Creating {} as a subset of {} and {} rows in original.", target, source, (removeFromOriginal ? "removing"
+					: "leaving"));
 			List<String> allLines = FileUtils.readLines(source, StandardCharsets.UTF_8);
 			List<String> newLines = new ArrayList<String>();
+			List<String> remainingLines = new ArrayList<String>();
 			int lineCount = 1;
 			for (String thisLine : allLines) {
 				String[] columns = thisLine.split("\t");
 				if (lineCount == 1 || (columns.length > columnNum && columns[columnNum].equals(mustMatch))) {
 					newLines.add(thisLine);
+					if (lineCount == 1) {
+						remainingLines.add(thisLine);
+					}
+				} else {
+					remainingLines.add(thisLine);
 				}
 				lineCount++;
 			}
 			FileUtils.writeLines(target, newLines);
+			if (removeFromOriginal) {
+				FileUtils.writeLines(source, remainingLines);
+			}
 		} else {
 			LOGGER.warn("Did not find file {} needed to create subset {}", source, target);
 		}
