@@ -1,10 +1,12 @@
 package org.ihtsdo.ts.importer;
 
 import net.rcarz.jiraclient.JiraException;
+
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClient;
 import org.ihtsdo.ts.importer.clients.WorkbenchWorkflowClientException;
 import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
+import org.ihtsdo.ts.importer.clients.jira.JiraSyncException;
 import org.ihtsdo.ts.importer.clients.snowowl.ImportError;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
@@ -120,12 +122,14 @@ public class Importer {
 			} catch (WorkbenchWorkflowClientException e) {
 				return handleError(e.getMessage(), importResult, e);
 			}
-		} catch (JiraException e) {
+		} catch (JiraException | JiraSyncException e) {
 			throw new ImporterException("Error using Jira.", e);
 		}
 	}
 
-	private ImportResult importSelection(String taskKey, Set<Long> completedConceptIds, ImportResult importResult, boolean updateJiraOnImportError) throws SnowOwlRestClientException, JiraException, ImportFilterServiceException {
+	private ImportResult importSelection(String taskKey, Set<Long> completedConceptIds, ImportResult importResult,
+			boolean updateJiraOnImportError) throws SnowOwlRestClientException, JiraException, ImportFilterServiceException,
+			JiraSyncException {
 		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, importResult);
 		importResult.setSelectionResult(selectionResult);
 		if (selectionResult.isSuccess()) {

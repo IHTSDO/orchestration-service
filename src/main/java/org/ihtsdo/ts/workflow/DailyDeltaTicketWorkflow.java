@@ -2,10 +2,12 @@ package org.ihtsdo.ts.workflow;
 
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
+
 import org.ihtsdo.ts.importer.Importer;
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JQLBuilder;
 import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
+import org.ihtsdo.ts.importer.clients.jira.JiraSyncException;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importfilter.ImportFilterService;
 import org.ihtsdo.ts.importfilter.ImportFilterServiceException;
@@ -116,7 +118,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 			try {
 				issue.addComment(errMsg);
 				jiraProjectSync.updateStatus(issue, JiraTransitions.FAILED);
-			} catch (JiraException e2) {
+			} catch (JiraException | JiraSyncException e2) {
 				logger.error("Additional exception while trying to record previous exception in Jira.", e2);
 			}
 		}
@@ -126,7 +128,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 		return DDState.valueOf(issue.getStatus().getName().toUpperCase().replace(" ", "_"));
 	}
 
-	private void revertImport(Issue issue) throws JiraException, ImportFilterServiceException {
+	private void revertImport(Issue issue) throws ImportFilterServiceException, JiraSyncException, JiraException {
 		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
 		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
 		importFilterService.putSelectionArchiveBackInBacklog(selectedArchiveVersion);

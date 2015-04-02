@@ -4,6 +4,7 @@ import net.rcarz.jiraclient.BasicCredentials;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraClient;
 import net.rcarz.jiraclient.JiraException;
+import net.rcarz.jiraclient.Status;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,13 +51,20 @@ public class JiraProjectSync {
 		issue.update(); // Pick up new comment locally too
 	}
 
-	public void updateStatus(String taskKey, String statusTransitionName) throws JiraException {
+	public void updateStatus(String taskKey, String statusTransitionName) throws JiraSyncException, JiraException {
 		updateStatus(findIssue(taskKey), statusTransitionName);
 	}
 
-	public void updateStatus(Issue issue, String statusTransitionName) throws JiraException {
-		issue.transition().execute(statusTransitionName);
-		issue.refresh(); // Synchronize the issue to pick up the new status.
+	public void updateStatus(Issue issue, String statusTransitionName) throws JiraSyncException {
+		Status previousStatus = issue.getStatus();
+		try {
+			issue.transition().execute(statusTransitionName);
+			issue.refresh(); // Synchronize the issue to pick up the new status.
+		} catch (JiraException je) {
+			String msg = "Failed to transition issue " + issue.getKey() + " from status " + previousStatus.getName() + " via transition "
+					+ statusTransitionName;
+			throw new JiraSyncException(msg, je);
+		}
 	}
 
 	public Issue findIssue(String taskKey) throws JiraException {

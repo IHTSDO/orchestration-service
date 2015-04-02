@@ -5,6 +5,7 @@ import net.rcarz.jiraclient.JiraException;
 
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JQLBuilder;
+import org.ihtsdo.ts.importer.clients.jira.JiraSyncException;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +90,7 @@ public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implemen
 			try {
 				jiraProjectSync.addComment(issue, errMsg);
 				jiraProjectSync.updateStatus(issue, JiraTransitions.FAILED);
-			} catch (JiraException e2) {
+			} catch (JiraException | JiraSyncException e2) {
 				logger.error("Additional exception while trying to record previous exception in Jira.", e2);
 			}
 		}

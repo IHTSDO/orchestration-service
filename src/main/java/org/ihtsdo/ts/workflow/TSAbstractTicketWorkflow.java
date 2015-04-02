@@ -10,6 +10,7 @@ import org.ihtsdo.srs.client.SRSRestClientHelper;
 import org.ihtsdo.ts.importer.JiraTransitions;
 import org.ihtsdo.ts.importer.clients.jira.JiraDataHelper;
 import org.ihtsdo.ts.importer.clients.jira.JiraProjectSync;
+import org.ihtsdo.ts.importer.clients.jira.JiraSyncException;
 import org.ihtsdo.ts.importer.clients.snowowl.ClassificationResults;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importer.clients.snowowl.SnowOwlRestClientException;
@@ -90,7 +91,7 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	}
 
 	protected void runClassifier(Issue issue, SnowOwlRestClient.BranchType branchType) throws SnowOwlRestClientException,
-			InterruptedException, JiraException {
+			InterruptedException, JiraException, JiraSyncException {
 		String issueKey = issue.getKey();
 		ClassificationResults results = snowOwlRestClient.classify(issueKey, branchType);
 		boolean equivalentConceptsFound = results.isEquivalentConceptsFound();
@@ -112,7 +113,8 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue, statusTransition);
 	}
 
-	protected void saveClassification(Issue issue, SnowOwlRestClient.BranchType branchType) throws JiraException, SnowOwlRestClientException {
+	protected void saveClassification(Issue issue, SnowOwlRestClient.BranchType branchType) throws JiraException,
+			SnowOwlRestClientException, JiraSyncException {
 		String classificationId = jiraDataHelper.getData(issue, CLASSIFICATION_ID);
 		snowOwlRestClient.saveClassification(issue, classificationId, branchType);
 		jiraProjectSync.updateStatus(issue, TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
@@ -164,7 +166,7 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		issue.addComment("Release validation ready to view at: " + rvfResponseURL);
 	}
 	
-	protected void mergeTaskToMain(Issue issue) throws IOException, JSONException, JiraException {
+	protected void mergeTaskToMain(Issue issue) throws IOException, JSONException, JiraException, JiraSyncException {
 		snowOwlRestClient.promoteBranch(issue.getKey());
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_PROMOTED);
 	}
