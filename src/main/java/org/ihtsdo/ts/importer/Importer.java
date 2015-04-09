@@ -70,18 +70,22 @@ public class Importer {
 			try {
 				importFilterService.importNewWorkbenchArchives();
 
+				logger.info("Fetching Workbench workflow concept IDs with approval status.");
+				Map<Long, Boolean> conceptIdsWithApprovalStatus = workbenchWorkflowClient.getConceptIdsWithApprovedStatus();
 				Set<Long> completedConceptIds;
+				Set<Long> incompleteConceptIds = workbenchWorkflowClient.getIncompleteConceptIds(conceptIdsWithApprovalStatus);
 				if (selectConceptIdsOverride != null) {
 					completedConceptIds = selectConceptIdsOverride;
 					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: \n" + toJiraSearchableIdList(selectConceptIdsOverride));
-					importSelection(taskKey, completedConceptIds, importResult, true);
+					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
+					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, true);
 				} else {
-					logger.info("Fetching Workbench workflow completed concept IDs.");
-					completedConceptIds = new HashSet<>(workbenchWorkflowClient.getCompletedConceptSctids());
+					completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
 					logger.info("Completed concepts ({}): {}", completedConceptIds.size(), completedConceptIds);
+					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
 
 					jiraContentProjectSync.addComment(taskKey, "Attempting to import all completed content without blacklist.");
-					importSelection(taskKey, completedConceptIds, importResult, false);
+					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false);
 
 					// Iterate attempting import and adding to blacklist until import is successful
 					for (int blacklistRun = 1;
@@ -101,9 +105,10 @@ public class Importer {
 								jiraContentProjectSync.addComment(taskKey, blacklistMessage + "\n" + toJiraTable(blacklistResults.getImportErrors()));
 								logger.info(blacklistMessage + " {}", blacklistedConceptsFromThisRun);
 								completedConceptIds.removeAll(blacklistedConceptsFromThisRun);
+								incompleteConceptIds.addAll(blacklistedConceptsFromThisRun);
 								logger.info("Completed concepts minus blacklist ({}): {}", completedConceptIds.size(), completedConceptIds);
 								jiraContentProjectSync.addComment(taskKey, "Reimporting content using new blacklist (attempt " + (blacklistRun + 1) + ").");
-								importSelection(taskKey, completedConceptIds, importResult, false);
+								importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false);
 							} else {
 								importResult.setBuildingBlacklistFailed(true);
 								handleError("Import failed but no concept blacklist could be built.", importResult);
@@ -127,10 +132,10 @@ public class Importer {
 		}
 	}
 
-	private ImportResult importSelection(String taskKey, Set<Long> completedConceptIds, ImportResult importResult,
+	private ImportResult importSelection(String taskKey, Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult,
 			boolean updateJiraOnImportError) throws SnowOwlRestClientException, JiraException, ImportFilterServiceException,
 			JiraSyncException {
-		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, importResult);
+		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult);
 		importResult.setSelectionResult(selectionResult);
 		if (selectionResult.isSuccess()) {
 			// Create TS branch
@@ -164,10 +169,10 @@ public class Importer {
 		}
 	}
 
-	private SelectionResult createSelectionArchive(Set<Long> completedConceptIds, ImportResult importResult) throws ImportFilterServiceException {
+	private SelectionResult createSelectionArchive(Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult) throws ImportFilterServiceException {
 		MissingDependencyReport missingDependencyReport;
 		try {
-			missingDependencyReport = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds);
+			missingDependencyReport = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds, incompleteConceptIds);
 		} catch (IOException | LoadException e) {
 			throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
 		}
@@ -176,18 +181,18 @@ public class Importer {
 			addComment("No incomplete dependencies found.", importResult, "Info");
 		} else {
 			// Remove concepts with incomplete dependencies from the selection list
-			removeConceptsFromSelection(completedConceptIds, missingDependencyReport);
+			recordConceptsAsNotComplete(completedConceptIds, incompleteConceptIds, missingDependencyReport);
 
 			handleWarning("The following concepts are complete but will not be imported " +
 					"because they are related to others which are not complete: \n" +
 					formatForJira(missingDependencyReport), importResult);
 
 			try {
-				List<MissingDependencyReport> exhaustiveReports = backlogContentService.getExhaustiveListOfConceptsWithMissingDependencies(completedConceptIds);
+				List<MissingDependencyReport> exhaustiveReports = backlogContentService.getExhaustiveListOfConceptsWithMissingDependencies(completedConceptIds, incompleteConceptIds);
 
 				// Remove concepts with incomplete dependencies from the selection list
 				for (MissingDependencyReport exhaustiveReport : exhaustiveReports) {
-					removeConceptsFromSelection(completedConceptIds, exhaustiveReport);
+					recordConceptsAsNotComplete(completedConceptIds, incompleteConceptIds, exhaustiveReport);
 				}
 
 				if (!exhaustiveReports.isEmpty()) {
@@ -208,17 +213,18 @@ public class Importer {
 		}
 	}
 
-	private void removeConceptsFromSelection(Set<Long> completedConceptIds, MissingDependencyReport missingDependencyReport) {
-		Map<Concept, List<Concept>> conceptToMissingDependencyMap = missingDependencyReport.getConceptToMissingDependencyMap();
-		for (Concept conceptWithMissingDependency : conceptToMissingDependencyMap.keySet()) {
-			completedConceptIds.remove(conceptWithMissingDependency.getSctid());
+	private void recordConceptsAsNotComplete(Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, MissingDependencyReport missingDependencyReport) {
+		for (Concept conceptWithMissingDependency : missingDependencyReport.getConceptToMissingStatedAndInferredDependencyMap().keySet()) {
+			Long sctid = conceptWithMissingDependency.getSctid();
+			completedConceptIds.remove(sctid);
+			incompleteConceptIds.add(sctid);
 		}
 	}
 
 	private String formatForJira(MissingDependencyReport missingDependencyReport) {
 		StringBuilder builder = new StringBuilder();
 
-		Map<Concept, List<Concept>> conceptToMissingDependencyMap = missingDependencyReport.getConceptToMissingDependencyMap();
+		Map<Concept, List<Concept>> conceptToMissingDependencyMap = missingDependencyReport.getConceptToMissingStatedAndInferredDependencyMap();
 		builder.append("||Complete concept excluded from import||Related incomplete concepts (arrow indicates direction of relation)||\n");
 		for (Concept concept : conceptToMissingDependencyMap.keySet()) {
 			builder.append("|").append(concept.getSctid()).append("|");
@@ -242,11 +248,12 @@ public class Importer {
 		builder.append("||Further excluded concepts||\n");
 		for (MissingDependencyReport exhaustiveReport : exhaustiveReports) {
 			builder.append("|");
-			Set<Concept> concepts = exhaustiveReport.getConceptToMissingDependencyMap().keySet();
+			Set<Concept> concepts = exhaustiveReport.getConceptToMissingStatedAndInferredDependencyMap().keySet();
 			boolean first = true;
 			for (Concept concept : concepts) {
 				if (!first) builder.append(", ");
-				builder.append(concept.getSctid() + " ");
+				builder.append(concept.getSctid());
+				builder.append(" ");
 				first = false;
 			}
 			builder.append("|\n");
