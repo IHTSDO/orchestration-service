@@ -7,18 +7,13 @@
 		<version>1.2.2.RELEASE</version>
 	</parent>
 
-	<groupId>org.ihtsdo.ts</groupId>
-	<artifactId>ts-delta-import-process</artifactId>
+	<groupId>org.ihtsdo.orchestration</groupId>
+	<artifactId>orchestration-service-parent</artifactId>
 	<version>1.4-SNAPSHOT</version>
-	<packaging>jar</packaging>
-
-	<name>ts-delta-import-process</name>
-	<url>http://maven.apache.org</url>
+	<packaging>pom</packaging>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<execFinalName>${project.build.finalName}.jar</execFinalName>
-		<packageName>${project.artifactId}</packageName>
 	</properties>
 
 	<scm>
@@ -28,56 +23,15 @@
 		<tag>HEAD</tag>
 	</scm>
 
+	<modules>
+		<module>import-export-transform</module>
+		<module>orchestration-service</module>
+	</modules>
+
 	<dependencies>
-		<dependency>
-			<groupId>org.ihtsdo.ts</groupId>
-			<artifactId>import-filter</artifactId>
-			<version>1.4-SNAPSHOT</version>
-		</dependency>
-		<dependency>
-			<groupId>org.ihtsdo.otf.common</groupId>
-			<artifactId>otf-common</artifactId>
-			<version>0.0.8</version>
-			<exclusions>
-				<exclusion>
-					<artifactId>spring-beans</artifactId>
-					<groupId>org.springframework</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-logging</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.rcarz</groupId>
-			<artifactId>jira-client</artifactId>
-			<version>0.5</version>
-		</dependency>
-		<dependency>
-			<groupId>us.monoid.web</groupId>
-			<artifactId>resty</artifactId>
-			<version>0.3.2</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.10</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jsoup</groupId>
-			<artifactId>jsoup</artifactId>
-			<version>1.8.1</version>
 		</dependency>
 	</dependencies>
 
@@ -92,10 +46,6 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
 				<groupId>external.atlassian.jgitflow</groupId>
 				<artifactId>jgitflow-maven-plugin</artifactId>
 				<version>1.0-m4.3</version>
@@ -107,83 +57,6 @@
 			</plugin>
 		</plugins>
 	</build>
-
-	<profiles>
-		<profile>
-			<id>deb</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.vafer</groupId>
-						<artifactId>jdeb</artifactId>
-						<version>1.1.1</version>
-						<executions>
-							<execution>
-								<phase>package</phase>
-								<goals>
-									<goal>jdeb</goal>
-								</goals>
-								<configuration>
-									<deb>${project.build.directory}/${packageName}-${project.version}-all.deb</deb>
-									<controlDir>${basedir}/src/deb/control</controlDir>
-									<snapshotExpand>true</snapshotExpand>
-									<snapshotEnv>BUILD_NUMBER</snapshotEnv>
-									<verbose>true</verbose>
-									<classifier>all</classifier>
-									<signPackage>false</signPackage>
-									<dataSet>
-										<data>
-											<src>${project.build.directory}/${execFinalName}</src>
-											<dst>app.jar</dst>
-											<type>file</type>
-											<mapper>
-												<type>perm</type>
-												<prefix>/opt/${packageName}/lib/</prefix>
-											</mapper>
-										</data>
-										<data>
-											<src>${basedir}/src/deb/supervisor.conf</src>
-											<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
-											<type>file</type>
-											<conffile>true</conffile>
-										</data>
-										<data>
-											<type>template</type>
-											<paths>
-												<path>/etc/opt/${packageName}</path>
-												<path>/opt/${packageName}</path>
-											</paths>
-										</data>
-										<data>
-											<type>template</type>
-											<paths>
-												<path>/var/opt/${packageName}</path>
-												<path>/var/opt/${packageName}/run</path>
-												<path>/var/opt/${packageName}/logs</path>
-											</paths>
-											<mapper>
-												<type>perm</type>
-												<user>${packageName}</user>
-												<group>${packageName}</group>
-												<dirmode>0750</dirmode>
-												<filemode>0750</filemode>
-											</mapper>
-										</data>
-										<data>
-											<type>link</type>
-											<linkName>/var/log/${packageName}</linkName>
-											<linkTarget>/var/opt/${packageName}/log</linkTarget>
-											<symlink>true</symlink>
-										</data>
-									</dataSet>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-	</profiles>
 
 	<repositories>
 		<repository>
