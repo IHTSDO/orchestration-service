@@ -4,7 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+
 import net.rcarz.jiraclient.Issue;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -12,9 +14,11 @@ import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.orchestration.clients.common.resty.HttpEntityContent;
 import org.ihtsdo.orchestration.clients.common.resty.RestyHelper;
+import org.ihtsdo.orchestration.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -254,6 +258,8 @@ public class SnowOwlRestClient {
 		if (deltaStartEffectiveTime != null) {
 			jsonObj.put("deltaStartEffectiveTime", deltaStartEffectiveTime);
 		}
+
+		jsonObj.put("transientEffectiveTime", DateUtils.today(DateUtils.YYYYMMDD));
 
 		logger.info("Initiating export from {} with json: {}", exportURL, jsonObj.toString());
 		JSONResource jsonResponse = resty.json(exportURL, RestyHelper.content(jsonObj, SNOWOWL_V1_CONTENT_TYPE));
