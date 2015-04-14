@@ -58,6 +58,14 @@ public class Importer {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	public ImportResult importSelectedWBContent(Set<Long> selectConceptIdsOverride) throws ImporterException {
+		return importWBContent(selectConceptIdsOverride, false);
+	}
+
+	public ImportResult importAllWBContent() throws ImporterException {
+		return importWBContent(null, true);
+	}
+
+	private ImportResult importWBContent(Set<Long> selectConceptIdsOverride, boolean importEverything) throws ImporterException {
 		logger.info("Started");
 		Date startDate = new Date();
 		String contentEffectiveDate = RF2_DATE_FORMAT.format(startDate);
@@ -80,6 +88,9 @@ public class Importer {
 					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: \n" + toJiraSearchableIdList(selectConceptIdsOverride));
 					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
 					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, true, contentEffectiveDate);
+				} else if (importEverything) {
+					jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog!");
+					importSelection(taskKey, null, null, importResult, true, contentEffectiveDate);
 				} else {
 					completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
 					logger.info("Completed concepts ({}): {}", completedConceptIds.size(), completedConceptIds);
@@ -171,40 +182,42 @@ public class Importer {
 	}
 
 	private SelectionResult createSelectionArchive(Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult, String contentEffectiveDate) throws ImportFilterServiceException {
-		MissingDependencyReport missingDependencyReport;
-		try {
-			missingDependencyReport = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds, incompleteConceptIds);
-		} catch (IOException | LoadException e) {
-			throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
-		}
-
-		if (!missingDependencyReport.anyMissingDependenciesFound()) {
-			addComment("No incomplete dependencies found.", importResult, "Info");
-		} else {
-			// Remove concepts with incomplete dependencies from the selection list
-			recordConceptsAsNotComplete(completedConceptIds, incompleteConceptIds, missingDependencyReport);
-
-			handleWarning("The following concepts are complete but will not be imported " +
-					"because they are related to others which are not complete: \n" +
-					formatForJira(missingDependencyReport), importResult);
-
+		if (completedConceptIds != null) {
+			MissingDependencyReport missingDependencyReport;
 			try {
-				List<MissingDependencyReport> exhaustiveReports = backlogContentService.getExhaustiveListOfConceptsWithMissingDependencies(completedConceptIds, incompleteConceptIds);
-
-				// Remove concepts with incomplete dependencies from the selection list
-				for (MissingDependencyReport exhaustiveReport : exhaustiveReports) {
-					recordConceptsAsNotComplete(completedConceptIds, incompleteConceptIds, exhaustiveReport);
-				}
-
-				if (!exhaustiveReports.isEmpty()) {
-					handleWarning("As a result of the exclusions above the following concepts will also not be included for the same " +
-							"reason. Each row represents exclusions from a new iteration based on the results of the last: \n" +
-							formatForJira(exhaustiveReports), importResult);
-				}
+				missingDependencyReport = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds, incompleteConceptIds);
 			} catch (IOException | LoadException e) {
 				throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
 			}
 
+			if (!missingDependencyReport.anyMissingDependenciesFound()) {
+				addComment("No incomplete dependencies found.", importResult, "Info");
+			} else {
+				// Remove concepts with incomplete dependencies from the selection list
+				recordConceptsAsNotComplete(completedConceptIds, incompleteConceptIds, missingDependencyReport);
+
+				handleWarning("The following concepts are complete but will not be imported " +
+						"because they are related to others which are not complete: \n" +
+						formatForJira(missingDependencyReport), importResult);
+
+				try {
+					List<MissingDependencyReport> exhaustiveReports = backlogContentService.getExhaustiveListOfConceptsWithMissingDependencies(completedConceptIds, incompleteConceptIds);
+
+					// Remove concepts with incomplete dependencies from the selection list
+					for (MissingDependencyReport exhaustiveReport : exhaustiveReports) {
+						recordConceptsAsNotComplete(completedConceptIds, incompleteConceptIds, exhaustiveReport);
+					}
+
+					if (!exhaustiveReports.isEmpty()) {
+						handleWarning("As a result of the exclusions above the following concepts will also not be included for the same " +
+								"reason. Each row represents exclusions from a new iteration based on the results of the last: \n" +
+								formatForJira(exhaustiveReports), importResult);
+					}
+				} catch (IOException | LoadException e) {
+					throw new ImportFilterServiceException("Error calculating component dependencies in the backlog content.", e);
+				}
+
+			}
 		}
 
 		try {
@@ -304,5 +317,4 @@ public class Importer {
 		}
 		return builder.toString();
 	}
-
 }

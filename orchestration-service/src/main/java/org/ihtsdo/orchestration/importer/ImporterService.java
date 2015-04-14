@@ -20,10 +20,15 @@ public class ImporterService {
 		executorService = Executors.newSingleThreadExecutor();
 	}
 
-	public void importCompletedWBContent(Set<Long> selectConceptIdsOverride) {
+	public void importCompletedWBContent(Set<Long> selectConceptIdsOverride, boolean importEverything) {
 		// Run importer
 		try {
-			ImportResult importResult = importer.importSelectedWBContent(selectConceptIdsOverride);
+			ImportResult importResult;
+			if (importEverything) {
+				importResult = importer.importAllWBContent();
+			} else {
+				importResult = importer.importSelectedWBContent(selectConceptIdsOverride);
+			}
 			if (importResult.isImportCompletedSuccessfully()) {
 				logger.info("Completed successfully");
 			} else {
@@ -35,11 +40,11 @@ public class ImporterService {
 
 	}
 
-	public void importCompletedWBContentAsync(final Set<Long> selectConceptIdsOverride) {
+	public void importCompletedWBContentAsync(final Set<Long> selectConceptIdsOverride, final boolean importEverything) {
 		executorService.submit(new Runnable() {
 			@Override
 			public void run() {
-				importCompletedWBContent(selectConceptIdsOverride);
+				importCompletedWBContent(selectConceptIdsOverride, importEverything);
 			}
 		});
 	}

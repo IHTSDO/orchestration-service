@@ -23,6 +23,8 @@ import java.util.Set;
 @RequestMapping("/REST/selections")
 public class SelectionsController {
 
+	public static final String IMPORT_EVERYTHING = "importEverything";
+	public static final String SELECT_CONCEPT_IDS = "selectConceptIds";
 	@Autowired
 	private ImporterService importerService;
 
@@ -32,21 +34,29 @@ public class SelectionsController {
 	String triggerImport(@RequestBody(required = false) String json) throws IOException, LoadException {
 
 		Set<Long> selectConceptIdsOverride = null;
+		boolean importEverything = false;
+
 		if (json != null) {
 			JsonElement options = new JsonParser().parse(json);
 			JsonObject asJsonObject = options.getAsJsonObject();
-			JsonArray selectConceptIds = asJsonObject.getAsJsonArray("selectConceptIds");
-			if (selectConceptIds != null) {
-				selectConceptIdsOverride = new HashSet<>();
-				for (JsonElement selectConceptId : selectConceptIds) {
-					long asLong = selectConceptId.getAsLong();
-					selectConceptIdsOverride.add(asLong);
+			if (asJsonObject.has(IMPORT_EVERYTHING)) {
+				importEverything = asJsonObject.getAsJsonPrimitive(IMPORT_EVERYTHING).getAsBoolean();
+			}
+			if (!importEverything) {
+				JsonArray selectConceptIds = asJsonObject.getAsJsonArray(SELECT_CONCEPT_IDS);
+				if (selectConceptIds != null) {
+					selectConceptIdsOverride = new HashSet<>();
+					for (JsonElement selectConceptId : selectConceptIds) {
+						long asLong = selectConceptId.getAsLong();
+						selectConceptIdsOverride.add(asLong);
+					}
 				}
 			}
 		}
 
+		logger.info("importEverything = {}", importEverything);
 		logger.info("selectConceptIdsOverride = {}", selectConceptIdsOverride);
-		importerService.importCompletedWBContentAsync(selectConceptIdsOverride);
+		importerService.importCompletedWBContentAsync(selectConceptIdsOverride, importEverything);
 		return "Selection creation process started";
 	}
 
