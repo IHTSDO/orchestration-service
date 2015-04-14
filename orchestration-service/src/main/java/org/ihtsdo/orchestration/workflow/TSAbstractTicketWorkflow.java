@@ -114,13 +114,13 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 
 	protected void saveClassification(Issue issue, SnowOwlRestClient.BranchType branchType) throws JiraException,
 			SnowOwlRestClientException, JiraSyncException {
-		String classificationId = jiraDataHelper.getData(issue, CLASSIFICATION_ID);
+		String classificationId = jiraDataHelper.getLatestData(issue, CLASSIFICATION_ID);
 		snowOwlRestClient.saveClassification(issue, classificationId, branchType);
 		jiraProjectSync.updateStatus(issue, TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
 	}
 
 	protected void callSRS(Issue issue) throws Exception {
-		String exportArchiveLocation = jiraDataHelper.getData(issue, EXPORT_ARCHIVE_LOCATION);
+		String exportArchiveLocation = jiraDataHelper.getLatestData(issue, EXPORT_ARCHIVE_LOCATION);
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
 		Map<String, String> srsResponse = callSRS(exportArchive);
@@ -159,7 +159,7 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	}
 
 	protected void awaitRVFResults(Issue issue) throws Exception {
-		String rvfResponseURL = jiraDataHelper.getData(issue, RVF_RESPONSE_URL);
+		String rvfResponseURL = jiraDataHelper.getLatestData(issue, RVF_RESPONSE_URL);
 		rvfClient.waitForResults(rvfResponseURL);
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_VALIDATED);
 		issue.addComment("Release validation ready to view at: " + rvfResponseURL);

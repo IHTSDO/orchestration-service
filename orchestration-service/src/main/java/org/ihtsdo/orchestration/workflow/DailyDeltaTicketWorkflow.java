@@ -128,7 +128,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 	}
 
 	private void revertImport(Issue issue) throws ImportFilterServiceException, JiraSyncException, JiraException {
-		String selectedArchiveVersion = jiraDataHelper.getData(issue, Importer.SELECTED_ARCHIVE_VERSION);
+		String selectedArchiveVersion = jiraDataHelper.getLatestData(issue, Importer.SELECTED_ARCHIVE_VERSION);
 		Assert.notNull(selectedArchiveVersion, "Selected archive version can not be null.");
 		importFilterService.putSelectionArchiveBackInBacklog(selectedArchiveVersion);
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_CLOSED);

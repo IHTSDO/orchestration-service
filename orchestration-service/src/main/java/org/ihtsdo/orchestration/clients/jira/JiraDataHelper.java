@@ -3,11 +3,12 @@ package org.ihtsdo.orchestration.clients.jira;
 import net.rcarz.jiraclient.Comment;
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
-
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class JiraDataHelper {
 
@@ -24,11 +25,12 @@ public class JiraDataHelper {
 		issue.addComment(getWorkflowDataId(key) + value);
 	}
 
-	public String getData(Issue issue, String key) throws JiraException {
+	public String getLatestData(Issue issue, String key) throws JiraException {
 		String targetWorkflowDataId = getWorkflowDataId(key);
 		// Update our issue with Jira to pick up any new comments;
 		issue.refresh();
-		List<Comment> comments = issue.getComments();
+		List<Comment> comments = new ArrayList<>(issue.getComments());
+		Collections.reverse(comments);
 		for (Comment thisComment : comments) {
 			String commentText = thisComment.getBody();
 			if (commentText.startsWith(targetWorkflowDataId)) {
