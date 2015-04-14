@@ -1,32 +1,32 @@
 package org.ihtsdo.orchestration.importer;
 
 import net.rcarz.jiraclient.JiraException;
-
+import org.apache.commons.lang.time.FastDateFormat;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
 import org.ihtsdo.orchestration.clients.jira.JiraProjectSync;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
 import org.ihtsdo.orchestration.clients.snowowl.ImportError;
-import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClient;
-import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClientException;
 import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClient;
+import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClientException;
+import org.ihtsdo.orchestration.workflow.DailyDeltaTicketWorkflow;
 import org.ihtsdo.orchestration.workflow.JiraTransitions;
 import org.ihtsdo.ts.importfilter.*;
-import org.ihtsdo.orchestration.workflow.DailyDeltaTicketWorkflow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Importer {
 
 	public static final String SELECTED_ARCHIVE_VERSION = "SelectedArchiveVersion";
 
-	private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+	private static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy/MM/dd HH:mm:ss");
+	private static final FastDateFormat RF2_DATE_FORMAT = FastDateFormat.getInstance("yyyyMMdd");
 
 	@Autowired
 	private WorkbenchWorkflowClient workbenchWorkflowClient;
@@ -60,7 +60,7 @@ public class Importer {
 	public ImportResult importSelectedWBContent(Set<Long> selectConceptIdsOverride) throws ImporterException {
 		logger.info("Started");
 		Date startDate = new Date();
-
+		String contentEffectiveDate = RF2_DATE_FORMAT.format(startDate);
 		ImportResult importResult = new ImportResult();
 
 		try {
@@ -79,14 +79,14 @@ public class Importer {
 					completedConceptIds = selectConceptIdsOverride;
 					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: \n" + toJiraSearchableIdList(selectConceptIdsOverride));
 					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
-					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, true);
+					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, true, contentEffectiveDate);
 				} else {
 					completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
 					logger.info("Completed concepts ({}): {}", completedConceptIds.size(), completedConceptIds);
 					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
 
 					jiraContentProjectSync.addComment(taskKey, "Attempting to import all completed content without blacklist.");
-					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false);
+					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false, contentEffectiveDate);
 
 					// Iterate attempting import and adding to blacklist until import is successful
 					for (int blacklistRun = 1;
@@ -109,7 +109,7 @@ public class Importer {
 								incompleteConceptIds.addAll(blacklistedConceptsFromThisRun);
 								logger.info("Completed concepts minus blacklist ({}): {}", completedConceptIds.size(), completedConceptIds);
 								jiraContentProjectSync.addComment(taskKey, "Reimporting content using new blacklist (attempt " + (blacklistRun + 1) + ").");
-								importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false);
+								importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false, contentEffectiveDate);
 							} else {
 								importResult.setBuildingBlacklistFailed(true);
 								handleError("Import failed but no concept blacklist could be built.", importResult);
@@ -134,9 +134,9 @@ public class Importer {
 	}
 
 	private ImportResult importSelection(String taskKey, Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult,
-			boolean updateJiraOnImportError) throws SnowOwlRestClientException, JiraException, ImportFilterServiceException,
+			boolean updateJiraOnImportError, String contentEffectiveDate) throws SnowOwlRestClientException, JiraException, ImportFilterServiceException,
 			JiraSyncException {
-		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult);
+		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult, contentEffectiveDate);
 		importResult.setSelectionResult(selectionResult);
 		if (selectionResult.isSuccess()) {
 			// Create TS branch
@@ -170,7 +170,7 @@ public class Importer {
 		}
 	}
 
-	private SelectionResult createSelectionArchive(Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult) throws ImportFilterServiceException {
+	private SelectionResult createSelectionArchive(Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult, String contentEffectiveDate) throws ImportFilterServiceException {
 		MissingDependencyReport missingDependencyReport;
 		try {
 			missingDependencyReport = backlogContentService.getConceptsWithMissingDependencies(completedConceptIds, incompleteConceptIds);
@@ -208,7 +208,7 @@ public class Importer {
 		}
 
 		try {
-			return importFilter.createFilteredImport(completedConceptIds);
+			return importFilter.createFilteredImport(completedConceptIds, contentEffectiveDate);
 		} catch (IOException e) {
 			throw new ImportFilterServiceException("Error during creation of filtered archive.", e);
 		}
