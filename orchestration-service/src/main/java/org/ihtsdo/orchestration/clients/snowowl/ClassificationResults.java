@@ -1,11 +1,13 @@
 package org.ihtsdo.orchestration.clients.snowowl;
 
+import java.io.File;
+
 public class ClassificationResults {
 	private boolean equivalentConceptsFound;
-	private boolean relationshipChangesFound;
+	private int relationshipChangesCount;
 	private String classificationId;
 	private String equivalentConceptsJson;
-	private String relationshipChangesJson;
+	private File relationshipChangesFile;
 
 	public void setEquivalentConceptsFound(boolean equivalentConceptsFound) {
 		this.equivalentConceptsFound = equivalentConceptsFound;
@@ -15,12 +17,12 @@ public class ClassificationResults {
 		return equivalentConceptsFound;
 	}
 
-	public void setRelationshipChangesFound(boolean relationshipChangesFound) {
-		this.relationshipChangesFound = relationshipChangesFound;
+	public void setRelationshipChangesCount(int relationshipChangesCount) {
+		this.relationshipChangesCount = relationshipChangesCount;
 	}
 
-	public boolean isRelationshipChangesFound() {
-		return relationshipChangesFound;
+	public int getRelationshipChangesCount() {
+		return relationshipChangesCount;
 	}
 
 	public void setClassificationId(String classificationId) {
@@ -39,11 +41,15 @@ public class ClassificationResults {
 		return equivalentConceptsJson;
 	}
 
-	public void setRelationshipChangesJson(String relationshipChangesJson) {
-		this.relationshipChangesJson = relationshipChangesJson;
+	public void setRelationshipChangesFile(File relationshipChangesFile) {
+		this.relationshipChangesFile = relationshipChangesFile;
 	}
 
-	public String getRelationshipChangesJson() {
-		return relationshipChangesJson;
+	public File getRelationshipChangesFile() {
+		return relationshipChangesFile;
+	}
+
+	public boolean isRelationshipChangesFound() {
+		return relationshipChangesCount > 0;
 	}
 }

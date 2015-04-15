@@ -92,6 +92,7 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	protected void runClassifier(Issue issue, SnowOwlRestClient.BranchType branchType) throws SnowOwlRestClientException,
 			InterruptedException, JiraException, JiraSyncException {
 		String issueKey = issue.getKey();
+
 		ClassificationResults results = snowOwlRestClient.classify(issueKey, branchType);
 		boolean equivalentConceptsFound = results.isEquivalentConceptsFound();
 		boolean relationshipChangesFound = results.isRelationshipChangesFound();
@@ -105,7 +106,8 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 				jiraProjectSync.addComment(issueKey, "Equivalent concepts found by classifier.\n" + results.getEquivalentConceptsJson());
 			}
 			if (relationshipChangesFound) {
-				jiraProjectSync.addComment(issueKey, "Redundant stated relationships found by classifier.\n" + results.getRelationshipChangesJson());
+				jiraProjectSync.addComment(issueKey, results.getRelationshipChangesCount() + " relationship changes found by classifier. See attachment " + results.getRelationshipChangesFile().getName());
+				jiraProjectSync.attachFile(issueKey, results.getRelationshipChangesFile());
 			}
 		}
 		jiraDataHelper.putData(issue, CLASSIFICATION_ID, results.getClassificationId());

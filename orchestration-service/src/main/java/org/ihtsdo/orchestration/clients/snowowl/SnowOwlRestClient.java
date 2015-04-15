@@ -4,10 +4,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-
+import com.google.gson.stream.JsonWriter;
 import net.rcarz.jiraclient.Issue;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -27,6 +28,7 @@ import us.monoid.web.JSONResource;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -46,10 +48,11 @@ public class SnowOwlRestClient {
 	public static final String EXPORTS_URL = "/exports";
 	public static final String CLASSIFICATIONS_URL = "/classifications";
 	public static final String EQUIVALENT_CONCEPTS_URL = "/equivalent-concepts";
-	public static final String RELATIONSHIP_CHANGES_URL = "/relationship-changes";
+	public static final String RELATIONSHIP_CHANGES_URL = "/relationship-changes?limit=1000000";
+	private static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
 
 	public enum ExtractType {
-		DELTA, SNAPSHOT, FULL
+		DELTA, SNAPSHOT, FULL;
 	};
 
 	public enum BranchState {
@@ -65,6 +68,7 @@ public class SnowOwlRestClient {
 	private String reasonerId;
 	private String logPath;
 	private String rolloverLogPath;
+	private final Gson gson;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -72,6 +76,7 @@ public class SnowOwlRestClient {
 		this.snowOwlUrl = snowOwlUrl;
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 		resty.authenticate(snowOwlUrl, username, password.toCharArray());
+		gson = new GsonBuilder().setPrettyPrinting().create();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -167,6 +172,7 @@ public class SnowOwlRestClient {
 
 	public ClassificationResults classify(String branchName, BranchType branchType) throws SnowOwlRestClientException, InterruptedException {
 		ClassificationResults results = new ClassificationResults();
+		String date = SIMPLE_DATE_FORMAT.format(new Date());
 		String classificationLocation;
 		try {
 			JSONObject requestJson = new JSONObject().put("reasonerId", reasonerId);
@@ -195,10 +201,13 @@ public class SnowOwlRestClient {
 			}
 			try {
 				// Check relationship changes
-				JSONResource json = resty.json(classificationLocation + RELATIONSHIP_CHANGES_URL);
-				Integer total = (Integer) json.get("total");
-				results.setRelationshipChangesFound(total != 0);
-				results.setRelationshipChangesJson(toPrettyJson(json.object().toString()));
+				JSONResource relationshipChangesUnlimited = resty.json(classificationLocation + RELATIONSHIP_CHANGES_URL);
+				Integer total = (Integer) relationshipChangesUnlimited.get("total");
+				results.setRelationshipChangesCount(total);
+				Path tempDirectory = Files.createTempDirectory(getClass().getSimpleName());
+				File file = new File(tempDirectory.toFile(), "relationship-changes-" + date + ".json");
+				toPrettyJson(relationshipChangesUnlimited.object().toString(), file);
+				results.setRelationshipChangesFile(file);
 			} catch (Exception e) {
 				throw new SnowOwlRestClientException("Failed to retrieve relationship changes of classification.", e);
 			}
@@ -349,10 +358,15 @@ public class SnowOwlRestClient {
 	}
 
 	private String toPrettyJson(String jsonString) {
-		JsonParser parser = new JsonParser();
-		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-		JsonElement el = parser.parse(jsonString);
+		JsonElement el = new JsonParser().parse(jsonString);
 		return gson.toJson(el);
+	}
+
+	private void toPrettyJson(String jsonString, File outFile) throws IOException {
+		JsonElement el = new JsonParser().parse(jsonString);
+		try (JsonWriter writer = new JsonWriter(new FileWriter(outFile))) {
+			gson.toJson(el, writer);
+		}
 	}
 
 	public void setReasonerId(String reasonerId) {

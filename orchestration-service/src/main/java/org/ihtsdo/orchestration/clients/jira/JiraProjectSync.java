@@ -1,14 +1,10 @@
 package org.ihtsdo.orchestration.clients.jira;
 
-import net.rcarz.jiraclient.BasicCredentials;
-import net.rcarz.jiraclient.Issue;
-import net.rcarz.jiraclient.JiraClient;
-import net.rcarz.jiraclient.JiraException;
-import net.rcarz.jiraclient.Status;
-
+import net.rcarz.jiraclient.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +45,10 @@ public class JiraProjectSync {
 		logger.info("Adding comment to '{}': [{}]", issue.getKey(), commentString);
 		issue.addComment(commentString);
 		issue.update(); // Pick up new comment locally too
+	}
+
+	public void attachFile(String taskKey, File attachment) throws JiraException {
+		getJiraClient().getIssue(taskKey).addAttachment(attachment);
 	}
 
 	public void updateStatus(String taskKey, String statusTransitionName) throws JiraSyncException, JiraException {
