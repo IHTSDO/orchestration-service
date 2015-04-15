@@ -19,6 +19,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,14 +112,16 @@ public class SRSRestClientHelper {
 		File inferred = new File(extractDir, "sct2_Relationship_Delta_INT_" + releaseDate + ".txt");
 		File stated = new File(extractDir, "sct2_StatedRelationship_Delta_INT_" + releaseDate + ".txt");
 		boolean removeFromOriginal = false;
-		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID, removeFromOriginal);
+		boolean removeId = true;
+		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID, removeFromOriginal, removeId);
 
 		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
 		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
 		File description = new File(extractDir, "sct2_Description_Delta_INT_" + releaseDate + ".txt");
 		File definition = new File(extractDir, "sct2_TextDefinition_Delta_INT_" + releaseDate + ".txt");
 		removeFromOriginal = true;
-		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal);
+		removeId = false;
+		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal, removeId);
 
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
@@ -209,7 +212,8 @@ public class SRSRestClientHelper {
 	/*
 	 * Creates a file containing all the rows which have "mustMatch" in columnNum. Plus the header row.
 	 */
-	protected static void createSubsetFile(File source, File target, int columnNum, String mustMatch, boolean removeFromOriginal)
+	protected static void createSubsetFile(File source, File target, int columnNum, String mustMatch, boolean removeFromOriginal,
+			boolean removeId)
 			throws IOException {
 		if (source.exists() && !source.isDirectory()) {
 			LOGGER.debug("Creating {} as a subset of {} and {} rows in original.", target, source, (removeFromOriginal ? "removing"
@@ -221,7 +225,14 @@ public class SRSRestClientHelper {
 			for (String thisLine : allLines) {
 				String[] columns = thisLine.split("\t");
 				if (lineCount == 1 || (columns.length > columnNum && columns[columnNum].equals(mustMatch))) {
-					newLines.add(thisLine);
+					// Are we wiping out the Id (column index 0) before writing?
+					if (removeId && lineCount != 1) {
+						columns[0] = "";
+						String lineWithIDRemoved = StringUtils.join(columns, "\t");
+						newLines.add(lineWithIDRemoved);
+					} else {
+						newLines.add(thisLine);
+					}
 					if (lineCount == 1) {
 						remainingLines.add(thisLine);
 					}
