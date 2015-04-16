@@ -51,6 +51,15 @@ public class JiraProjectSync {
 		getJiraClient().getIssue(taskKey).addAttachment(attachment);
 	}
 
+	/**
+	 * This should only be used during exception handling to prevent setting a failed status more than once.
+	 */
+	public void conditionalUpdateStatus(String taskKey, String statusTransitionName, String ifStatusNotThis) throws JiraException, JiraSyncException {
+		if (!findIssue(taskKey).getStatus().getName().equals(ifStatusNotThis)) {
+			updateStatus(taskKey, statusTransitionName);
+		}
+	}
+
 	public void updateStatus(String taskKey, String statusTransitionName) throws JiraSyncException, JiraException {
 		updateStatus(findIssue(taskKey), statusTransitionName);
 	}

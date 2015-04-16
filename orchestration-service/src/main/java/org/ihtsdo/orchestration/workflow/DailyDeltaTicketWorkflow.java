@@ -134,7 +134,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_CLOSED);
 	}
 
-	private enum DDState {
+	public enum DDState {
 		CREATED,
 		IMPORTED,
 		CLASSIFIED_WITH_QUERIES,

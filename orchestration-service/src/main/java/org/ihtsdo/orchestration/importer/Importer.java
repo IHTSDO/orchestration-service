@@ -124,20 +124,21 @@ public class Importer {
 							} else {
 								importResult.setBuildingBlacklistFailed(true);
 								handleError("Import failed but no concept blacklist could be built.", importResult);
+								updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_TO_FAILED);
 							}
 						} catch (ImportBlacklistServiceException e) {
 							importResult.setBuildingBlacklistFailed(true);
-							handleError("Failed to parse import error log.", importResult, e);
+							handleExceptionTransitionToFailed("Failed to parse import error log.", importResult, e);
 						}
 					}
 				}
 				return importResult;
 			} catch (ImportFilterServiceException e) {
-				return handleError("Error during selection archive creation process.", importResult, e);
+				return handleExceptionTransitionToFailed("Error during selection archive creation process.", importResult, e);
 			} catch (SnowOwlRestClientException e) {
-				return handleError("Error using Snow Owl Terminology Server.", importResult, e);
+				return handleExceptionTransitionToFailed("Error using Snow Owl Terminology Server.", importResult, e);
 			} catch (WorkbenchWorkflowClientException e) {
-				return handleError(e.getMessage(), importResult, e);
+				return handleExceptionTransitionToFailed(e.getMessage(), importResult, e);
 			}
 		} catch (JiraException | JiraSyncException e) {
 			throw new ImporterException("Error using Jira.", e);
@@ -163,19 +164,21 @@ public class Importer {
 				importResult.setImportCompletedSuccessfully(true);
 				Set<Long> foundConceptIds = selectionResult.getFoundConceptIds();
 				jiraContentProjectSync.addComment(taskKey, "Created task with selection from workbench daily export. SCTID list (" + foundConceptIds.size() + " concepts): \n" + toJiraSearchableIdList(foundConceptIds));
-				jiraContentProjectSync.updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
+				updateStatus(taskKey, JiraTransitions.IMPORT_CONTENT);
 			} else {
 				if (updateJiraOnImportError) {
 					handleError("Import process failed, see SnowOwl logs for details.", importResult);
-					jiraContentProjectSync.updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_REJECTED);
+					updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_REJECTED);
 				}
 			}
 
 			return importResult;
 		} else {
 			if (selectionResult.isEmptySelection()) {
+				updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_CLOSED);
 				return handleError("The current selection did not match anything in the backlog.", importResult);
 			} else {
+				updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_TO_FAILED);
 				return handleError("Unknown selection problem.", importResult);
 			}
 		}
@@ -279,10 +282,20 @@ public class Importer {
 		addComment(message, importResult, "Warning");
 	}
 
-	private ImportResult handleError(String message, ImportResult importResult, Exception e) {
+	private void updateStatus(String taskKey, String statusTransitionName) throws JiraSyncException, JiraException {
+		jiraContentProjectSync.updateStatus(taskKey, statusTransitionName);
+	}
+
+	private ImportResult handleExceptionTransitionToFailed(String message, ImportResult importResult, Exception e) {
 		// If we have an Exception then it's an application error which needs logging as such.
 		logger.error(message, e);
-		return handleError(message, importResult);
+		handleError(message, importResult);
+		try {
+			jiraContentProjectSync.conditionalUpdateStatus(importResult.getTaskKey(), DailyDeltaTicketWorkflow.TRANSITION_TO_FAILED, DailyDeltaTicketWorkflow.DDState.FAILED.toString());
+		} catch (JiraException | JiraSyncException e2) {
+			logger.error("Failed to transition issue {} to FAILED state.", importResult.getTaskKey(), e2);
+		}
+		return importResult;
 	}
 
 	private ImportResult handleError(String message, ImportResult importResult) {

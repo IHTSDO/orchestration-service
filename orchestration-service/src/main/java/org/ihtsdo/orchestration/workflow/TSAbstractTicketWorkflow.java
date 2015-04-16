@@ -57,6 +57,7 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	public static final String RVF_RESPONSE_URL = "RVF Response URL";
 	public static final String CLASSIFICATION_ID = "Classification ID";
 
+	public static final String TRANSITION_FROM_CREATED_TO_CLOSED = "Nothing to import";
 	public static final String TRANSITION_FROM_CREATED_TO_REJECTED = "Reject inconsistent data";
 	public static final String TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS = "Classification Saved";
 	public static final String TRANSITION_TO_EXPORTED = "Export content";
