@@ -1,0 +1,38 @@
+server.port=9001
+
+# Snow Owl Server
+snowowl.url = http://localhost:8080/snowowl/
+snowowl.username =
+snowowl.password =
+snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
+snowowl.export.fromDate= 20150201
+snowowl.log.path = /opt/termserver/serviceability/logs/log.log
+snowowl.rolloverLog.path = /opt/termserver/serviceability/logs/log_1.log
+
+#SRS Server
+srs.root.url = https://localhost/api/v1/
+srs.product = centers/international/products/snomed_ct_release/
+srs.username =
+srs.password =
+
+#RVF Server
+rvf.pollPeriod = 60  #Polling interval in seconds
+rvf.timeout = 120 #Timeout in minutes
+
+# Jira
+jira.url = http://localhost:8080/jira
+jira.username =
+jira.password =
+jira.contentProjectKey =
+jira.dailyExportProjectKey =
+
+aws.key =
+aws.secretKey =
+aws.bucket.archives =
+aws.bucket.filter =
+
+import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
+
+schedule.startDailyImport.cron = 0 0 2 * * *
+schedule.startDailyExport.cron = 0 0 15 * * *
+schedule.pollJiraTickets.cron = 0 */3 * * * *
