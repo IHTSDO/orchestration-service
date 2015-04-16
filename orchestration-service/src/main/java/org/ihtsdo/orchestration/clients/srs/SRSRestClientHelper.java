@@ -117,8 +117,8 @@ public class SRSRestClientHelper {
 
 		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
 		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
-		File description = new File(extractDir, "sct2_Description_Delta_INT_" + releaseDate + ".txt");
-		File definition = new File(extractDir, "sct2_TextDefinition_Delta_INT_" + releaseDate + ".txt");
+		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
+		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + ".txt");
 		removeFromOriginal = true;
 		removeId = false;
 		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal, removeId);
