@@ -8,9 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class TicketWorkflowManager {
 	
@@ -44,6 +42,7 @@ public class TicketWorkflowManager {
 			try {
 				// This list should be returned so we process in time ascending order
 				List<Issue> issues = jiraProjectSync.findIssues(jqlSelectStatement);
+				sortIssuesOldestFirst(issues);
 				for (Issue issue : issues) {
 					while (!workflow.isComplete(issue) && hasStatusChanged(issue)) {
 						processChangedTicket(workflow, issue);
@@ -62,6 +61,15 @@ public class TicketWorkflowManager {
 				logger.error("Failed to find issues for workflow '{}'", workflowName, e);
 			}
 		}
+	}
+
+	protected void sortIssuesOldestFirst(List<Issue> issues) {
+		Collections.sort(issues, new Comparator<Issue>() {
+			@Override
+			public int compare(Issue o1, Issue o2) {
+				return o1.getKey().compareTo(o2.getKey());
+			}
+		});
 	}
 
 	/*
