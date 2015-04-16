@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.ts</groupId>
 			<artifactId>import-filter</artifactId>
-			<version>1.4-SNAPSHOT</version>
+			<version>1.4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
