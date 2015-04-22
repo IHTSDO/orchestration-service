@@ -151,13 +151,15 @@ public class Importer {
 		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult, contentEffectiveDate);
 		importResult.setSelectionResult(selectionResult);
 		if (selectionResult.isSuccess()) {
+			// Creating a branch can fail, but we need to know which archive to roll back if it does, so capture this first
+			String selectedArchiveVersion = selectionResult.getSelectedArchiveVersion();
+			jiraDataHelper.putData(jiraContentProjectSync.findIssue(taskKey), SELECTED_ARCHIVE_VERSION, selectedArchiveVersion);
+			logger.info("Filter version {}", selectedArchiveVersion);
+
 			// Create TS branch
 			tsClient.getCreateBranch(taskKey);
 
 			// Stream selection archive into TS import process
-			String selectedArchiveVersion = selectionResult.getSelectedArchiveVersion();
-			jiraDataHelper.putData(jiraContentProjectSync.findIssue(taskKey), SELECTED_ARCHIVE_VERSION, selectedArchiveVersion);
-			logger.info("Filter version {}", selectedArchiveVersion);
 			InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectedArchiveVersion);
 			boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
 			if (importSuccessful) {
@@ -290,7 +292,7 @@ public class Importer {
 		// If we have an Exception then it's an application error which needs logging as such.
 		// But we still need to return the selected items to the backlog.
 		logger.error(message, e);
-		handleError(message, importResult);
+		handleError(message, importResult, e);
 		try {
 			jiraContentProjectSync.conditionalUpdateStatus(importResult.getTaskKey(),
 					DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_REJECTED, DailyDeltaTicketWorkflow.DDState.FAILED.toString());
@@ -298,6 +300,11 @@ public class Importer {
 			logger.error("Failed to transition issue {} to CONTENT_REJECTED state.", importResult.getTaskKey(), e2);
 		}
 		return importResult;
+	}
+
+	private ImportResult handleError(String message, ImportResult importResult, Exception e) {
+		message += "\nCaused by Exception: " + e.getLocalizedMessage();
+		return handleError(message, importResult);
 	}
 
 	private ImportResult handleError(String message, ImportResult importResult) {
