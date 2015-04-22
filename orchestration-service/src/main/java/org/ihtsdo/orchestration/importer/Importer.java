@@ -128,17 +128,17 @@ public class Importer {
 							}
 						} catch (ImportBlacklistServiceException e) {
 							importResult.setBuildingBlacklistFailed(true);
-							handleExceptionTransitionToFailed("Failed to parse import error log.", importResult, e);
+							handleExceptionTransitionToRejected("Failed to parse import error log.", importResult, e);
 						}
 					}
 				}
 				return importResult;
 			} catch (ImportFilterServiceException e) {
-				return handleExceptionTransitionToFailed("Error during selection archive creation process.", importResult, e);
+				return handleExceptionTransitionToRejected("Error during selection archive creation process.", importResult, e);
 			} catch (SnowOwlRestClientException e) {
-				return handleExceptionTransitionToFailed("Error using Snow Owl Terminology Server.", importResult, e);
+				return handleExceptionTransitionToRejected("Error using Snow Owl Terminology Server.", importResult, e);
 			} catch (WorkbenchWorkflowClientException e) {
-				return handleExceptionTransitionToFailed(e.getMessage(), importResult, e);
+				return handleExceptionTransitionToRejected(e.getMessage(), importResult, e);
 			}
 		} catch (JiraException | JiraSyncException e) {
 			throw new ImporterException("Error using Jira.", e);
@@ -178,7 +178,7 @@ public class Importer {
 				updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_CLOSED);
 				return handleError("The current selection did not match anything in the backlog.", importResult);
 			} else {
-				updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_TO_FAILED);
+				updateStatus(taskKey, DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_REJECTED);
 				return handleError("Unknown selection problem.", importResult);
 			}
 		}
@@ -286,14 +286,16 @@ public class Importer {
 		jiraContentProjectSync.updateStatus(taskKey, statusTransitionName);
 	}
 
-	private ImportResult handleExceptionTransitionToFailed(String message, ImportResult importResult, Exception e) {
+	private ImportResult handleExceptionTransitionToRejected(String message, ImportResult importResult, Exception e) {
 		// If we have an Exception then it's an application error which needs logging as such.
+		// But we still need to return the selected items to the backlog.
 		logger.error(message, e);
 		handleError(message, importResult);
 		try {
-			jiraContentProjectSync.conditionalUpdateStatus(importResult.getTaskKey(), DailyDeltaTicketWorkflow.TRANSITION_TO_FAILED, DailyDeltaTicketWorkflow.DDState.FAILED.toString());
+			jiraContentProjectSync.conditionalUpdateStatus(importResult.getTaskKey(),
+					DailyDeltaTicketWorkflow.TRANSITION_FROM_CREATED_TO_REJECTED, DailyDeltaTicketWorkflow.DDState.FAILED.toString());
 		} catch (JiraException | JiraSyncException e2) {
-			logger.error("Failed to transition issue {} to FAILED state.", importResult.getTaskKey(), e2);
+			logger.error("Failed to transition issue {} to CONTENT_REJECTED state.", importResult.getTaskKey(), e2);
 		}
 		return importResult;
 	}
