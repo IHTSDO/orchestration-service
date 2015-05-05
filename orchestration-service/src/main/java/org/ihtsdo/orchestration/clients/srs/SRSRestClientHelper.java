@@ -78,7 +78,7 @@ public class SRSRestClientHelper {
 				new String[] { "der2_iisssccRefset_Icd10ComplexMapReferenceSet****_INT_########.txt" }));
 		refsetMap.put("SimpleMap", new RefsetCombiner("der2_sRefset_SimpleMap****_INT_########.txt", new String[] {
 				"der2_sRefset_Ctv3SimpleMap****_INT_########.txt", "der2_sRefset_IcdOSimpleMapReferenceSet****_INT_########.txt",
-				"der2_sRefset_SnomedRtIdSimpleMap****_INT_########.txt", "der2_sRefset_GmdnSimpleMapReferenceSet*****_INT_########.txt" }));
+				"der2_sRefset_SnomedRtIdSimpleMap****_INT_########.txt", "der2_sRefset_GmdnSimpleMapReferenceSet****_INT_########.txt" }));
 		refsetMap.put("ModuleDependency", new RefsetCombiner("der2_ssRefset_ModuleDependency****_INT_########.txt",
 				new String[] { "der2_ssRefset_ModuleDependency****_INT_########.txt" }));
 	}
