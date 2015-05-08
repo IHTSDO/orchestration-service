@@ -12,7 +12,7 @@
 		</layout>
 	</appender>
 	<logger name="org.ihtsdo" additivity="false">
-		<level value="info" />
+		<level value="${LOG_LEVEL}" />
 		<appender-ref ref="console"/>
 	</logger>
 	<root>

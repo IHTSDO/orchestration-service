@@ -78,7 +78,7 @@ public class SRSRestClientHelper {
 				new String[] { "der2_iisssccRefset_Icd10ComplexMapReferenceSet****_INT_########.txt" }));
 		refsetMap.put("SimpleMap", new RefsetCombiner("der2_sRefset_SimpleMap****_INT_########.txt", new String[] {
 				"der2_sRefset_Ctv3SimpleMap****_INT_########.txt", "der2_sRefset_IcdOSimpleMapReferenceSet****_INT_########.txt",
-				"der2_sRefset_SnomedRtIdSimpleMap****_INT_########.txt" }));
+				"der2_sRefset_SnomedRtIdSimpleMap****_INT_########.txt", "der2_sRefset_GmdnSimpleMapReferenceSet****_INT_########.txt" }));
 		refsetMap.put("ModuleDependency", new RefsetCombiner("der2_ssRefset_ModuleDependency****_INT_########.txt",
 				new String[] { "der2_ssRefset_ModuleDependency****_INT_########.txt" }));
 	}
@@ -117,8 +117,8 @@ public class SRSRestClientHelper {
 
 		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
 		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
-		File description = new File(extractDir, "sct2_Description_Delta_INT_" + releaseDate + ".txt");
-		File definition = new File(extractDir, "sct2_TextDefinition_Delta_INT_" + releaseDate + ".txt");
+		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
+		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + ".txt");
 		removeFromOriginal = true;
 		removeId = false;
 		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal, removeId);

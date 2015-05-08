@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.orchestration</groupId>
 		<artifactId>orchestration-service-parent</artifactId>
-		<version>1.4</version>
+		<version>1.5</version>
 	</parent>
 
 	<artifactId>orchestration-service</artifactId>
@@ -18,7 +18,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.ts</groupId>
 			<artifactId>import-filter</artifactId>
-			<version>1.4</version>
+			<version>1.5</version>
 		</dependency>
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
