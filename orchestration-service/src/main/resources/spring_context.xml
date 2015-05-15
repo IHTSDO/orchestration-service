@@ -68,6 +68,11 @@
 		<constructor-arg value="${srs.password}"/>
 	</bean>
 	
+	<bean class="org.ihtsdo.orchestration.clients.srs.SRSFileDAO">
+		<constructor-arg value="${srs.next.release}"/>
+		<constructor-arg value="${aws.bucket.refsets}"/>
+	</bean>
+	
 	<bean class="org.ihtsdo.orchestration.clients.rvf.RVFRestClient" >
 		<constructor-arg value="${rvf.pollPeriod}"/>
 		<constructor-arg value="${rvf.timeout}"/>
