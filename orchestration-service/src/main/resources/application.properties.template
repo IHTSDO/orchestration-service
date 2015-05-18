@@ -14,6 +14,7 @@ srs.root.url = https://localhost/api/v1/
 srs.product = centers/international/products/snomed_ct_release/
 srs.username =
 srs.password =
+srs.next.release = 
 
 #RVF Server
 rvf.pollPeriod = 60  #Polling interval in seconds
@@ -30,6 +31,7 @@ aws.key =
 aws.secretKey =
 aws.bucket.archives =
 aws.bucket.filter =
+aws.bucket.refsets = 
 
 import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
 

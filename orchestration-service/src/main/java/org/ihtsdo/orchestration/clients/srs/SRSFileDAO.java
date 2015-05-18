@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,16 +22,19 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.ihtsdo.otf.dao.s3.S3ClientImpl;
+import org.ihtsdo.otf.dao.s3.helper.FileHelper;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import com.google.common.io.Files;
 
-public class SRSRestClientHelper {
+public class SRSFileDAO {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(SRSRestClientHelper.class);
+	private final Logger logger = LoggerFactory.getLogger(SRSFileDAO.class);
 
 	private static final String FILE_TYPE_INSERT = "****";
 	private static final String RELEASE_DATE_INSERT = "########";
@@ -41,6 +46,13 @@ public class SRSRestClientHelper {
 
 	public static final String STATED_RELATIONSHIP_SCTID = "900000000000010007";
 	public static final String TEXT_DEFINITION_SCTID = "900000000000550004";
+
+	@Autowired
+	S3ClientImpl s3Client;
+
+	private String nextRelease;
+
+	private String refsetBucket;
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
@@ -83,15 +95,21 @@ public class SRSRestClientHelper {
 				new String[] { "der2_ssRefset_ModuleDependency****_INT_########.txt" }));
 	}
 
+	public SRSFileDAO(String nextRelease, String refsetBucket) {
+		this.nextRelease = nextRelease;
+		this.refsetBucket = refsetBucket;
+	}
+
 	/*
 	 * @return - the directory containing the files ready for uploading to SRS
 	 */
-	public static File readyInputFiles(File archive, String releaseDate) throws ProcessWorkflowException, IOException {
+	public File readyInputFiles(File archive, String releaseDate, boolean includeExternalRefsets) throws ProcessWorkflowException,
+			IOException {
 
 		// We're going to create release files in a temp directory
 		File extractDir = Files.createTempDir();
 		unzipFlat(archive, extractDir);
-		LOGGER.debug("Unzipped files to {}", extractDir.getAbsolutePath());
+		logger.debug("Unzipped files to {}", extractDir.getAbsolutePath());
 
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
@@ -105,7 +123,7 @@ public class SRSRestClientHelper {
 		if (descriptionFileWrongName.exists()) {
 			descriptionFileWrongName.renameTo(descriptionFileRightName);
 		} else {
-			LOGGER.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
+			logger.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
 		}
 
 		// We don't get a Stated Relationship file. We'll form it instead as a subset of the Inferred RelationshipFile
@@ -123,6 +141,11 @@ public class SRSRestClientHelper {
 		removeId = false;
 		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal, removeId);
 
+		//Now pull in an externally maintained refsets from S3
+		if (includeExternalRefsets) {
+			includeExternallyMaintainedRefsets(extractDir, releaseDate);
+		}
+		
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
 		renameFiles(extractDir, "der2", "rel2");
@@ -130,7 +153,8 @@ public class SRSRestClientHelper {
 		return extractDir;
 	}
 
-	private static void mergeRefsets(File extractDir, String fileType, String releaseDate) throws IOException {
+
+	private void mergeRefsets(File extractDir, String fileType, String releaseDate) throws IOException {
 		// Loop through our map of refsets required, and see what contributing files we can match
 		for (Map.Entry<String, RefsetCombiner> refset : refsetMap.entrySet()) {
 
@@ -156,18 +180,18 @@ public class SRSRestClientHelper {
 				}
 			}
 			if (isFirstContributor) {
-				LOGGER.warn("Failed to find any files to contribute to {}", combinedRefset);
+				logger.warn("Failed to find any files to contribute to {}", combinedRefset);
 			} else {
-				LOGGER.debug("Created combined refset {}", combinedRefset);
+				logger.debug("Created combined refset {}", combinedRefset);
 			}
 		}
 	}
 
-	private static String getFilename(String filenamePattern, String fileType, String date) {
+	private String getFilename(String filenamePattern, String fileType, String date) {
 		return filenamePattern.replace(FILE_TYPE_INSERT, fileType).replace(RELEASE_DATE_INSERT, date);
 	}
 
-	private static void renameFiles(File targetDirectory, String find, String replace) {
+	private void renameFiles(File targetDirectory, String find, String replace) {
 		Assert.isTrue(targetDirectory.isDirectory(), targetDirectory.getAbsolutePath()
 				+ " must be a directory in order to rename files from " + find + " to " + replace);
 		for (File thisFile : targetDirectory.listFiles()) {
@@ -190,7 +214,7 @@ public class SRSRestClientHelper {
 	 *            searched for term must match in this column
 	 * @throws IOException
 	 */
-	protected static void replaceInFiles(File targetDirectory, String find, String replace, int columnNum) throws IOException {
+	protected void replaceInFiles(File targetDirectory, String find, String replace, int columnNum) throws IOException {
 		Assert.isTrue(targetDirectory.isDirectory(), targetDirectory.getAbsolutePath()
 				+ " must be a directory in order to replace text from " + find + " to " + replace);
 		for (File thisFile : targetDirectory.listFiles()) {
@@ -212,11 +236,11 @@ public class SRSRestClientHelper {
 	/*
 	 * Creates a file containing all the rows which have "mustMatch" in columnNum. Plus the header row.
 	 */
-	protected static void createSubsetFile(File source, File target, int columnNum, String mustMatch, boolean removeFromOriginal,
+	protected void createSubsetFile(File source, File target, int columnNum, String mustMatch, boolean removeFromOriginal,
 			boolean removeId)
 			throws IOException {
 		if (source.exists() && !source.isDirectory()) {
-			LOGGER.debug("Creating {} as a subset of {} and {} rows in original.", target, source, (removeFromOriginal ? "removing"
+			logger.debug("Creating {} as a subset of {} and {} rows in original.", target, source, (removeFromOriginal ? "removing"
 					: "leaving"));
 			List<String> allLines = FileUtils.readLines(source, StandardCharsets.UTF_8);
 			List<String> newLines = new ArrayList<String>();
@@ -246,11 +270,11 @@ public class SRSRestClientHelper {
 				FileUtils.writeLines(source, remainingLines);
 			}
 		} else {
-			LOGGER.warn("Did not find file {} needed to create subset {}", source, target);
+			logger.warn("Did not find file {} needed to create subset {}", source, target);
 		}
 	}
 
-	public static String recoverReleaseDate(File archive) throws ProcessWorkflowException, IOException {
+	public String recoverReleaseDate(File archive) throws ProcessWorkflowException, IOException {
 		// Ensure that we have a valid archive
 		if (!archive.isFile()) {
 			throw new ProcessWorkflowException("Could not open supplied archive: " + archive.getAbsolutePath());
@@ -272,7 +296,7 @@ public class SRSRestClientHelper {
 		throw new ProcessWorkflowException("No files found in archive: " + archive.getAbsolutePath());
 	}
 
-	public static String findDateInString(String str) throws ProcessWorkflowException {
+	public String findDateInString(String str) throws ProcessWorkflowException {
 		Matcher dateMatcher = Pattern.compile("(\\d{8})").matcher(str);
 		if (dateMatcher.find()) {
 			return dateMatcher.group();
@@ -280,7 +304,7 @@ public class SRSRestClientHelper {
 		throw new ProcessWorkflowException("Unable to determine date from " + str);
 	}
 
-	public static void unzipFlat(File archive, File targetDir) throws ProcessWorkflowException, IOException {
+	public void unzipFlat(File archive, File targetDir) throws ProcessWorkflowException, IOException {
 
 		if (!targetDir.exists() || !targetDir.isDirectory()) {
 			throw new ProcessWorkflowException(targetDir + " is not a viable directory in which to extract archive");
@@ -304,6 +328,37 @@ public class SRSRestClientHelper {
 			zis.closeEntry();
 			zis.close();
 		}
+	}
+
+	private void includeExternallyMaintainedRefsets(File extractDir, String releaseDateToday) throws IOException {
+		FileHelper s3 = new FileHelper(this.refsetBucket, s3Client);
+
+		// Recover all files in the folder ready for the next release
+		logger.debug("Recovering External Refsets from {}/{}", this.refsetBucket, this.nextRelease);
+		List<String> refsets = s3.listFiles(this.nextRelease);
+
+		for (String refset : refsets) {
+			// The current directory is also listed
+			if (refset != null && refset.equals("/"))
+				continue;
+			
+			InputStream fileStream = null;
+			try {
+				// Note that filename already contains directory separator, so append directly
+				fileStream = s3.getFileStream(this.nextRelease + refset);
+
+				// Files expected to be named for next release date, so rename to this release date
+				String localRefsetName = refset.replace(this.nextRelease, releaseDateToday);
+				File localRefset = new File(extractDir, localRefsetName);
+				logger.debug("Pulling in external refset to {}", localRefset.getAbsolutePath());
+				java.nio.file.Files.copy(fileStream, localRefset.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			} catch (Exception e) {
+				logger.error("Failed to pull external refset from S3: {}{}", this.nextRelease, refset, e);
+			} finally {
+				IOUtils.closeQuietly(fileStream);
+			}
+		}
+
 	}
 
 }

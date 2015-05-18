@@ -4,7 +4,7 @@ import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.lang.NotImplementedException;
-import org.ihtsdo.orchestration.clients.srs.SRSRestClientHelper;
+import org.ihtsdo.orchestration.clients.srs.SRSFileDAO;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
@@ -47,6 +47,9 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	@Autowired
 	protected JiraDataHelper jiraDataHelper;
 	
+	@Autowired
+	protected SRSFileDAO srsDAO;
+
 	@Autowired
 	private String exportDeltaStartEffectiveTime;
 
@@ -139,8 +142,9 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 
 	// Pulled out this section so it can be tested in isolation from Jira Issue
 	public Map<String, String> callSRS(File exportArchive) throws Exception {
-		String releaseDate = SRSRestClientHelper.recoverReleaseDate(exportArchive);
-		File srsFilesDir = SRSRestClientHelper.readyInputFiles(exportArchive, releaseDate);
+		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
+		boolean includeExternallyMaintainedRefsets = true;
+		File srsFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedRefsets);
 		return srsClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 

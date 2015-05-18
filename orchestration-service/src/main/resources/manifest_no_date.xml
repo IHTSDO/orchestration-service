@@ -19,6 +19,8 @@
 					</folder>
 					<folder Name="Map">
 						<file Name="der2_sRefset_SimpleMapFull_INT_########.txt"/>
+						<file Name="der2_iissscRefset_ComplexMapFull_INT_########.txt"/>
+						<file Name="der2_iisssccRefset_ExtendedMapFull_INT_20150131.txt"/>
 					</folder>
 					<folder Name="Language">
 						<file Name="der2_cRefset_LanguageFull-en_INT_########.txt"/>
@@ -47,6 +49,8 @@
 					</folder>
 					<folder Name="Map">
 						<file Name="der2_sRefset_SimpleMapSnapshot_INT_########.txt"/>
+						<file Name="der2_iissscRefset_ComplexMapSnapshot_INT_########.txt"/>
+						<file Name="der2_iisssccRefset_ExtendedMapSnapshot_INT_20150131.txt"/>
 					</folder>
 					<folder Name="Language">
 						<file Name="der2_cRefset_LanguageSnapshot-en_INT_########.txt"/>
@@ -75,6 +79,8 @@
 					</folder>
 					<folder Name="Map">
 						<file Name="der2_sRefset_SimpleMapDelta_INT_########.txt"/>
+						<file Name="der2_iissscRefset_ComplexMapDelta_INT_########.txt"/>
+						<file Name="der2_iisssccRefset_ExtendedMapDelta_INT_20150131.txt"/>
 					</folder>
 					<folder Name="Language">
 						<file Name="der2_cRefset_LanguageDelta-en_INT_########.txt"/>	

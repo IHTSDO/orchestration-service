@@ -23,6 +23,8 @@ public class SRSRestClientHelperTest {
 	private static String TEST_FILE = "rel2_Concept_Delta_INT_20150318.txt";
 	File testArchive = null;
 
+	private SRSFileDAO srsFileDAO;
+
 	@Before
 	public void setUp() throws Exception {
 		URL testArchiveURL = getClass().getResource(TEST_ARCHIVE);
@@ -30,24 +32,26 @@ public class SRSRestClientHelperTest {
 		if (!testArchive.exists()) {
 			throw new Exception("Unable to load test resource: " + TEST_ARCHIVE);
 		}
+
+		srsFileDAO = new SRSFileDAO(null, null);
 	}
 
 	@Test
 	public void testReleaseDateRecovery() throws ProcessWorkflowException {
 		String testFileName = "der2_cRefset_DescriptionInactivationIndicatorReferenceSetDelta_INT_20150318.txt";
-		String actualDate = SRSRestClientHelper.findDateInString(testFileName);
+		String actualDate = srsFileDAO.findDateInString(testFileName);
 		Assert.assertEquals(TEST_DATE, actualDate);
 	}
 
 	@Test
 	public void testRecoverDate() throws Exception {
-		String releaseDate = SRSRestClientHelper.recoverReleaseDate(testArchive);
+		String releaseDate = srsFileDAO.recoverReleaseDate(testArchive);
 		Assert.assertEquals(TEST_DATE, releaseDate);
 	}
 
 	@Test
 	public void testPrepareFiles() throws ProcessWorkflowException, IOException {
-		File location = SRSRestClientHelper.readyInputFiles(testArchive, TEST_DATE);
+		File location = srsFileDAO.readyInputFiles(testArchive, TEST_DATE, false);
 		logger.debug("Test files made ready for SRS input at {}", location.getAbsolutePath());
 		logger.debug("Tidying up folder at {}", location.getAbsolutePath());
 		FileUtils.deleteDirectory(location);
@@ -63,14 +67,14 @@ public class SRSRestClientHelperTest {
 		File copiedFile = new File(tempDir, testFile.getName());
 		FileUtils.copyFile(testFile, copiedFile);
 
-		SRSRestClientHelper.replaceInFiles(tempDir, SRSRestClientHelper.UNKNOWN_EFFECTIVE_DATE, ALTERNATIVE_DATE,
-				SRSRestClientHelper.EFFECTIVE_DATE_COLUMN);
+		srsFileDAO.replaceInFiles(tempDir, SRSFileDAO.UNKNOWN_EFFECTIVE_DATE, ALTERNATIVE_DATE,
+				SRSFileDAO.EFFECTIVE_DATE_COLUMN);
 
 		// Check the new file now contains our test date and does not contain the unknown effective date
 		String testFileContent = FileUtils.readFileToString(copiedFile);
 		Assert.assertTrue("Relplaced file should contain replaced date", testFileContent.contains(ALTERNATIVE_DATE));
 		Assert.assertFalse("Relplaced file should not contain unknown effective date",
-				testFileContent.contains(SRSRestClientHelper.UNKNOWN_EFFECTIVE_DATE));
+				testFileContent.contains(SRSFileDAO.UNKNOWN_EFFECTIVE_DATE));
 
 	}
 
