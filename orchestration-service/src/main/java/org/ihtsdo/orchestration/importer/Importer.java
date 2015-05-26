@@ -1,5 +1,6 @@
 package org.ihtsdo.orchestration.importer;
 
+import com.b2international.commons.VerhoeffCheck;
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
@@ -80,8 +81,19 @@ public class Importer {
 
 				logger.info("Fetching Workbench workflow concept IDs with approval status.");
 				Map<Long, Boolean> conceptIdsWithApprovalStatus = workbenchWorkflowClient.getConceptIdsWithApprovedStatus();
+
+				Set<Long> idsWithInvalidVerhoeffCheckDigit = getIdsWithInvalidVerhoeffCheckDigit(conceptIdsWithApprovalStatus.keySet());
+				if (!idsWithInvalidVerhoeffCheckDigit.isEmpty()) {
+					jiraContentProjectSync.addComment(taskKey, "The following SCT IDs have an invalid verhoeff check digit and will not be imported (will be treated as incomplete): " + idsWithInvalidVerhoeffCheckDigit.toString());
+					for (Long id : idsWithInvalidVerhoeffCheckDigit) {
+						conceptIdsWithApprovalStatus.remove(id);
+					}
+				}
+
 				Set<Long> completedConceptIds;
 				Set<Long> incompleteConceptIds = workbenchWorkflowClient.getIncompleteConceptIds(conceptIdsWithApprovalStatus);
+				incompleteConceptIds.addAll(idsWithInvalidVerhoeffCheckDigit);
+
 				if (selectConceptIdsOverride != null) {
 					completedConceptIds = selectConceptIdsOverride;
 					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: \n" + toJiraSearchableIdList(selectConceptIdsOverride));
@@ -234,6 +246,21 @@ public class Importer {
 		} catch (IOException e) {
 			throw new ImportFilterServiceException("Error during creation of filtered archive.", e);
 		}
+	}
+
+	/**
+	 * Returns any invalid ids or an empty set.
+	 * @param ids
+	 * @return
+	 */
+	private Set<Long> getIdsWithInvalidVerhoeffCheckDigit(Set<Long> ids) {
+		Set<Long> invalidIds = new HashSet<>();
+		for (Long id : ids) {
+			if (!VerhoeffCheck.validateLastChecksumDigit(id.toString())) {
+				invalidIds.add(id);
+			}
+		}
+		return invalidIds;
 	}
 
 	private void recordConceptsAsNotComplete(Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, MissingDependencyReport missingDependencyReport) {
