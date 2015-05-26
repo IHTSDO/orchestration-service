@@ -100,7 +100,7 @@ public class Importer {
 
 					// Iterate attempting import and adding to blacklist until import is successful
 					for (int blacklistRun = 1;
-						 importResult.getSelectionResult().isSuccess()
+						 (importResult.getSelectionResult() != null && importResult.getSelectionResult().isSuccess())
 								 && !importResult.isImportCompletedSuccessfully()
 								 && !importResult.isBuildingBlacklistFailed()
 								 && blacklistRun <= 10; blacklistRun++) {
