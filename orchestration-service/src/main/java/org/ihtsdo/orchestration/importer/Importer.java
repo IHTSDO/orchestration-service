@@ -17,8 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 
 public class Importer {
@@ -150,6 +149,11 @@ public class Importer {
 			JiraSyncException {
 		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult, contentEffectiveDate);
 		importResult.setSelectionResult(selectionResult);
+
+		for (String rowDiscardedMessage : selectionResult.getRowsDiscarded()) {
+			jiraContentProjectSync.addComment(taskKey, rowDiscardedMessage);
+		}
+
 		if (selectionResult.isSuccess()) {
 			// Creating a branch can fail, but we need to know which archive to roll back if it does, so capture this first
 			String selectedArchiveVersion = selectionResult.getSelectedArchiveVersion();
