@@ -16,10 +16,10 @@ public class ImportErrorParser {
 	public static final String IMPORT_STARTED_FROM_RF2_RELEASE_FORMAT = "import started from RF2 release format";
 	public static final String IMPORT_UTIL = " com.b2international.snowowl.snomed.importer.rf2.util.ImportUtil ";
 	public static final String ERROR = " ERROR ";
-	public static final String CONCEPT_ID = "concept ID ";
-	public static final String PART_OF_CONCEPT_ID = "part of concept ID ";
-	public static final String SOURCE_CONCEPT = "Source concept '";
-	public static final String VALIDATION_ENCOUNTERED = "Validation encountered ";
+	public static final String CONCEPT_ID = "concept id ";
+	public static final String PART_OF_CONCEPT_ID = "part of concept id ";
+	public static final String SOURCE_CONCEPT = "source concept '";
+	public static final String VALIDATION_ENCOUNTERED = "validation encountered ";
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -59,22 +59,23 @@ public class ImportErrorParser {
 
 	private ImportError parseErrorLine(String importErrorLogLine) {
 		ImportError importError;
-		String message = importErrorLogLine.substring(importErrorLogLine.indexOf(IMPORT_UTIL) + IMPORT_UTIL.length()).trim();
-		logger.debug("Error message [{}]", message);
-		if (message.startsWith(VALIDATION_ENCOUNTERED)) {
+		String messageOrig = importErrorLogLine.substring(importErrorLogLine.indexOf(IMPORT_UTIL) + IMPORT_UTIL.length()).trim();
+		String messageLower = messageOrig.toLowerCase();
+		logger.debug("Error message [{}]", messageOrig);
+		if (messageLower.startsWith(VALIDATION_ENCOUNTERED)) {
 			importError = null;
-		} else if (message.contains(PART_OF_CONCEPT_ID)) {
-			importError = new ImportError(getConceptId(message, PART_OF_CONCEPT_ID), message);
-		} else if (message.contains(CONCEPT_ID)) {
-			importError = new ImportError(getConceptId(message, CONCEPT_ID), message);
-		} else if (message.contains(SOURCE_CONCEPT)) {
-			int conceptIdStartIndex = message.indexOf(SOURCE_CONCEPT) + SOURCE_CONCEPT.length();
-			int conceptIdEndIndexQuote = message.indexOf("'", conceptIdStartIndex);
-			int conceptIdEndIndexPipe = message.indexOf("|", conceptIdStartIndex);
+		} else if (messageLower.contains(PART_OF_CONCEPT_ID)) {
+			importError = new ImportError(getConceptId(messageLower, PART_OF_CONCEPT_ID), messageLower);
+		} else if (messageLower.contains(CONCEPT_ID)) {
+			importError = new ImportError(getConceptId(messageLower, CONCEPT_ID), messageLower);
+		} else if (messageLower.toLowerCase().contains(SOURCE_CONCEPT)) {
+			int conceptIdStartIndex = messageLower.indexOf(SOURCE_CONCEPT) + SOURCE_CONCEPT.length();
+			int conceptIdEndIndexQuote = messageLower.indexOf("'", conceptIdStartIndex);
+			int conceptIdEndIndexPipe = messageLower.indexOf("|", conceptIdStartIndex);
 			int conceptIdEndIndex = conceptIdEndIndexPipe != -1 && conceptIdEndIndexPipe < conceptIdEndIndexQuote ? conceptIdEndIndexPipe : conceptIdEndIndexQuote;
-			importError = new ImportError(message.substring(conceptIdStartIndex, conceptIdEndIndex), message);
+			importError = new ImportError(messageLower.substring(conceptIdStartIndex, conceptIdEndIndex), messageLower);
 		} else {
-			logger.warn("Not sure how to parse import error message [{}]", message);
+			logger.warn("Not sure how to parse import error message [{}]", messageOrig);
 			importError = null;
 		}
 		return importError;
