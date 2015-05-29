@@ -15,7 +15,9 @@
 			<map>
 				<entry>
 					<key>
-						<bean class="org.ihtsdo.orchestration.schedule.StartFilteredImport"/>
+						<bean class="org.ihtsdo.orchestration.schedule.StartFilteredImport">
+							<property name="importEverything" value="${schedule.startDailyImport.importEverything}"/>
+						</bean>
 					</key>
 					<value>${schedule.startDailyImport.cron}</value>
 				</entry>

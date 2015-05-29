@@ -9,7 +9,7 @@ public class RestApplication {
 		ConfigurableApplicationContext applicationContext = SpringApplication.run(Config.class, "server.port=9000");
 
 		// Uncomment next line to trigger import on startup (useful for testing)
-//		applicationContext.getBean(ImporterService.class).importCompletedWBContent(null, false);
+//		applicationContext.getBean(ImporterService.class).importCompletedWBContent(null, true);
 
 //		applicationContext.getBean(TicketWorkflowManager.class).processIncompleteTickets();
 
