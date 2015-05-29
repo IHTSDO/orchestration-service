@@ -36,7 +36,7 @@ import java.util.List;
 
 public class SnowOwlRestClient {
 
-	public static final int IMPORT_TIMEOUT_MINUTES = 30;
+	public static final int IMPORT_TIMEOUT_MINUTES = 60;
 	public static final int CLASSIFICATION_TIMEOUT_MINUTES = 10;
 	public static final String SNOWOWL_V1_CONTENT_TYPE = "application/vnd.com.b2international.snowowl-v1+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
