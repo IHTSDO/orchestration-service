@@ -26,7 +26,6 @@ public class Importer {
 	public static final String SELECTED_ARCHIVE_VERSION = "SelectedArchiveVersion";
 
 	private static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy/MM/dd HH:mm:ss");
-	private static final FastDateFormat RF2_DATE_FORMAT = FastDateFormat.getInstance("yyyyMMdd");
 
 	@Autowired
 	private WorkbenchWorkflowClient workbenchWorkflowClient;
@@ -68,7 +67,7 @@ public class Importer {
 	private ImportResult importWBContent(Set<Long> selectConceptIdsOverride, boolean importEverything) throws ImporterException {
 		logger.info("Started");
 		Date startDate = new Date();
-		String contentEffectiveDate = RF2_DATE_FORMAT.format(startDate);
+		String contentEffectiveDate = ""; // Blank effective date allows importing into Snow Owl as unpublished content
 		ImportResult importResult = new ImportResult();
 
 		try {
@@ -250,8 +249,6 @@ public class Importer {
 
 	/**
 	 * Returns any invalid ids or an empty set.
-	 * @param ids
-	 * @return
 	 */
 	private Set<Long> getIdsWithInvalidVerhoeffCheckDigit(Set<Long> ids) {
 		Set<Long> invalidIds = new HashSet<>();
