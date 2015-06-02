@@ -1,5 +1,6 @@
 package org.ihtsdo.orchestration.importer;
 
+import com.b2international.commons.VerhoeffCheck;
 import net.rcarz.jiraclient.JiraException;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
@@ -17,8 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 
 public class Importer {
@@ -26,7 +26,6 @@ public class Importer {
 	public static final String SELECTED_ARCHIVE_VERSION = "SelectedArchiveVersion";
 
 	private static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy/MM/dd HH:mm:ss");
-	private static final FastDateFormat RF2_DATE_FORMAT = FastDateFormat.getInstance("yyyyMMdd");
 
 	@Autowired
 	private WorkbenchWorkflowClient workbenchWorkflowClient;
@@ -68,7 +67,7 @@ public class Importer {
 	private ImportResult importWBContent(Set<Long> selectConceptIdsOverride, boolean importEverything) throws ImporterException {
 		logger.info("Started");
 		Date startDate = new Date();
-		String contentEffectiveDate = RF2_DATE_FORMAT.format(startDate);
+		String contentEffectiveDate = ""; // Blank effective date allows importing into Snow Owl as unpublished content
 		ImportResult importResult = new ImportResult();
 
 		try {
@@ -81,27 +80,43 @@ public class Importer {
 
 				logger.info("Fetching Workbench workflow concept IDs with approval status.");
 				Map<Long, Boolean> conceptIdsWithApprovalStatus = workbenchWorkflowClient.getConceptIdsWithApprovedStatus();
+
+				Set<Long> idsWithInvalidVerhoeffCheckDigit = getIdsWithInvalidVerhoeffCheckDigit(conceptIdsWithApprovalStatus.keySet());
+				if (!idsWithInvalidVerhoeffCheckDigit.isEmpty()) {
+					jiraContentProjectSync.addComment(taskKey, "The following SCT IDs have an invalid verhoeff check digit and will not be imported (will be treated as incomplete): " + idsWithInvalidVerhoeffCheckDigit.toString());
+					for (Long id : idsWithInvalidVerhoeffCheckDigit) {
+						conceptIdsWithApprovalStatus.remove(id);
+					}
+				}
+
 				Set<Long> completedConceptIds;
 				Set<Long> incompleteConceptIds = workbenchWorkflowClient.getIncompleteConceptIds(conceptIdsWithApprovalStatus);
+				incompleteConceptIds.addAll(idsWithInvalidVerhoeffCheckDigit);
+
 				if (selectConceptIdsOverride != null) {
 					completedConceptIds = selectConceptIdsOverride;
 					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: \n" + toJiraSearchableIdList(selectConceptIdsOverride));
 					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
 					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, true, contentEffectiveDate);
-				} else if (importEverything) {
-					jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog!");
-					importSelection(taskKey, null, null, importResult, true, contentEffectiveDate);
 				} else {
-					completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
-					logger.info("Completed concepts ({}): {}", completedConceptIds.size(), completedConceptIds);
-					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
 
-					jiraContentProjectSync.addComment(taskKey, "Attempting to import all completed content without blacklist.");
-					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false, contentEffectiveDate);
+					if (importEverything) {
+						jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog, without blacklist at first.");
+						completedConceptIds = new HashSet<>();
+						incompleteConceptIds = new HashSet<>();
+						importSelection(taskKey, null, null, importResult, true, contentEffectiveDate);
+					} else {
+						jiraContentProjectSync.addComment(taskKey, "Attempting to import selected content, without blacklist at first.");
+						completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
+						logger.info("Completed concepts ({}): {}", completedConceptIds.size(), completedConceptIds);
+						logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
+					}
+
+					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, importEverything, contentEffectiveDate);
 
 					// Iterate attempting import and adding to blacklist until import is successful
 					for (int blacklistRun = 1;
-						 importResult.getSelectionResult().isSuccess()
+						 (importResult.getSelectionResult() != null && importResult.getSelectionResult().isSuccess())
 								 && !importResult.isImportCompletedSuccessfully()
 								 && !importResult.isBuildingBlacklistFailed()
 								 && blacklistRun <= 10; blacklistRun++) {
@@ -150,6 +165,11 @@ public class Importer {
 			JiraSyncException {
 		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult, contentEffectiveDate);
 		importResult.setSelectionResult(selectionResult);
+
+		for (String rowDiscardedMessage : selectionResult.getRowsDiscarded()) {
+			jiraContentProjectSync.addComment(taskKey, rowDiscardedMessage);
+		}
+
 		if (selectionResult.isSuccess()) {
 			// Creating a branch can fail, but we need to know which archive to roll back if it does, so capture this first
 			String selectedArchiveVersion = selectionResult.getSelectedArchiveVersion();
@@ -227,9 +247,22 @@ public class Importer {
 
 		try {
 			return importFilter.createFilteredImport(completedConceptIds, contentEffectiveDate);
-		} catch (IOException e) {
+		} catch (IOException | ImportFilterException e) {
 			throw new ImportFilterServiceException("Error during creation of filtered archive.", e);
 		}
+	}
+
+	/**
+	 * Returns any invalid ids or an empty set.
+	 */
+	private Set<Long> getIdsWithInvalidVerhoeffCheckDigit(Set<Long> ids) {
+		Set<Long> invalidIds = new HashSet<>();
+		for (Long id : ids) {
+			if (!VerhoeffCheck.validateLastChecksumDigit(id.toString())) {
+				invalidIds.add(id);
+			}
+		}
+		return invalidIds;
 	}
 
 	private void recordConceptsAsNotComplete(Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, MissingDependencyReport missingDependencyReport) {

@@ -9,7 +9,7 @@
 
 	<groupId>org.ihtsdo.orchestration</groupId>
 	<artifactId>orchestration-service-parent</artifactId>
-	<version>1.6</version>
+	<version>1.7</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -53,6 +53,7 @@
 					<autoVersionSubmodules>true</autoVersionSubmodules>
 					<enableSshAgent>true</enableSshAgent>
 					<noDeploy>true</noDeploy>
+					<allowSnapshots>true</allowSnapshots>
 				</configuration>
 			</plugin>
 		</plugins>

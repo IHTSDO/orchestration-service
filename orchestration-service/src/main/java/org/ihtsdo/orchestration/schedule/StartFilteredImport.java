@@ -10,12 +10,17 @@ public class StartFilteredImport implements Runnable {
 	@Autowired
 	private ImporterService importerService;
 
+	private boolean importEverything;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Override
 	public void run() {
-		logger.info("Scheduled import triggered");
-		importerService.importCompletedWBContentAsync(null, false);
+		logger.info("Scheduled import triggered. importEverything = {}", importEverything);
+		importerService.importCompletedWBContentAsync(null, importEverything);
 	}
 
+	public void setImportEverything(boolean importEverything) {
+		this.importEverything = importEverything;
+	}
 }
