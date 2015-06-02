@@ -98,16 +98,21 @@ public class Importer {
 					jiraContentProjectSync.addComment(taskKey, "Concept selection override, SCTID list: \n" + toJiraSearchableIdList(selectConceptIdsOverride));
 					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
 					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, true, contentEffectiveDate);
-				} else if (importEverything) {
-					jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog!");
-					importSelection(taskKey, null, null, importResult, true, contentEffectiveDate);
 				} else {
-					completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
-					logger.info("Completed concepts ({}): {}", completedConceptIds.size(), completedConceptIds);
-					logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
 
-					jiraContentProjectSync.addComment(taskKey, "Attempting to import all completed content without blacklist.");
-					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, false, contentEffectiveDate);
+					if (importEverything) {
+						jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog, without blacklist at first.");
+						completedConceptIds = new HashSet<>();
+						incompleteConceptIds = new HashSet<>();
+						importSelection(taskKey, null, null, importResult, true, contentEffectiveDate);
+					} else {
+						jiraContentProjectSync.addComment(taskKey, "Attempting to import selected content, without blacklist at first.");
+						completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
+						logger.info("Completed concepts ({}): {}", completedConceptIds.size(), completedConceptIds);
+						logger.info("Incomplete concepts ({}): {}", incompleteConceptIds.size(), incompleteConceptIds);
+					}
+
+					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, importEverything, contentEffectiveDate);
 
 					// Iterate attempting import and adding to blacklist until import is successful
 					for (int blacklistRun = 1;
@@ -242,7 +247,7 @@ public class Importer {
 
 		try {
 			return importFilter.createFilteredImport(completedConceptIds, contentEffectiveDate);
-		} catch (IOException e) {
+		} catch (IOException | ImportFilterException e) {
 			throw new ImportFilterServiceException("Error during creation of filtered archive.", e);
 		}
 	}
