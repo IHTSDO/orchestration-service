@@ -104,7 +104,6 @@ public class Importer {
 						jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog, without blacklist at first.");
 						completedConceptIds = new HashSet<>();
 						incompleteConceptIds = new HashSet<>();
-						importSelection(taskKey, null, null, importResult, true, contentEffectiveDate);
 					} else {
 						jiraContentProjectSync.addComment(taskKey, "Attempting to import selected content, without blacklist at first.");
 						completedConceptIds = workbenchWorkflowClient.getCompleteConceptIds(conceptIdsWithApprovalStatus);
