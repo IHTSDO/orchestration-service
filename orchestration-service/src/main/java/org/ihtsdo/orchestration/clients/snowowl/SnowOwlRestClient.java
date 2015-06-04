@@ -6,7 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
 import net.rcarz.jiraclient.Issue;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
@@ -18,8 +17,8 @@ import org.ihtsdo.orchestration.clients.common.resty.RestyHelper;
 import org.ihtsdo.orchestration.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Required;
 import org.springframework.util.Assert;
-
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -36,8 +35,6 @@ import java.util.List;
 
 public class SnowOwlRestClient {
 
-	public static final int IMPORT_TIMEOUT_MINUTES = 60;
-	public static final int CLASSIFICATION_TIMEOUT_MINUTES = 10;
 	public static final String SNOWOWL_V1_CONTENT_TYPE = "application/vnd.com.b2international.snowowl-v1+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final String SNOMED_TERMINOLOGY_URL = "snomed-ct";
@@ -69,6 +66,8 @@ public class SnowOwlRestClient {
 	private String logPath;
 	private String rolloverLogPath;
 	private final Gson gson;
+	private int importTimeoutMinutes;
+	private int classificationTimeoutMinutes;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -164,7 +163,7 @@ public class SnowOwlRestClient {
 
 			// Poll import entity until complete or times-out
 			logger.info("SnowOwl processing import, this will probably take a few minutes. (Import ID '{}')", importId);
-			return waitForCompleteStatus(snowOwlUrl + IMPORTS_URL + "/" + importId, getTimeoutDate(IMPORT_TIMEOUT_MINUTES), "import");
+			return waitForCompleteStatus(snowOwlUrl + IMPORTS_URL + "/" + importId, getTimeoutDate(importTimeoutMinutes), "import");
 		} catch (Exception e) {
 			throw new SnowOwlRestClientException("Import failed.", e);
 		}
@@ -186,7 +185,7 @@ public class SnowOwlRestClient {
 		}
 
 		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
-		boolean classifierCompleted = waitForCompleteStatus(classificationLocation, getTimeoutDate(CLASSIFICATION_TIMEOUT_MINUTES), "classifier");
+		boolean classifierCompleted = waitForCompleteStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), "classifier");
 		if (classifierCompleted) {
 			try {
 				// Check equivalent concepts
@@ -385,4 +384,13 @@ public class SnowOwlRestClient {
 		this.rolloverLogPath = rolloverLogPath;
 	}
 
+	@Required
+	public void setImportTimeoutMinutes(int importTimeoutMinutes) {
+		this.importTimeoutMinutes = importTimeoutMinutes;
+	}
+
+	@Required
+	public void setClassificationTimeoutMinutes(int classificationTimeoutMinutes) {
+		this.classificationTimeoutMinutes = classificationTimeoutMinutes;
+	}
 }

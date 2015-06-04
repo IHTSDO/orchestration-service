@@ -61,6 +61,8 @@
 		<property name="reasonerId" value="${snowowl.reasonerId}"/>
 		<property name="logPath" value="${snowowl.log.path}"/>
 		<property name="rolloverLogPath" value="${snowowl.rolloverLog.path}"/>
+		<property name="importTimeoutMinutes" value="${snowowl.import.timeout}"/>
+		<property name="classificationTimeoutMinutes" value="${snowowl.classification.timeout}"/>
 	</bean>
 	
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSRestClient">
