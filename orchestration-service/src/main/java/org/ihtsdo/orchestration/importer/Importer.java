@@ -102,7 +102,7 @@ public class Importer {
 
 					if (importEverything) {
 						jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog, without blacklist at first.");
-						completedConceptIds = new HashSet<>();
+						completedConceptIds = null;
 						incompleteConceptIds = new HashSet<>();
 					} else {
 						jiraContentProjectSync.addComment(taskKey, "Attempting to import selected content, without blacklist at first.");
@@ -112,6 +112,10 @@ public class Importer {
 					}
 
 					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, importEverything, contentEffectiveDate);
+
+					if (importEverything) {
+						completedConceptIds = importResult.getSelectionResult().getFoundConceptIds();
+					}
 
 					// Iterate attempting import and adding to blacklist until import is successful
 					for (int blacklistRun = 1;
