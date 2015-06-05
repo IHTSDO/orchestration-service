@@ -156,7 +156,8 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 				exportArchive = tsClient.exportVersion(SnowOwlRestClient.BranchType.MAIN.name(), SnowOwlRestClient.ExtractType.DELTA);
 				break;
 			case BRANCH:
-				exportArchive = tsClient.exportBranch(issue.getKey(), SnowOwlRestClient.ExtractType.DELTA, exportDeltaStartEffectiveTime);
+			// We're exporting unpublished content, so no need for a "from" date in the call.
+			exportArchive = tsClient.exportBranch(issue.getKey(), SnowOwlRestClient.ExtractType.DELTA, null);
 				break;
 			default:
 				throw new TicketWorkflowException("Export requested from unknown source: " + exportFrom.name());
