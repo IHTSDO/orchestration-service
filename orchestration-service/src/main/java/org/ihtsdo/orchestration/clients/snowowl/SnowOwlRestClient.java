@@ -5,7 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonWriter;
+
 import net.rcarz.jiraclient.Issue;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.http.HttpEntity;
@@ -19,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONArray;
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
@@ -58,6 +61,10 @@ public class SnowOwlRestClient {
 
 	public enum BranchType {
 		MAIN, BRANCH
+	}
+
+	public enum ProcessingStatus {
+		COMPLETED, SAVED
 	}
 
 	private final String snowOwlUrl;
@@ -163,7 +170,7 @@ public class SnowOwlRestClient {
 
 			// Poll import entity until complete or times-out
 			logger.info("SnowOwl processing import, this will probably take a few minutes. (Import ID '{}')", importId);
-			return waitForCompleteStatus(snowOwlUrl + IMPORTS_URL + "/" + importId, getTimeoutDate(importTimeoutMinutes), "import");
+			return waitForStatus(snowOwlUrl + IMPORTS_URL + "/" + importId, getTimeoutDate(importTimeoutMinutes), ProcessingStatus.COMPLETED, "import");
 		} catch (Exception e) {
 			throw new SnowOwlRestClientException("Import failed.", e);
 		}
@@ -185,7 +192,7 @@ public class SnowOwlRestClient {
 		}
 
 		logger.info("SnowOwl classifier running, this will probably take a few minutes. (Classification URL '{}')", classificationLocation);
-		boolean classifierCompleted = waitForCompleteStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), "classifier");
+		boolean classifierCompleted = waitForStatus(classificationLocation, getTimeoutDate(classificationTimeoutMinutes), ProcessingStatus.COMPLETED, "classifier");
 		if (classifierCompleted) {
 			try {
 				// Check equivalent concepts
@@ -216,12 +223,18 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	public void saveClassification(Issue issue, String classificationId, BranchType branchType) throws SnowOwlRestClientException {
+	public void saveClassification(Issue issue, String classificationId, BranchType branchType) throws SnowOwlRestClientException, InterruptedException {
 		String classificationUrl = getClassificationsUrl(issue.getKey(), branchType) + "/" + classificationId;
 		try {
 			logger.debug("Saving classification via {}", classificationUrl);
 			JSONObject jsonObj = new JSONObject().put("status", "SAVED");
 			resty.put(classificationUrl, jsonObj, SNOWOWL_V1_CONTENT_TYPE);
+			//We'll wait the same time for saving as we do for the classification
+			boolean savingCompleted = waitForStatus(classificationUrl, getTimeoutDate(classificationTimeoutMinutes),
+					ProcessingStatus.SAVED, "classifier result saving");
+			if (!savingCompleted) {
+				throw new IOException("Classifier reported non-saved status when saving");
+			}
 		} catch (IOException | JSONException e) {
 			throw new SnowOwlRestClientException("Failed to save classification via URL " + classificationUrl, e);
 		}
@@ -311,27 +324,28 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	private boolean waitForCompleteStatus(String url, Date timeoutDate, final String waitingFor) throws SnowOwlRestClientException, InterruptedException {
+	private boolean waitForStatus(String url, Date timeoutDate, ProcessingStatus targetStatus, final String waitingFor)
+			throws SnowOwlRestClientException, InterruptedException {
 		String status = "";
-		boolean complete = false;
-		while (!complete) {
+		boolean finalStateAchieved = false;
+		while (!finalStateAchieved) {
 			try {
 				status = (String) resty.json(url).get("status");
 			} catch (Exception e) {
 				throw new SnowOwlRestClientException("Rest client error while checking status of " + waitingFor + ".", e);
 			}
-			complete = !("RUNNING".equals(status) || "SCHEDULED".equals(status));
+			finalStateAchieved = !("RUNNING".equals(status) || "SCHEDULED".equals(status) || "SAVING_IN_PROGRESS".equals(status));
 			if (new Date().after(timeoutDate)) {
 				throw new SnowOwlRestClientException("Client timeout waiting for " + waitingFor + ".");
 			}
 			Thread.sleep(1000 * 10);
 		}
 
-		boolean completed = "COMPLETED".equals(status);
-		if (!completed) {
+		boolean targetStatusAchieved = targetStatus.toString().equals(status);
+		if (!targetStatusAchieved) {
 			logger.warn("TS reported non-complete status {} from URL {}", status, url);
 		}
-		return completed;
+		return targetStatusAchieved;
 	}
 
 	private Date getTimeoutDate(int importTimeoutMinutes) {
