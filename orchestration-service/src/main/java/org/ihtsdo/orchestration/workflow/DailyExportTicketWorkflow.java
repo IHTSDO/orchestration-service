@@ -5,7 +5,6 @@ import net.rcarz.jiraclient.JiraException;
 
 import org.ihtsdo.orchestration.clients.jira.JQLBuilder;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +42,7 @@ public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implemen
 		try {
 			switch (currentState) {
 				case CREATED:
-					runClassifier(issue, SnowOwlRestClient.BranchType.MAIN);
+					runClassifier(issue, BranchType.PROJECT);
 					break;
 
 				case CLASSIFIED_WITH_QUERIES:
@@ -51,11 +50,11 @@ public class DailyExportTicketWorkflow extends TSAbstractTicketWorkflow implemen
 					break;
 
 				case CLASSIFICATION_ACCEPTED:
-					saveClassification(issue, SnowOwlRestClient.BranchType.MAIN);
+					saveClassification(issue, BranchType.PROJECT);
 					break;
 
 				case CLASSIFIED_SUCCESSFULLY:
-					export(issue, SnowOwlRestClient.BranchType.MAIN);
+					export(issue, BranchType.PROJECT);
 					break;
 
 				case EXPORTED:

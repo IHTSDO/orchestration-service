@@ -120,6 +120,10 @@
 
 	<bean class="org.ihtsdo.orchestration.importer.DevTestTool"/>
 
+	<bean name="snowowlProjectBranch" class="java.lang.String">
+		<constructor-arg value="${snowowl.projectBranch}"/>
+	</bean>
+
 	<bean name="exportDeltaStartEffectiveTime" class="java.lang.String" >
 		<constructor-arg value="${snowowl.export.fromDate}"/>
 	</bean>
