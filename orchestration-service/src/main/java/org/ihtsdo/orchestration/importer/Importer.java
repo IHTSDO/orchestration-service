@@ -40,6 +40,9 @@ public class Importer {
 	private SnowOwlRestClient tsClient;
 
 	@Autowired
+	private String snowowlProjectBranch;
+
+	@Autowired
 	private JiraDataHelper jiraDataHelper;
 
 	@Autowired
@@ -180,11 +183,12 @@ public class Importer {
 			logger.info("Filter version {}", selectedArchiveVersion);
 
 			// Create TS branch
-			tsClient.getCreateBranch(taskKey);
+			tsClient.createProjectBranchIfNeeded(snowowlProjectBranch);
+			tsClient.createProjectTaskIfNeeded(snowowlProjectBranch, taskKey);
 
 			// Stream selection archive into TS import process
 			InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectedArchiveVersion);
-			boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
+			boolean importSuccessful = tsClient.importRF2Archive(snowowlProjectBranch, taskKey, selectionArchiveStream);
 			if (importSuccessful) {
 				importResult.setImportCompletedSuccessfully(true);
 				Set<Long> foundConceptIds = selectionResult.getFoundConceptIds();

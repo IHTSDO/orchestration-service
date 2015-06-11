@@ -33,10 +33,10 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	protected SnowOwlRestClient snowOwlRestClient;
 
 	@Autowired
-	protected JiraProjectSync jiraProjectSync;
+	private String snowowlProjectBranch;
 
 	@Autowired
-	protected SnowOwlRestClient tsClient;
+	protected JiraProjectSync jiraProjectSync;
 
 	@Autowired
 	protected SRSRestClient srsClient;
@@ -93,11 +93,22 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		return isComplete;
 	}
 
-	protected void runClassifier(Issue issue, SnowOwlRestClient.BranchType branchType) throws SnowOwlRestClientException,
-			InterruptedException, JiraException, JiraSyncException {
+	protected void runClassifier(Issue issue, BranchType branchType) throws SnowOwlRestClientException,
+			InterruptedException, JiraException, JiraSyncException, TicketWorkflowException {
 		String issueKey = issue.getKey();
 
-		ClassificationResults results = snowOwlRestClient.classify(issueKey, branchType);
+		ClassificationResults results;
+		switch (branchType) {
+			case PROJECT:
+				results = snowOwlRestClient.classifyProject(snowowlProjectBranch);
+				break;
+			case TASK:
+				results = snowOwlRestClient.classifyTask(snowowlProjectBranch, issueKey);
+				break;
+			default:
+				throw new TicketWorkflowException("Unrecognised branch type " + branchType.name());
+		}
+
 		boolean equivalentConceptsFound = results.isEquivalentConceptsFound();
 		boolean relationshipChangesFound = results.isRelationshipChangesFound();
 		String statusTransition;
@@ -118,10 +129,21 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue, statusTransition);
 	}
 
-	protected void saveClassification(Issue issue, SnowOwlRestClient.BranchType branchType) throws JiraException,
-			SnowOwlRestClientException, JiraSyncException, InterruptedException {
+	protected void saveClassification(Issue issue, BranchType branchType) throws JiraException,
+			SnowOwlRestClientException, JiraSyncException, TicketWorkflowException, InterruptedException {
 		String classificationId = jiraDataHelper.getLatestData(issue, CLASSIFICATION_ID);
-		snowOwlRestClient.saveClassification(issue, classificationId, branchType);
+
+		switch (branchType) {
+			case PROJECT:
+				snowOwlRestClient.saveClassificationOfProject(snowowlProjectBranch, classificationId);
+				break;
+			case TASK:
+				snowOwlRestClient.saveClassificationOfTask(snowowlProjectBranch, issue.getKey(), classificationId);
+				break;
+			default:
+				throw new TicketWorkflowException("Unrecognised branch type " + branchType.name());
+		}
+
 		jiraProjectSync.updateStatus(issue, TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
 	}
 
@@ -148,16 +170,15 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		return srsClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 
-	protected void export(Issue issue, SnowOwlRestClient.BranchType exportFrom) throws Exception {
+	protected void export(Issue issue, BranchType exportFrom) throws Exception {
 
 		File exportArchive;
 		switch (exportFrom) {
-			case MAIN:
-				exportArchive = tsClient.exportVersion(SnowOwlRestClient.BranchType.MAIN.name(), SnowOwlRestClient.ExtractType.DELTA);
+			case PROJECT:
+				exportArchive = snowOwlRestClient.exportProject(snowowlProjectBranch, SnowOwlRestClient.ExtractType.DELTA);
 				break;
-			case BRANCH:
-			// We're exporting unpublished content, so no need for a "from" date in the call.
-			exportArchive = tsClient.exportBranch(issue.getKey(), SnowOwlRestClient.ExtractType.DELTA, null);
+			case TASK:
+				exportArchive = snowOwlRestClient.exportTask(snowowlProjectBranch, issue.getKey(), SnowOwlRestClient.ExtractType.DELTA);
 				break;
 			default:
 				throw new TicketWorkflowException("Export requested from unknown source: " + exportFrom.name());
@@ -173,8 +194,8 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		issue.addComment("Release validation ready to view at: " + rvfResponseURL);
 	}
 	
-	protected void mergeTaskToMain(Issue issue) throws IOException, JSONException, JiraException, JiraSyncException {
-		snowOwlRestClient.promoteBranch(issue.getKey());
+	protected void mergeTaskToProject(Issue issue) throws IOException, JSONException, JiraException, JiraSyncException {
+		snowOwlRestClient.mergeTaskToProject(snowowlProjectBranch, issue.getKey());
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_PROMOTED);
 	}
 
@@ -184,5 +205,9 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 
 	protected String jiraState(Enum state) {
 		return "\"" + state.name().replace("_", " ") + "\"";
+	}
+
+	public enum BranchType {
+		PROJECT, TASK
 	}
 }

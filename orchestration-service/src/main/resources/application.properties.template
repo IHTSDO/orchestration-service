@@ -4,12 +4,13 @@ server.port=9001
 snowowl.url = http://localhost:8080/snowowl/
 snowowl.username =
 snowowl.password =
-snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
-snowowl.export.fromDate= 20150201
+snowowl.projectBranch = workbench-import
+snowowl.import.timeout = 60
 snowowl.log.path = /opt/termserver/serviceability/logs/log.log
 snowowl.rolloverLog.path = /opt/termserver/serviceability/logs/log_1.log
-snowowl.import.timeout = 60
+snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
 snowowl.classification.timeout = 10
+snowowl.export.fromDate= 20150201
 
 #SRS Server
 srs.root.url = https://localhost/api/v1/
