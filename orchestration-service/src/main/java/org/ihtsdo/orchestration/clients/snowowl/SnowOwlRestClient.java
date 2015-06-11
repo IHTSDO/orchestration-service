@@ -34,21 +34,12 @@ public class SnowOwlRestClient {
 	public static final String SNOWOWL_CONTENT_TYPE = "application/vnd.com.b2international.snowowl+json";
 	public static final String ANY_CONTENT_TYPE = "*/*";
 	public static final FastDateFormat SIMPLE_DATE_FORMAT = FastDateFormat.getInstance("yyyy-MM-dd_HH-mm-ss");
-	public static final String MAIN = "main";
+	public static final String US_EN_LANG_REFSET = "900000000000509007";
 
 	public enum ExtractType {
 		DELTA, SNAPSHOT, FULL;
 	};
 
-	public enum BranchState {
-		UP_TO_DATE,
-		FORWARD,
-		BEHIND,
-		DIVERGED,
-		STALE
-	}
-
-	private final String snowOwlUrl;
 	private final SnowOwlRestUrlHelper urlHelper;
 	private final RestyHelper resty;
 	private String reasonerId;
@@ -62,7 +53,6 @@ public class SnowOwlRestClient {
 
 	public SnowOwlRestClient(String snowOwlUrl, String username, String password) {
 		snowOwlUrl = SnowOwlRestUrlHelper.removeTrailingSlash(snowOwlUrl);
-		this.snowOwlUrl = snowOwlUrl;
 		urlHelper = new SnowOwlRestUrlHelper(snowOwlUrl);
 		this.resty = new RestyHelper(ANY_CONTENT_TYPE);
 		resty.authenticate(snowOwlUrl, username, password.toCharArray());
@@ -70,7 +60,7 @@ public class SnowOwlRestClient {
 	}
 
 	public void createProjectBranch(String branchName) throws SnowOwlRestClientException {
-		createBranch(MAIN, branchName);
+		createBranch(urlHelper.getMainBranchPath(), branchName);
 	}
 
 	public void createProjectBranchIfNeeded(String projectName) throws SnowOwlRestClientException {
@@ -90,24 +80,29 @@ public class SnowOwlRestClient {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	public List<String> listProjectBranches() throws SnowOwlRestClientException {
-		return listBranchDirectChildren(MAIN);
+		return listBranchDirectChildren(urlHelper.getMainBranchPath());
 	}
 
 	public List<String> listProjectTasks(String projectName) throws SnowOwlRestClientException {
-		return listBranchDirectChildren(MAIN + "/" + projectName);
+		return listBranchDirectChildren(urlHelper.getBranchPath(projectName));
 	}
 
-	private List<String> listBranchDirectChildren(String branch) throws SnowOwlRestClientException {
+	private List<String> listBranchDirectChildren(String branchPath) throws SnowOwlRestClientException {
 		try {
 			List<String> projectNames = new ArrayList<>();
-			List<String> branchPaths = (List<String>) resty.json(urlHelper.getBranchChildrenUrl(branch)).get("items.path");
-			for (String branchPath : branchPaths) {
-				String branchName = branchPath.substring((branch + "/").length());
-				if (!branchName.contains("/")) {
-					projectNames.add(branchName);
+			JSONResource json = resty.json(urlHelper.getBranchChildrenUrl(branchPath));
+			try {
+				@SuppressWarnings("unchecked")
+				List<String> childBranchPaths = (List<String>) json.get("items.path");
+				for (String childBranchPath : childBranchPaths) {
+					String branchName = childBranchPath.substring((branchPath + "/").length());
+					if (!branchName.contains("/")) {
+						projectNames.add(branchName);
+					}
 				}
+			} catch (JSONException e) {
+				// this thrown if there are no items.. do nothing
 			}
 			return projectNames;
 		} catch (IOException e) {
@@ -127,7 +122,7 @@ public class SnowOwlRestClient {
 
 	private void deleteBranch(String branchPathRelativeToMain) throws SnowOwlRestClientException {
 		try {
-			resty.json(urlHelper.getBranchUrlRelativeToMain(branchPathRelativeToMain)).delete();
+			resty.json(urlHelper.getBranchUrlRelativeToMain(branchPathRelativeToMain), RestyHelper.delete());
 		} catch (IOException e) {
 			throw new SnowOwlRestClientException("Failed to delete branch " + branchPathRelativeToMain, e);
 		}
@@ -154,7 +149,7 @@ public class SnowOwlRestClient {
 			JSONObject params = new JSONObject();
 			params.put("type", "DELTA");
 			params.put("branchPath", branchPath);
-			params.put("languageRefSetId", "900000000000509007");
+			params.put("languageRefSetId", US_EN_LANG_REFSET);
 			params.put("createVersions", "false");
 			resty.withHeader("Accept", SNOWOWL_CONTENT_TYPE);
 			JSONResource json = resty.json(urlHelper.getImportsUrl(), RestyHelper.content(params, SNOWOWL_CONTENT_TYPE));
@@ -335,8 +330,6 @@ public class SnowOwlRestClient {
 
 	/**
 	 * Returns stream from rollover log or null.
-	 * @return
-	 * @throws FileNotFoundException
 	 */
 	public InputStream getRolloverLogStream() throws FileNotFoundException {
 		if (new File(rolloverLogPath).isFile()) {

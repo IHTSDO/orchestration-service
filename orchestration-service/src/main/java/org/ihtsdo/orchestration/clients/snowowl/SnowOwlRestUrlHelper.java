@@ -2,7 +2,7 @@ package org.ihtsdo.orchestration.clients.snowowl;
 
 public class SnowOwlRestUrlHelper {
 
-	public static final String MAIN = "main";
+	private static final String MAIN = "MAIN";
 
 	private final String snomedUrl;
 
@@ -58,12 +58,16 @@ public class SnowOwlRestUrlHelper {
 		return snomedUrl + "/merges";
 	}
 
+	public String getMainBranchPath() {
+		return MAIN;
+	}
+
 	public String getBranchPath(String projectName) {
 		return getBranchPath(projectName, null);
 	}
 
 	public String getBranchPath(String projectName, String taskName) {
-		String s = MAIN;
+		String s = getMainBranchPath();
 		if (projectName != null) {
 			s += "/" + projectName;
 			if (taskName != null) {
@@ -80,5 +84,4 @@ public class SnowOwlRestUrlHelper {
 		}
 		return snowOwlUrl;
 	}
-
 }

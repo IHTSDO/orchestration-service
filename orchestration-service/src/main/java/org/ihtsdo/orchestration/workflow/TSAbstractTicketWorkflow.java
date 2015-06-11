@@ -175,7 +175,7 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		File exportArchive;
 		switch (exportFrom) {
 			case PROJECT:
-				exportArchive = snowOwlRestClient.exportProject(BranchType.PROJECT.name(), SnowOwlRestClient.ExtractType.DELTA);
+				exportArchive = snowOwlRestClient.exportProject(snowowlProjectBranch, SnowOwlRestClient.ExtractType.DELTA);
 				break;
 			case TASK:
 				exportArchive = snowOwlRestClient.exportTask(snowowlProjectBranch, issue.getKey(), SnowOwlRestClient.ExtractType.DELTA);
