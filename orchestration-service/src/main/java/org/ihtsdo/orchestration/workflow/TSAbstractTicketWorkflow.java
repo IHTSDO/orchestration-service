@@ -10,9 +10,9 @@ import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.clients.jira.JiraProjectSync;
-import org.ihtsdo.orchestration.clients.snowowl.ClassificationResults;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.ClassificationResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,17 +93,17 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		return isComplete;
 	}
 
-	protected void runClassifier(Issue issue, BranchType branchType) throws SnowOwlRestClientException,
+	protected void runClassifier(Issue issue, BranchType branchType) throws RestClientException,
 			InterruptedException, JiraException, JiraSyncException, TicketWorkflowException {
 		String issueKey = issue.getKey();
 
 		ClassificationResults results;
 		switch (branchType) {
 			case PROJECT:
-				results = snowOwlRestClient.classifyProject(snowowlProjectBranch);
+				results = snowOwlRestClient.classify(snowowlProjectBranch);
 				break;
 			case TASK:
-				results = snowOwlRestClient.classifyTask(snowowlProjectBranch, issueKey);
+				results = snowOwlRestClient.classify(snowowlProjectBranch + "/" + issueKey);
 				break;
 			default:
 				throw new TicketWorkflowException("Unrecognised branch type " + branchType.name());
@@ -130,20 +130,9 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	}
 
 	protected void saveClassification(Issue issue, BranchType branchType) throws JiraException,
-			SnowOwlRestClientException, JiraSyncException, TicketWorkflowException, InterruptedException {
+			RestClientException, JiraSyncException, TicketWorkflowException, InterruptedException {
 		String classificationId = jiraDataHelper.getLatestData(issue, CLASSIFICATION_ID);
-
-		switch (branchType) {
-			case PROJECT:
-				snowOwlRestClient.saveClassificationOfProject(snowowlProjectBranch, classificationId);
-				break;
-			case TASK:
-				snowOwlRestClient.saveClassificationOfTask(snowowlProjectBranch, issue.getKey(), classificationId);
-				break;
-			default:
-				throw new TicketWorkflowException("Unrecognised branch type " + branchType.name());
-		}
-
+		snowOwlRestClient.saveClassification(issue.getKey(), classificationId);
 		jiraProjectSync.updateStatus(issue, TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
 	}
 
@@ -175,10 +164,10 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		File exportArchive;
 		switch (exportFrom) {
 			case PROJECT:
-				exportArchive = snowOwlRestClient.exportProject(snowowlProjectBranch, SnowOwlRestClient.ExtractType.DELTA);
+			exportArchive = snowOwlRestClient.exportProject(snowowlProjectBranch, SnowOwlRestClient.ExtractType.DELTA);
 				break;
 			case TASK:
-				exportArchive = snowOwlRestClient.exportTask(snowowlProjectBranch, issue.getKey(), SnowOwlRestClient.ExtractType.DELTA);
+			exportArchive = snowOwlRestClient.exportTask(snowowlProjectBranch, issue.getKey(), SnowOwlRestClient.ExtractType.DELTA);
 				break;
 			default:
 				throw new TicketWorkflowException("Export requested from unknown source: " + exportFrom.name());

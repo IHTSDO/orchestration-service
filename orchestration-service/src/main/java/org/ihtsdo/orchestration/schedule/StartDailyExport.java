@@ -2,7 +2,7 @@ package org.ihtsdo.orchestration.schedule;
 
 import org.ihtsdo.orchestration.importer.ImporterService;
 import org.ihtsdo.orchestration.clients.jira.JiraProjectSync;
-import org.ihtsdo.orchestration.utils.DateUtils;
+import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

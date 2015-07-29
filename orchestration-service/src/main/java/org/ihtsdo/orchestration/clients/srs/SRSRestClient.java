@@ -6,13 +6,14 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.ihtsdo.orchestration.clients.common.resty.HttpEntityContent;
-import org.ihtsdo.orchestration.clients.common.resty.RestyHelper;
-import org.ihtsdo.orchestration.utils.DateUtils;
+import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
+import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
+import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.Content;

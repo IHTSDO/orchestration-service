@@ -1,6 +1,6 @@
 package org.ihtsdo.orchestration.importer;
 
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.ts.importfilter.ImportFilterService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -54,7 +54,7 @@
 
 	<bean id="dailyDeltaTicketWorkflow" class="org.ihtsdo.orchestration.workflow.DailyDeltaTicketWorkflow"/>
 
-	<bean class="org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient">
+	<bean class="org.ihtsdo.otf.rest.client.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>
