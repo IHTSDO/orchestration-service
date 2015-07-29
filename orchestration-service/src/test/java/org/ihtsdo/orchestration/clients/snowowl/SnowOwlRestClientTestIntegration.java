@@ -2,6 +2,8 @@ package org.ihtsdo.orchestration.clients.snowowl;
 
 import org.ihtsdo.orchestration.Config;
 import org.ihtsdo.orchestration.TestProperties;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,13 +30,13 @@ public class SnowOwlRestClientTestIntegration {
 	private static final String INTEGRATION_TESTING = "integration_testing";
 
 	@Before
-	public void setup() throws SnowOwlRestClientException {
+	public void setup() throws RestClientException {
 		runName = "run_" + SnowOwlRestClient.SIMPLE_DATE_FORMAT.format(new Date());
 		taskBranchesToDelete = new ArrayList<>();
 	}
 
 	@Test
-	public void testCreateProjectAndTask() throws SnowOwlRestClientException {
+	public void testCreateProjectAndTask() throws RestClientException {
 		client.createProjectBranchIfNeeded(INTEGRATION_TESTING);
 
 		// Check it's in the listing
@@ -51,7 +53,7 @@ public class SnowOwlRestClientTestIntegration {
 	}
 
 	@After
-	public void after() throws SnowOwlRestClientException {
+	public void after() throws RestClientException {
 		for (String branchToDelete : taskBranchesToDelete) {
 			client.deleteTaskBranch(INTEGRATION_TESTING, branchToDelete);
 		}

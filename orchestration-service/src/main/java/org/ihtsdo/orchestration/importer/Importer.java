@@ -1,14 +1,16 @@
 package org.ihtsdo.orchestration.importer;
 
 import com.b2international.commons.VerhoeffCheck;
+
 import net.rcarz.jiraclient.JiraException;
+
 import org.apache.commons.lang.time.FastDateFormat;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
 import org.ihtsdo.orchestration.clients.jira.JiraProjectSync;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
 import org.ihtsdo.orchestration.clients.snowowl.ImportError;
+import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
-import org.ihtsdo.otf.rest.client.SnowOwlRestClientException;
 import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClient;
 import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClientException;
 import org.ihtsdo.orchestration.workflow.DailyDeltaTicketWorkflow;
@@ -156,7 +158,7 @@ public class Importer {
 				return importResult;
 			} catch (ImportFilterServiceException e) {
 				return handleExceptionTransitionToRejected("Error during selection archive creation process.", importResult, e);
-			} catch (SnowOwlRestClientException e) {
+			} catch (RestClientException e) {
 				return handleExceptionTransitionToRejected("Error using Snow Owl Terminology Server.", importResult, e);
 			} catch (WorkbenchWorkflowClientException e) {
 				return handleExceptionTransitionToRejected(e.getMessage(), importResult, e);
@@ -167,7 +169,7 @@ public class Importer {
 	}
 
 	private ImportResult importSelection(String taskKey, Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult,
-			boolean updateJiraOnImportError, String contentEffectiveDate) throws SnowOwlRestClientException, JiraException, ImportFilterServiceException,
+			boolean updateJiraOnImportError, String contentEffectiveDate) throws RestClientException, JiraException, ImportFilterServiceException,
 			JiraSyncException {
 		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult, contentEffectiveDate);
 		importResult.setSelectionResult(selectionResult);
