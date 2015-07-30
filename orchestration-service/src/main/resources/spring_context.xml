@@ -92,6 +92,10 @@
 			</bean>
 		</constructor-arg>
 	</bean>
+	
+	<bean class="org.ihtsdo.orchestration.dao.TSDao">
+		<constructor-arg value="${ts.reportsBucket}"/>
+	</bean>
 
 	<bean name="jiraContentProjectSync" class="org.ihtsdo.orchestration.clients.jira.JiraProjectSync">
 		<constructor-arg value="${jira.url}"/>

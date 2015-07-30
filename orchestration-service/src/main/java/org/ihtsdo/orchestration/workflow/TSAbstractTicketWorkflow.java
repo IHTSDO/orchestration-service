@@ -183,7 +183,7 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		issue.addComment("Release validation ready to view at: " + rvfResponseURL);
 	}
 	
-	protected void mergeTaskToProject(Issue issue) throws IOException, JSONException, JiraException, JiraSyncException {
+	protected void mergeTaskToProject(Issue issue) throws IOException, JSONException, JiraException, JiraSyncException, RestClientException {
 		snowOwlRestClient.mergeTaskToProject(snowowlProjectBranch, issue.getKey());
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_PROMOTED);
 	}

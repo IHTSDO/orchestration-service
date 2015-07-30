@@ -11,6 +11,7 @@ snowowl.rolloverLog.path = /opt/termserver/serviceability/logs/log_1.log
 snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
 snowowl.classification.timeout = 10
 snowowl.export.fromDate= 20150201
+ts.reportsBucket = 
 
 #SRS Server
 srs.root.url = https://localhost/api/v1/
