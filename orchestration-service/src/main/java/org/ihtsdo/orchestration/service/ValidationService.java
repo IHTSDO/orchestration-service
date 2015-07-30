@@ -1,4 +1,4 @@
-package org.ihtsdo.orchestrations.service;
+package org.ihtsdo.orchestration.service;
 
 public class ValidationService {
 

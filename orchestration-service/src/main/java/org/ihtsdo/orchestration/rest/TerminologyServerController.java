@@ -1,10 +1,8 @@
 package org.ihtsdo.orchestration.rest;
 
-import org.ihtsdo.orchestration.importer.ImporterService;
-import org.ihtsdo.orchestrations.service.ValidationService;
+import org.ihtsdo.orchestration.service.ValidationService;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -29,7 +27,7 @@ public class TerminologyServerController {
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
 
-	@RequestMapping(value = "valiate", method = RequestMethod.POST)
+	@RequestMapping(value = "/validate", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
 	void validate(@RequestBody(required = false) String json) throws BadRequestException {
 
@@ -39,6 +37,7 @@ public class TerminologyServerController {
 			if (jsonObj.has(BRANCH_PATH_KEY)) {
 				String branchPath = jsonObj.getAsJsonPrimitive(BRANCH_PATH_KEY).getAsString();
 				validationService.validate(branchPath);
+				return;
 			}
 		}
 

@@ -127,5 +127,7 @@
 	<bean name="exportDeltaStartEffectiveTime" class="java.lang.String" >
 		<constructor-arg value="${snowowl.export.fromDate}"/>
 	</bean>
+	
+	<bean class="org.ihtsdo.orchestration.service.ValidationService"/>
 
 </beans>
