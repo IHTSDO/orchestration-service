@@ -8,11 +8,14 @@ import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
+import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 
 import us.monoid.json.JSONException;
@@ -50,16 +53,18 @@ public class SRSRestClient {
 	private static final String TRIGGER_BUILD_ENDPOINT = "/trigger";
 	private static final String PRODUCT_CONFIGURATION_ENDPOINT = "/configuration";
 	private static final String AUTHENTICATION_TOKEN = "authenticationToken";
+	private static final String PRODUCT_PREFIX = "centers/international/products/";
 	private static final String ID = "id";
 	private static final char[] BLANK_PASSWORD = "".toCharArray();
 	private static final byte[] EMPTY_CONTENT_ARRAY = new byte[0];
 	private static final Content EMPTY_CONTENT = new Content(CONTENT_TYPE_TEXT, EMPTY_CONTENT_ARRAY);
 
+	private static final Integer NOT_FOUND = new Integer(HttpStatus.NOT_FOUND.value());
+
 	@Autowired
 	protected SRSFileDAO srsDAO;
 
 	private final String srsRootURL;
-	private final String srsProductURL;
 	private final String username;
 	private final String password;
 
@@ -68,9 +73,8 @@ public class SRSRestClient {
 	public static final String RVF_RESPONSE = "buildReport.rvf_response";
 	protected static final String[] ITEMS_OF_INTEREST = { "outputfiles_url", "status", "logs_url", RVF_RESPONSE, "buildReport.Message" };
 
-	public SRSRestClient(String srsRootURL, String srsProduct, String username, String password) {
+	public SRSRestClient(String srsRootURL, String username, String password) {
 		this.srsRootURL = srsRootURL;
-		this.srsProductURL = srsRootURL + srsProduct;
 		this.username = username;
 		this.password = password;
 		this.resty = new RestyHelper(CONTENT_TYPE_ANY);
@@ -81,26 +85,24 @@ public class SRSRestClient {
 	 */
 	public SRSRestClient() {
 		srsRootURL = null;
-		srsProductURL = null;
 		username = null;
 		password = null;
 		resty = null;
 	}
 
 	// Pulled out this section so it can be tested in isolation from Jira Issue
-	public SRSProjectConfiguration prepareSRSFiles(File exportArchive) throws Exception {
-		SRSProjectConfiguration config = new SRSProjectConfiguration();
+	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config) throws Exception {
 		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 		config.setReleaseDate(releaseDate);
 		boolean includeExternallyMaintainedRefsets = true;
 		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedRefsets);
 		config.setInputFilesDir(inputFilesDir);
-		return config;
 	}
 
-	public Map<String, String> runDailyBuild(SRSProjectConfiguration config) throws Exception {
-
-		logger.info("Running daily build for {} with files uploaded from: {}", config.getReleaseDate(), config.getInputFilesDir()
+	public Map<String, String> runBuild(SRSProjectConfiguration config) throws Exception {
+		Assert.notNull(config.getProductName());
+		logger.info("Running {} daily build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
+				.getInputFilesDir()
 				.getAbsolutePath());
 		// Authentication first
 		MultipartContent credentials = Resty.form(Resty.data("username", username), Resty.data("password", password));
@@ -113,17 +115,18 @@ public class SRSRestClient {
 
 		// Lets upload the manifest first
 		File configuredManifest = configureManifest(config.getReleaseDate());
+		String srsProductURL = srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(config.getProductName()) + "/";
+
+		// Check the product exists and perform standard configuration if needed
+		setupProductIfRequired(srsRootURL + PRODUCT_PREFIX, srsProductURL, config);
+
 		uploadFile(srsProductURL + MANIFEST_ENDPOINT, configuredManifest);
 		configuredManifest.delete();
 
-		boolean ensureSuccess = true;
-
-		// Need to tell the product what release date it's targeting
-		String releaseDateISO = DateUtils.formatAsISO(config.getReleaseDate());
-		logger.debug("Setting product effective time to {}", releaseDateISO);
-		JSONObject jsonObj = new JSONObject();
-		jsonObj.put("effectiveTime", releaseDateISO);
-		resty.put(srsProductURL + PRODUCT_CONFIGURATION_ENDPOINT, jsonObj, CONTENT_TYPE_JSON);
+		// Configure the product
+		JSONObject productConfig = config.getJson();
+		logger.debug("Configuring SRS Product with " + productConfig.toString(2));
+		resty.put(srsProductURL + PRODUCT_CONFIGURATION_ENDPOINT, productConfig, CONTENT_TYPE_JSON);
 
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
@@ -146,6 +149,21 @@ public class SRSRestClient {
 		logger.debug("Build trigger returned: {}", json.object().toString(2));
 
 		return recoverItemsOfInterest(json);
+	}
+
+	private void setupProductIfRequired(String srsProductRootUrl, String srsProductURL, SRSProjectConfiguration config) throws IOException,
+			JSONException,
+			BusinessServiceException {
+
+		// Try to recover the product
+		Integer httpStatus = resty.json(srsProductURL).getHTTPStatus();
+		if (httpStatus != null && httpStatus.equals(NOT_FOUND)) {
+			// Create the product by POSTing to the root with the name in a json object
+			JSONObject obj = new JSONObject();
+			obj.put("name", config.getProductName());
+			JSONResource json = resty.json(srsProductRootUrl, obj, CONTENT_TYPE_JSON);
+			RestyServiceHelper.ensureSuccessfull(json);
+		}
 	}
 
 	protected Map<String, String> recoverItemsOfInterest(JSONResource json) throws JSONException, IOException {
@@ -185,7 +203,6 @@ public class SRSRestClient {
 
 		Assert.isTrue(file.exists(), "File for upload to " + url + " was found to not exist at location: " + file.getAbsolutePath());
 		Assert.isTrue(!file.isDirectory(), "File for upload to " + url + " was found to be a directory: " + file.getAbsolutePath());
-		boolean ensureSuccess = true;
 		try {
 			logger.debug("Uploading file to {} : {} ", url, file.getAbsolutePath());
 			MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
@@ -194,7 +211,8 @@ public class SRSRestClient {
 			multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 			HttpEntity httpEntity = multipartEntityBuilder.build();
 			resty.withHeader("Accept", CONTENT_TYPE_ANY);
-			resty.json(url, new HttpEntityContent(httpEntity));
+			JSONResource response = resty.json(url, new HttpEntityContent(httpEntity));
+			RestyServiceHelper.ensureSuccessfull(response);
 		} catch (Exception e) {
 			throw new ProcessingException("Failed to upload " + file.getAbsolutePath(), e);
 		}
@@ -209,6 +227,15 @@ public class SRSRestClient {
 		File configuredManifest = File.createTempFile("manifest_" + releaseDate, ".xml");
 		Files.write(configuredManifest.toPath(), content.getBytes(StandardCharsets.UTF_8));
 		return configuredManifest;
+	}
+
+	// TODO This is pinched from EntityHelper. Discuss moving to OTFCommon
+	public static String formatAsBusinessKey(String name) {
+		String businessKey = null;
+		if (name != null) {
+			businessKey = name.toLowerCase().replace(" ", "_").replaceAll("[^a-zA-Z0-9_]", "");
+		}
+		return businessKey;
 	}
 
 }

@@ -67,7 +67,6 @@
 	
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSRestClient">
 		<constructor-arg value="${srs.root.url}"/>
-		<constructor-arg value="${srs.product}"/>
 		<constructor-arg value="${srs.username}"/>
 		<constructor-arg value="${srs.password}"/>
 	</bean>
@@ -132,6 +131,15 @@
 		<constructor-arg value="${snowowl.export.fromDate}"/>
 	</bean>
 	
-	<bean class="org.ihtsdo.orchestration.service.ValidationService"/>
+	<bean class="org.ihtsdo.orchestration.service.ValidationService">
+		<constructor-arg>
+			<bean class="org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration">
+				<property name="readmeEndDate" value="${ts.srs.readmeEndDate}"/>
+				<property name="previousPublishedPackageName" value="${ts.srs.previousPublishedPackageName}"/>
+				<property name="previousInternationalRelease" value="${ts.rvf.previousInternationalRelease}"/>
+				<property name="assertionGroupNames" value="${ts.rvf.assertionGroupNames}"/>
+			</bean>
+		</constructor-arg>
+	</bean>
 
 </beans>

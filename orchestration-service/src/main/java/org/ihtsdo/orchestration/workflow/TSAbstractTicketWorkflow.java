@@ -141,8 +141,9 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		String exportArchiveLocation = jiraDataHelper.getLatestData(issue, EXPORT_ARCHIVE_LOCATION);
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
-		SRSProjectConfiguration config = srsClient.prepareSRSFiles(exportArchive);
-		Map<String, String> srsResponse = srsClient.runDailyBuild(config);
+		SRSProjectConfiguration config = new SRSProjectConfiguration();
+		srsClient.prepareSRSFiles(exportArchive, config);
+		Map<String, String> srsResponse = srsClient.runBuild(config);
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_BUILT);
 		// Did we obtain the RVF location for the next step in the process to poll?
 		if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
