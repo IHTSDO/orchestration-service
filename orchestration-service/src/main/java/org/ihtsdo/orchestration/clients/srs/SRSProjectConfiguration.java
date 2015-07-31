@@ -13,6 +13,7 @@ public class SRSProjectConfiguration {
 	String releaseDate;
 	String productName;
 	String readmeEndDate;
+	String readmeHeader = "Text should be defined in Ochestration context.xml file";
 
 	boolean firstTimeRelease = false;
 	boolean workbenchDataFixesRequired = false;
@@ -93,6 +94,8 @@ public class SRSProjectConfiguration {
 		JSONObject jsonObj = new JSONObject();
 
 		String releaseDateISO = DateUtils.formatAsISO(getReleaseDate());
+		jsonObj.put("readmeEndDate", readmeEndDate);
+		jsonObj.put("readmeHeader", readmeHeader);
 		jsonObj.put("effectiveTime", releaseDateISO);
 		jsonObj.put("inputFilesFixesRequired", Boolean.toString(inputFileFixesRequired));
 		jsonObj.put("firstTimeRelease", Boolean.toString(firstTimeRelease));
@@ -194,5 +197,13 @@ public class SRSProjectConfiguration {
 
 	public void setAssertionGroupNames(String assertionGroupNames) {
 		this.assertionGroupNames = assertionGroupNames;
+	}
+
+	public String getReadmeHeader() {
+		return readmeHeader;
+	}
+
+	public void setReadmeHeader(String readmeHeader) {
+		this.readmeHeader = readmeHeader;
 	}
 }
