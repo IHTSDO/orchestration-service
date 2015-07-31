@@ -18,6 +18,8 @@ public class ValidationService {
 		SCHEDULED, EXPORTING, BUILD_INITIATING, BUILDING, VALIDATING, COMPLETED, FAILED
 	}
 
+	public static ValidationStatus[] FINAL_STATES = new ValidationStatus[] { ValidationStatus.COMPLETED, ValidationStatus.FAILED };
+
 	public static final String VALIDATION_PROCESS = "validation";
 
 	@Autowired
@@ -36,7 +38,7 @@ public class ValidationService {
 
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = dao.getStatus(branchPath, VALIDATION_PROCESS);
-		if (status != null && !status.equals(ValidationStatus.COMPLETED.toString())) {
+		if (status != null && !isFinalState(status)) {
 			throw new EntityAlreadyExistsException("An existing validation has been detected at state " + status.toString());
 		}
 
@@ -48,6 +50,16 @@ public class ValidationService {
 
 	}
 	
+	public static boolean isFinalState(String status) {
+
+		for (ValidationStatus thisStatus : FINAL_STATES) {
+			if (status.equals(thisStatus.toString())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private class ValidationRunner implements Runnable {
 		
 		String branchPath;
