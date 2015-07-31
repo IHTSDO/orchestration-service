@@ -12,6 +12,7 @@ import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import us.monoid.json.JSONException;
@@ -54,6 +55,9 @@ public class SRSRestClient {
 	private static final byte[] EMPTY_CONTENT_ARRAY = new byte[0];
 	private static final Content EMPTY_CONTENT = new Content(CONTENT_TYPE_TEXT, EMPTY_CONTENT_ARRAY);
 
+	@Autowired
+	protected SRSFileDAO srsDAO;
+
 	private final String srsRootURL;
 	private final String srsProductURL;
 	private final String username;
@@ -83,9 +87,21 @@ public class SRSRestClient {
 		resty = null;
 	}
 
-	public Map<String, String> runDailyBuild(File srsFilesDir, String releaseDate) throws Exception {
+	// Pulled out this section so it can be tested in isolation from Jira Issue
+	public SRSProjectConfiguration prepareSRSFiles(File exportArchive) throws Exception {
+		SRSProjectConfiguration config = new SRSProjectConfiguration();
+		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
+		config.setReleaseDate(releaseDate);
+		boolean includeExternallyMaintainedRefsets = true;
+		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedRefsets);
+		config.setInputFilesDir(inputFilesDir);
+		return config;
+	}
 
-		logger.info("Running daily build for {} with files uploaded from: {}", releaseDate, srsFilesDir.getAbsolutePath());
+	public Map<String, String> runDailyBuild(SRSProjectConfiguration config) throws Exception {
+
+		logger.info("Running daily build for {} with files uploaded from: {}", config.getReleaseDate(), config.getInputFilesDir()
+				.getAbsolutePath());
 		// Authentication first
 		MultipartContent credentials = Resty.form(Resty.data("username", username), Resty.data("password", password));
 		JSONResource json = resty.json(srsRootURL + AUTHENTICATE_ENDPOINT, credentials);
@@ -96,14 +112,14 @@ public class SRSRestClient {
 		resty.authenticate(srsRootURL, authToken.toString(), BLANK_PASSWORD);
 
 		// Lets upload the manifest first
-		File configuredManifest = configureManifest(releaseDate);
+		File configuredManifest = configureManifest(config.getReleaseDate());
 		uploadFile(srsProductURL + MANIFEST_ENDPOINT, configuredManifest);
 		configuredManifest.delete();
 
 		boolean ensureSuccess = true;
 
 		// Need to tell the product what release date it's targeting
-		String releaseDateISO = DateUtils.formatAsISO(releaseDate);
+		String releaseDateISO = DateUtils.formatAsISO(config.getReleaseDate());
 		logger.debug("Setting product effective time to {}", releaseDateISO);
 		JSONObject jsonObj = new JSONObject();
 		jsonObj.put("effectiveTime", releaseDateISO);
@@ -114,9 +130,9 @@ public class SRSRestClient {
 		resty.json(srsProductURL + INPUT_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
 
 		// Now everything in the target directory
-		uploadFiles(srsFilesDir, srsProductURL + INPUT_FILES_ENDPOINT);
+		uploadFiles(config.getInputFilesDir(), srsProductURL + INPUT_FILES_ENDPOINT);
 		// And we can delete that too, now that a copy is safely stored in S3
-		FileUtils.deleteDirectory(srsFilesDir);
+		FileUtils.deleteDirectory(config.getInputFilesDir());
 
 		// Create a build. Pass blank content to encourage Resty to use POST
 		json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);

@@ -5,6 +5,7 @@ import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.orchestration.clients.srs.SRSFileDAO;
+import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
@@ -140,23 +141,16 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		String exportArchiveLocation = jiraDataHelper.getLatestData(issue, EXPORT_ARCHIVE_LOCATION);
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
-		Map<String, String> srsResponse = callSRS(exportArchive);
+		SRSProjectConfiguration config = srsClient.prepareSRSFiles(exportArchive);
+		Map<String, String> srsResponse = srsClient.runDailyBuild(config);
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_BUILT);
-		// Can we store the RVF location for the next step in the process to poll?
+		// Did we obtain the RVF location for the next step in the process to poll?
 		if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
 			jiraDataHelper.putData(issue, RVF_RESPONSE_URL, srsResponse.get(SRSRestClient.RVF_RESPONSE));
 		} else {
 			logger.warn("Did not find RVF Response location in SRS Client Response");
 		}
 		jiraProjectSync.addComment(issue.getKey(), "The build process returned the following items of interest: ", srsResponse);
-	}
-
-	// Pulled out this section so it can be tested in isolation from Jira Issue
-	public Map<String, String> callSRS(File exportArchive) throws Exception {
-		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
-		boolean includeExternallyMaintainedRefsets = true;
-		File srsFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedRefsets);
-		return srsClient.runDailyBuild(srsFilesDir, releaseDate);
 	}
 
 	protected void export(Issue issue, BranchType exportFrom) throws Exception {

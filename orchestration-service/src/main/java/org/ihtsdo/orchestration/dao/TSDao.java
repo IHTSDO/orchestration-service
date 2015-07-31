@@ -7,6 +7,7 @@ import org.apache.commons.httpclient.HttpStatus;
 import org.ihtsdo.orchestration.service.ValidationService;
 import org.ihtsdo.orchestration.service.ValidationService.ValidationStatus;
 import org.ihtsdo.otf.dao.s3.S3Client;
+import org.ihtsdo.otf.utils.DateUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -15,6 +16,7 @@ import com.amazonaws.AmazonServiceException;
 public class TSDao {
 	
 	private static final String statusFileName = "status.json";
+	private static final String reportFileName = "report.json";
 	private static final String statusKey = "status";
 	private static final String messageKey = "message";
 	
@@ -62,6 +64,16 @@ public class TSDao {
 
 	private String getStatusFilePath(String branchPath, String process) {
 		return branchPath + "/" + process + "/" + statusFileName;
+	}
+
+	private String getNewReportFilePath(String branchPath, String process) {
+		String dt = DateUtils.today(DateUtils.YYYYMMDD_HHMMSS);
+		return branchPath + "/" + process + "/" + dt + "/" + reportFileName;
+	}
+
+	public void saveReport(String branchPath, String process, JSONObject rvfReport) {
+		InputStream is = new ByteArrayInputStream(rvfReport.toString().getBytes());
+		s3Client.putObject(tsReportBucketName, getNewReportFilePath(branchPath, process), is, null);
 	}
 
 }
