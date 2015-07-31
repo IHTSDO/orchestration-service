@@ -10,7 +10,8 @@ public class CheckJiraTickets implements Runnable {
 
 	@Override
 	public void run() {
-		ticketWorkflowManager.processIncompleteTickets();
+		// Ticket Workflow not currently required.
+		// ticketWorkflowManager.processIncompleteTickets();
 	}
 
 }
