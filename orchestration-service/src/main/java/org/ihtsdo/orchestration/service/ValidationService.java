@@ -103,6 +103,7 @@ public class ValidationService {
 					dao.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.VALIDATING.toString(), null);
 					JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
 					dao.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
+					dao.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.COMPLETED.toString(), null);
 				} else {
 					String error = "Did not find RVF Response location in SRS Client Response";
 					dao.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.FAILED.toString(), error);
