@@ -9,6 +9,8 @@ import org.ihtsdo.orchestration.service.ValidationService.ValidationStatus;
 import org.ihtsdo.otf.dao.s3.S3Client;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.amazonaws.AmazonServiceException;
@@ -20,6 +22,8 @@ public class TSDao {
 	private static final String statusKey = "status";
 	private static final String messageKey = "message";
 	
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
 	@Autowired
 	private S3Client s3Client;
 
@@ -40,6 +44,7 @@ public class TSDao {
 
 		InputStream is = new ByteArrayInputStream(jsonObj.toString().getBytes());
 		s3Client.putObject(tsReportBucketName, getStatusFilePath(branchPath, process), is, null);
+		logger.debug("Set {} status to {} for branchPath {}.", process, status, branchPath);
 	}
 
 	public String getStatus(String branchPath, String process) {
