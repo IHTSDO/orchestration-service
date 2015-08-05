@@ -18,7 +18,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 @RestController
-@RequestMapping("/REST/ts")
+@RequestMapping("/REST/termserver")
 public class TerminologyServerController {
 
 	@Autowired
@@ -28,7 +28,7 @@ public class TerminologyServerController {
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
 
-	@RequestMapping(value = "/validate", method = RequestMethod.POST)
+	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
 	void validate(@RequestBody(required = false) String json) throws BadRequestException, EntityAlreadyExistsException {
 

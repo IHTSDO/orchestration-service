@@ -1,4 +1,4 @@
-package org.ihtsdo.orchestration.rest;
+package org.ihtsdo.orchestration.rest.legacyimport;
 
 import org.ihtsdo.ts.importfilter.BacklogContentService;
 import org.ihtsdo.ts.importfilter.Concept;
@@ -11,7 +11,7 @@ import java.io.IOException;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/REST/backlog")
+@RequestMapping("/REST/legacy-import/backlog")
 public class BacklogController {
 
 	@Autowired
