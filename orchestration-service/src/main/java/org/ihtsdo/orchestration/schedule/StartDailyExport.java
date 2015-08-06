@@ -24,7 +24,7 @@ public class StartDailyExport implements Runnable {
 	public void run() {
 		logger.info("Scheduled export triggered - creating Jira Ticket");
 		try {
-			String taskLabel = "Daily Export - " + DateUtils.today(DateUtils.YYYYMMDD);
+			String taskLabel = "Daily Export - " + DateUtils.now(DateUtils.YYYYMMDD);
 			jira.createTask(jiraDailyExportProjectKey, taskLabel);
 		} catch (Exception e) {
 			logger.error("Failed to initiate daily export", e);

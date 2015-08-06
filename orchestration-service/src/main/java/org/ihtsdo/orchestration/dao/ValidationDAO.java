@@ -78,7 +78,7 @@ public class ValidationDAO {
 	}
 
 	private String getNewReportFilePath(String branchPath, String process) {
-		String dt = DateUtils.today(DateUtils.YYYYMMDD_HHMMSS);
+		String dt = DateUtils.now(DateUtils.YYYYMMDD_HHMMSS);
 		return branchPath + "/" + process + "/" + dt + "/" + REPORT_FILE_NAME;
 	}
 
