@@ -5,6 +5,7 @@ import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.ValidationDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
+import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.json.JSONObject;
@@ -40,6 +41,9 @@ public class ValidationService {
 	@Autowired
 	protected RVFRestClient rvfClient;
 
+	@Autowired
+	private MessagingHelper messagingHelper;
+
 	private SRSProjectConfiguration defaultConfiguration;
 
 	public ValidationService(SRSProjectConfiguration defaultConfiguration) {
@@ -47,18 +51,22 @@ public class ValidationService {
 	}
 
 	public synchronized void validate(String branchPath) throws EntityAlreadyExistsException {
+		validate(branchPath, null);
+	}
+
+	public synchronized void validate(String branchPath, ValidationCallback callback) throws EntityAlreadyExistsException {
 
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = validationDAO.getStatus(branchPath, VALIDATION_PROCESS);
 		if (status != null && !isFinalState(status)) {
-			throw new EntityAlreadyExistsException("An existing validation has been detected at state " + status.toString());
+			throw new EntityAlreadyExistsException("An existing validation has been detected at state " + status);
 		}
 
 		// Update S3 location
 		validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ValidationRunner(branchPath))).start();
+		(new Thread(new ValidationRunner(branchPath, callback))).start();
 
 	}
 
@@ -85,19 +93,22 @@ public class ValidationService {
 	}
 
 	private class ValidationRunner implements Runnable {
-		
-		String branchPath;
-		SRSProjectConfiguration config;
-		
-		ValidationRunner (String branchPath) {
+
+		private final String branchPath;
+		private final ValidationCallback callback;
+		private SRSProjectConfiguration config;
+
+		private ValidationRunner(String branchPath, ValidationCallback callback) {
 			this.branchPath = branchPath;
+			this.callback = callback;
 			config = defaultConfiguration.clone();
 			config.setProductName(branchPath.replace("/", "_"));
 		}
 
 		@Override
 		public void run() {
-			
+
+			ValidationStatus finalValidationStatus = ValidationStatus.FAILED;
 			try {
 				// Export
 				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.EXPORTING.toString(), null);
@@ -118,16 +129,16 @@ public class ValidationService {
 					JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
 					validationDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
 					validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.COMPLETED.toString(), null);
+					finalValidationStatus = ValidationStatus.COMPLETED;
 				} else {
 					String error = "Did not find RVF Response location in SRS Client Response";
 					validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.FAILED.toString(), error);
 				}
-
 			} catch (Exception e) {
 				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.FAILED.toString(), e.getMessage());
 				logger.error("Validation of {} failed.", branchPath, e);
 			}
-			
+			callback.complete(finalValidationStatus);
 		}
 	}
 

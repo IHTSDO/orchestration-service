@@ -43,3 +43,7 @@ schedule.startDailyImport.cron = 0 0 2 * * *
 schedule.startDailyImport.importEverything = false
 schedule.startDailyExport.cron = 0 0 15 * * *
 schedule.pollJiraTickets.cron = 0 */3 * * * *
+
+orchestration.jms.url = tcp://localhost:61616
+orchestration.jms.username =
+orchestration.jms.password =

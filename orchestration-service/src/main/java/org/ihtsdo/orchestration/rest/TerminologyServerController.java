@@ -25,7 +25,6 @@ public class TerminologyServerController {
 
 	@Autowired
 	private ValidationService validationService;
-
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
@@ -37,20 +36,14 @@ public class TerminologyServerController {
 		if (json != null) {
 			JsonElement options = new JsonParser().parse(json);
 			JsonObject jsonObj = options.getAsJsonObject();
-			if (jsonObj.has(BRANCH_PATH_KEY)) {
-				String branchPath = jsonObj.getAsJsonPrimitive(BRANCH_PATH_KEY).getAsString();
-				validationService.validate(branchPath);
-				return;
-			}
+			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
+			validationService.validate(branchPath);
 		}
-
-		throw new BadRequestException("No branchPath detected in request to validate");
 	}
 
 	@RequestMapping(value = "/validations/**/latest", method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public ValidationReportDTO getLatestValidation(HttpServletRequest request) throws ResourceNotFoundException, IOException {
-//		if (path.endsWith("/latest"))
 		String path = (String) request.getAttribute(
 				HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
 		final String after = "/validations/";
@@ -62,6 +55,14 @@ public class TerminologyServerController {
 			return latestValidation;
 		} else {
 			throw new ResourceNotFoundException("Validation for path '" + path + "' not found.");
+		}
+	}
+
+	private String getRequiredParamString(JsonObject jsonObj, String branchPathKey) throws BadRequestException {
+		if (jsonObj.has(branchPathKey)) {
+			return jsonObj.getAsJsonPrimitive(branchPathKey).getAsString();
+		} else {
+			throw new BadRequestException(branchPathKey + " param is required");
 		}
 	}
 
