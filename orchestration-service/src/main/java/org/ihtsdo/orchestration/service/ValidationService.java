@@ -5,13 +5,13 @@ import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.ValidationDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
-import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,9 +41,6 @@ public class ValidationService {
 	@Autowired
 	protected RVFRestClient rvfClient;
 
-	@Autowired
-	private MessagingHelper messagingHelper;
-
 	private SRSProjectConfiguration defaultConfiguration;
 
 	public ValidationService(SRSProjectConfiguration defaultConfiguration) {
@@ -55,7 +52,7 @@ public class ValidationService {
 	}
 
 	public synchronized void validate(String branchPath, ValidationCallback callback) throws EntityAlreadyExistsException {
-
+		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = validationDAO.getStatus(branchPath, VALIDATION_PROCESS);
 		if (status != null && !isFinalState(status)) {
