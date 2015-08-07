@@ -15,6 +15,8 @@ import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class ValidationService {
@@ -77,6 +79,14 @@ public class ValidationService {
 			return new ValidationReportDTO(status, latestReport);
 		}
 		return null;
+	}
+
+	public List<String> getLatestValidationStatuses(List<String> paths) {
+		List<String> statuses = new ArrayList<>();
+		for (String path : paths) {
+			statuses.add(validationDAO.getStatus(path, VALIDATION_PROCESS));
+		}
+		return statuses;
 	}
 
 	public static boolean isFinalState(String status) {

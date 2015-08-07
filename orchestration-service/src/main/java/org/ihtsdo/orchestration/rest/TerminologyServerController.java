@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
@@ -58,6 +60,13 @@ public class TerminologyServerController {
 		}
 	}
 
+	@RequestMapping(value = "/validations/bulk/latest/statuses", method = RequestMethod.GET)
+	@ResponseStatus(HttpStatus.OK)
+	public List<String> getLatestValidation(@RequestParam String[] paths) throws ResourceNotFoundException, IOException {
+		logger.info("Get latest validation statuses for paths '{}'", paths);
+		return validationService.getLatestValidationStatuses(Arrays.asList(paths));
+	}
+
 	private String getRequiredParamString(JsonObject jsonObj, String branchPathKey) throws BadRequestException {
 		if (jsonObj.has(branchPathKey)) {
 			return jsonObj.getAsJsonPrimitive(branchPathKey).getAsString();
@@ -65,6 +74,5 @@ public class TerminologyServerController {
 			throw new BadRequestException(branchPathKey + " param is required");
 		}
 	}
-
 
 }
