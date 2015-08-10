@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.14-SNAPSHOT</version>
+			<version>0.0.14</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-beans</artifactId>
@@ -62,8 +62,8 @@
 		</dependency>
 		<dependency>
 			<groupId>us.monoid.web</groupId>
-			<artifactId>ihtsdo-resty</artifactId>
-			<version>0.3.5-SNAPSHOT</version>
+			<artifactId>resty</artifactId>
+			<version>0.3.4.1-IHTSDO</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
