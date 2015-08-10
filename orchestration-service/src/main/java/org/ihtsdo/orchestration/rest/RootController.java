@@ -15,8 +15,9 @@ public class RootController {
 	public Map<String, String> getAvailableEndpoints(HttpServletRequest request) {
 		HashMap<String, String> endpoints = new HashMap<>();
 		String requestURL = addTrailingSlash(request.getRequestURL().toString());
-		addEndpoint(requestURL, endpoints, "backlog");
-		addEndpoint(requestURL, endpoints, "selections/create");
+		addEndpoint(requestURL, endpoints, "legacy-import/backlog");
+		addEndpoint(requestURL, endpoints, "legacy-import/selections/create");
+		addEndpoint(requestURL, endpoints, "termserver/validations");
 		return endpoints;
 	}
 

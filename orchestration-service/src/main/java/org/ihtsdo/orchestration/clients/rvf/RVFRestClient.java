@@ -1,7 +1,11 @@
 package org.ihtsdo.orchestration.clients.rvf;
 
 
+import java.io.IOException;
+
 import org.ihtsdo.otf.rest.exception.ProcessingException;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -38,8 +42,17 @@ public class RVFRestClient {
 		this.pollPeriod = pollPeriod * 1000;
 		maxElapsedTime = timeout * 60 * 1000;
 	}
+	
+	public JSONObject waitForResponse(String pollURL) throws Exception {
+		JSONResource resource = waitForResults(pollURL);
+		if (resource != null) {
+			return new JSONObject(resource.object().toString(2));
+		} else {
+			return new JSONObject();
+		}
+	}
 
-	public void waitForResults(String pollURL) throws Exception {
+	public JSONResource waitForResults(String pollURL) throws Exception  {
 		
 		//Poll the URL and see what status the results are in
 		boolean isFinalState = false;
@@ -53,8 +66,10 @@ public class RVFRestClient {
 
 		int pollCount = 0;
 		RVF_STATE lastState = RVF_STATE.UNKNOWN;
+		JSONResource json = null;
+		
 		while (!isFinalState) {
-			JSONResource json = resty.json(pollURL);
+			json = resty.json(pollURL);
 			Object responseState = json.get(JSON_FIELD_STATUS);
 			RVF_STATE currentState = RVF_STATE.UNKNOWN;
 
@@ -90,6 +105,8 @@ public class RVFRestClient {
 
 			lastState = currentState;
 		}
+		return json;
+
 	}
 	
 

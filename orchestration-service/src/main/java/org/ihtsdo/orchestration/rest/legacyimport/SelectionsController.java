@@ -1,4 +1,4 @@
-package org.ihtsdo.orchestration.rest;
+package org.ihtsdo.orchestration.rest.legacyimport;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/REST/selections")
+@RequestMapping("/REST/legacy-import/selections")
 public class SelectionsController {
 
 	public static final String IMPORT_EVERYTHING = "importEverything";

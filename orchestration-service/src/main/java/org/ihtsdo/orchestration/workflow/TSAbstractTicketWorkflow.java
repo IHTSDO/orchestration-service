@@ -5,14 +5,15 @@ import net.rcarz.jiraclient.JiraException;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.ihtsdo.orchestration.clients.srs.SRSFileDAO;
+import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.clients.jira.JiraProjectSync;
-import org.ihtsdo.orchestration.clients.snowowl.ClassificationResults;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.ClassificationResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,10 +34,10 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 	protected SnowOwlRestClient snowOwlRestClient;
 
 	@Autowired
-	protected JiraProjectSync jiraProjectSync;
+	private String snowowlProjectBranch;
 
 	@Autowired
-	protected SnowOwlRestClient tsClient;
+	protected JiraProjectSync jiraProjectSync;
 
 	@Autowired
 	protected SRSRestClient srsClient;
@@ -93,11 +94,22 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		return isComplete;
 	}
 
-	protected void runClassifier(Issue issue, SnowOwlRestClient.BranchType branchType) throws SnowOwlRestClientException,
-			InterruptedException, JiraException, JiraSyncException {
+	protected void runClassifier(Issue issue, BranchType branchType) throws RestClientException,
+			InterruptedException, JiraException, JiraSyncException, TicketWorkflowException {
 		String issueKey = issue.getKey();
 
-		ClassificationResults results = snowOwlRestClient.classify(issueKey, branchType);
+		ClassificationResults results;
+		switch (branchType) {
+			case PROJECT:
+				results = snowOwlRestClient.classify(snowowlProjectBranch);
+				break;
+			case TASK:
+				results = snowOwlRestClient.classify(snowowlProjectBranch + "/" + issueKey);
+				break;
+			default:
+				throw new TicketWorkflowException("Unrecognised branch type " + branchType.name());
+		}
+
 		boolean equivalentConceptsFound = results.isEquivalentConceptsFound();
 		boolean relationshipChangesFound = results.isRelationshipChangesFound();
 		String statusTransition;
@@ -118,10 +130,10 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.updateStatus(issue, statusTransition);
 	}
 
-	protected void saveClassification(Issue issue, SnowOwlRestClient.BranchType branchType) throws JiraException,
-			SnowOwlRestClientException, JiraSyncException, InterruptedException {
+	protected void saveClassification(Issue issue, BranchType branchType) throws JiraException,
+			RestClientException, JiraSyncException, TicketWorkflowException, InterruptedException {
 		String classificationId = jiraDataHelper.getLatestData(issue, CLASSIFICATION_ID);
-		snowOwlRestClient.saveClassification(issue, classificationId, branchType);
+		snowOwlRestClient.saveClassification(issue.getKey(), classificationId);
 		jiraProjectSync.updateStatus(issue, TRANSITION_FROM_CLASSIFICATION_ACCEPTED_TO_SUCCESS);
 	}
 
@@ -129,9 +141,11 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		String exportArchiveLocation = jiraDataHelper.getLatestData(issue, EXPORT_ARCHIVE_LOCATION);
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
-		Map<String, String> srsResponse = callSRS(exportArchive);
+		SRSProjectConfiguration config = new SRSProjectConfiguration();
+		srsClient.prepareSRSFiles(exportArchive, config);
+		Map<String, String> srsResponse = srsClient.runBuild(config);
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_BUILT);
-		// Can we store the RVF location for the next step in the process to poll?
+		// Did we obtain the RVF location for the next step in the process to poll?
 		if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
 			jiraDataHelper.putData(issue, RVF_RESPONSE_URL, srsResponse.get(SRSRestClient.RVF_RESPONSE));
 		} else {
@@ -140,23 +154,15 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		jiraProjectSync.addComment(issue.getKey(), "The build process returned the following items of interest: ", srsResponse);
 	}
 
-	// Pulled out this section so it can be tested in isolation from Jira Issue
-	public Map<String, String> callSRS(File exportArchive) throws Exception {
-		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
-		boolean includeExternallyMaintainedRefsets = true;
-		File srsFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedRefsets);
-		return srsClient.runDailyBuild(srsFilesDir, releaseDate);
-	}
-
-	protected void export(Issue issue, SnowOwlRestClient.BranchType exportFrom) throws Exception {
+	protected void export(Issue issue, BranchType exportFrom) throws Exception {
 
 		File exportArchive;
 		switch (exportFrom) {
-			case MAIN:
-				exportArchive = tsClient.exportVersion(SnowOwlRestClient.BranchType.MAIN.name(), SnowOwlRestClient.ExtractType.DELTA);
+			case PROJECT:
+			exportArchive = snowOwlRestClient.exportProject(snowowlProjectBranch, SnowOwlRestClient.ExtractType.DELTA);
 				break;
-			case BRANCH:
-				exportArchive = tsClient.exportBranch(issue.getKey(), SnowOwlRestClient.ExtractType.DELTA, exportDeltaStartEffectiveTime);
+			case TASK:
+			exportArchive = snowOwlRestClient.exportTask(snowowlProjectBranch, issue.getKey(), SnowOwlRestClient.ExtractType.DELTA);
 				break;
 			default:
 				throw new TicketWorkflowException("Export requested from unknown source: " + exportFrom.name());
@@ -172,8 +178,8 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		issue.addComment("Release validation ready to view at: " + rvfResponseURL);
 	}
 	
-	protected void mergeTaskToMain(Issue issue) throws IOException, JSONException, JiraException, JiraSyncException {
-		snowOwlRestClient.promoteBranch(issue.getKey());
+	protected void mergeTaskToProject(Issue issue) throws IOException, JSONException, JiraException, JiraSyncException, RestClientException {
+		snowOwlRestClient.mergeTaskToProject(snowowlProjectBranch, issue.getKey());
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_PROMOTED);
 	}
 
@@ -183,5 +189,9 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 
 	protected String jiraState(Enum state) {
 		return "\"" + state.name().replace("_", " ") + "\"";
+	}
+
+	public enum BranchType {
+		PROJECT, TASK
 	}
 }

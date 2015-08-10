@@ -1,4 +1,4 @@
-package org.ihtsdo.orchestration.rest;
+package org.ihtsdo.orchestration.rest.legacyimport;
 
 import net.rcarz.jiraclient.Issue;
 import net.rcarz.jiraclient.JiraException;
@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/REST")
+@RequestMapping("/REST/legacy-import")
 public class TicketController {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());

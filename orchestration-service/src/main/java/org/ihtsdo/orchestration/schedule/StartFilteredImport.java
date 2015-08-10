@@ -16,8 +16,9 @@ public class StartFilteredImport implements Runnable {
 
 	@Override
 	public void run() {
-		logger.info("Scheduled import triggered. importEverything = {}", importEverything);
-		importerService.importCompletedWBContentAsync(null, importEverything);
+		// logger.info("Scheduled import triggered. importEverything = {}", importEverything);
+		// importerService.importCompletedWBContentAsync(null, importEverything);
+		logger.info("Scheduled workbench import triggered, ,currently disabled");
 	}
 
 	public void setImportEverything(boolean importEverything) {

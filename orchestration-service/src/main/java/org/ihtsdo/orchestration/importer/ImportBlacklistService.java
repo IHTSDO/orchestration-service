@@ -3,7 +3,7 @@ package org.ihtsdo.orchestration.importer;
 import org.ihtsdo.orchestration.clients.snowowl.ImportError;
 import org.ihtsdo.orchestration.clients.snowowl.ImportErrorParser;
 import org.ihtsdo.orchestration.clients.snowowl.ImportErrorParserException;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;

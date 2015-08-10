@@ -7,7 +7,6 @@ import org.ihtsdo.orchestration.importer.Importer;
 import org.ihtsdo.orchestration.clients.jira.JQLBuilder;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
 import org.ihtsdo.ts.importfilter.ImportFilterService;
 import org.ihtsdo.ts.importfilter.ImportFilterServiceException;
 import org.slf4j.Logger;
@@ -58,7 +57,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 					logger.info("DailyDelta Workflow ignoring ticket at status CREATED: {}", issue.getKey());
 					break;
 				case IMPORTED:
-					runClassifier(issue, SnowOwlRestClient.BranchType.BRANCH);
+					runClassifier(issue, BranchType.TASK);
 					break;
 
 				case CLASSIFIED_WITH_QUERIES:
@@ -66,7 +65,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 					break;
 
 				case CLASSIFICATION_ACCEPTED:
-					saveClassification(issue, SnowOwlRestClient.BranchType.BRANCH);
+					saveClassification(issue, BranchType.TASK);
 					break;
 
 				case CONTENT_REJECTED:
@@ -74,7 +73,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 					break;
 
 				case CLASSIFIED_SUCCESSFULLY:
-					export(issue, SnowOwlRestClient.BranchType.BRANCH);
+					export(issue, BranchType.TASK);
 					break;
 
 				case EXPORTED:
@@ -90,7 +89,7 @@ public class DailyDeltaTicketWorkflow extends TSAbstractTicketWorkflow implement
 					break;
 
 				case VALIDATION_ACCEPTED:
-					mergeTaskToMain(issue);
+					mergeTaskToProject(issue);
 					break;
 
 				case PROMOTED:

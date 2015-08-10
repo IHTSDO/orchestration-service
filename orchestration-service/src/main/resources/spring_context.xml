@@ -9,6 +9,7 @@
 	<context:annotation-config />
 
 	<import resource="classpath*:common_context.xml"/>
+	<import resource="jms-api-context.xml"/>
 
 	<bean class="org.springframework.scheduling.config.ScheduledTaskRegistrar">
 		<property name="cronTasks">
@@ -54,7 +55,7 @@
 
 	<bean id="dailyDeltaTicketWorkflow" class="org.ihtsdo.orchestration.workflow.DailyDeltaTicketWorkflow"/>
 
-	<bean class="org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient">
+	<bean class="org.ihtsdo.otf.rest.client.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>
@@ -67,7 +68,6 @@
 	
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSRestClient">
 		<constructor-arg value="${srs.root.url}"/>
-		<constructor-arg value="${srs.product}"/>
 		<constructor-arg value="${srs.username}"/>
 		<constructor-arg value="${srs.password}"/>
 	</bean>
@@ -91,6 +91,10 @@
 				<constructor-arg value="${aws.secretKey}"/>
 			</bean>
 		</constructor-arg>
+	</bean>
+	
+	<bean class="org.ihtsdo.orchestration.dao.ValidationDAO">
+		<constructor-arg value="${ts.reportsBucket}"/>
 	</bean>
 
 	<bean name="jiraContentProjectSync" class="org.ihtsdo.orchestration.clients.jira.JiraProjectSync">
@@ -120,8 +124,23 @@
 
 	<bean class="org.ihtsdo.orchestration.importer.DevTestTool"/>
 
+	<bean name="snowowlProjectBranch" class="java.lang.String">
+		<constructor-arg value="${snowowl.projectBranch}"/>
+	</bean>
+
 	<bean name="exportDeltaStartEffectiveTime" class="java.lang.String" >
 		<constructor-arg value="${snowowl.export.fromDate}"/>
+	</bean>
+	
+	<bean class="org.ihtsdo.orchestration.service.ValidationService">
+		<constructor-arg>
+			<bean class="org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration">
+				<property name="readmeEndDate" value="${ts.srs.readmeEndDate}"/>
+				<property name="previousPublishedPackageName" value="${ts.srs.previousPublishedPackageName}"/>
+				<property name="previousInternationalRelease" value="${ts.rvf.previousInternationalRelease}"/>
+				<property name="assertionGroupNames" value="${ts.rvf.assertionGroupNames}"/>
+			</bean>
+		</constructor-arg>
 	</bean>
 
 </beans>

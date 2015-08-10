@@ -1,14 +1,16 @@
 package org.ihtsdo.orchestration.importer;
 
 import com.b2international.commons.VerhoeffCheck;
+
 import net.rcarz.jiraclient.JiraException;
+
 import org.apache.commons.lang.time.FastDateFormat;
 import org.ihtsdo.orchestration.clients.jira.JiraDataHelper;
 import org.ihtsdo.orchestration.clients.jira.JiraProjectSync;
 import org.ihtsdo.orchestration.clients.jira.JiraSyncException;
 import org.ihtsdo.orchestration.clients.snowowl.ImportError;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClient;
-import org.ihtsdo.orchestration.clients.snowowl.SnowOwlRestClientException;
+import org.ihtsdo.otf.rest.client.RestClientException;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClient;
 import org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClientException;
 import org.ihtsdo.orchestration.workflow.DailyDeltaTicketWorkflow;
@@ -38,6 +40,9 @@ public class Importer {
 
 	@Autowired
 	private SnowOwlRestClient tsClient;
+
+	@Autowired
+	private String snowowlProjectBranch;
 
 	@Autowired
 	private JiraDataHelper jiraDataHelper;
@@ -102,7 +107,7 @@ public class Importer {
 
 					if (importEverything) {
 						jiraContentProjectSync.addComment(taskKey, "Attempting to import everything in the backlog, without blacklist at first.");
-						completedConceptIds = new HashSet<>();
+						completedConceptIds = null;
 						incompleteConceptIds = new HashSet<>();
 					} else {
 						jiraContentProjectSync.addComment(taskKey, "Attempting to import selected content, without blacklist at first.");
@@ -112,6 +117,10 @@ public class Importer {
 					}
 
 					importSelection(taskKey, completedConceptIds, incompleteConceptIds, importResult, importEverything, contentEffectiveDate);
+
+					if (importEverything) {
+						completedConceptIds = importResult.getSelectionResult().getFoundConceptIds();
+					}
 
 					// Iterate attempting import and adding to blacklist until import is successful
 					for (int blacklistRun = 1;
@@ -149,7 +158,7 @@ public class Importer {
 				return importResult;
 			} catch (ImportFilterServiceException e) {
 				return handleExceptionTransitionToRejected("Error during selection archive creation process.", importResult, e);
-			} catch (SnowOwlRestClientException e) {
+			} catch (RestClientException e) {
 				return handleExceptionTransitionToRejected("Error using Snow Owl Terminology Server.", importResult, e);
 			} catch (WorkbenchWorkflowClientException e) {
 				return handleExceptionTransitionToRejected(e.getMessage(), importResult, e);
@@ -160,7 +169,7 @@ public class Importer {
 	}
 
 	private ImportResult importSelection(String taskKey, Set<Long> completedConceptIds, Set<Long> incompleteConceptIds, ImportResult importResult,
-			boolean updateJiraOnImportError, String contentEffectiveDate) throws SnowOwlRestClientException, JiraException, ImportFilterServiceException,
+			boolean updateJiraOnImportError, String contentEffectiveDate) throws RestClientException, JiraException, ImportFilterServiceException,
 			JiraSyncException {
 		SelectionResult selectionResult = createSelectionArchive(completedConceptIds, incompleteConceptIds, importResult, contentEffectiveDate);
 		importResult.setSelectionResult(selectionResult);
@@ -176,11 +185,12 @@ public class Importer {
 			logger.info("Filter version {}", selectedArchiveVersion);
 
 			// Create TS branch
-			tsClient.getCreateBranch(taskKey);
+			tsClient.createProjectBranchIfNeeded(snowowlProjectBranch);
+			tsClient.createProjectTaskIfNeeded(snowowlProjectBranch, taskKey);
 
 			// Stream selection archive into TS import process
 			InputStream selectionArchiveStream = importFilterService.getSelectionArchive(selectedArchiveVersion);
-			boolean importSuccessful = tsClient.importRF2Archive(taskKey, selectionArchiveStream);
+			boolean importSuccessful = tsClient.importRF2Archive(snowowlProjectBranch, taskKey, selectionArchiveStream);
 			if (importSuccessful) {
 				importResult.setImportCompletedSuccessfully(true);
 				Set<Long> foundConceptIds = selectionResult.getFoundConceptIds();
