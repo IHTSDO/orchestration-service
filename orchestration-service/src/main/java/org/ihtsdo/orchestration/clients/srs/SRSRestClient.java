@@ -101,7 +101,7 @@ public class SRSRestClient {
 
 	public Map<String, String> runBuild(SRSProjectConfiguration config) throws Exception {
 		Assert.notNull(config.getProductName());
-		logger.info("Running {} daily build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
+		logger.info("Running {} build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
 				.getInputFilesDir()
 				.getAbsolutePath());
 		// Authentication first
