@@ -9,7 +9,7 @@
 
 	<groupId>org.ihtsdo.orchestration</groupId>
 	<artifactId>orchestration-service-parent</artifactId>
-	<version>1.8</version>
+	<version>1.9</version>
 	<packaging>pom</packaging>
 
 	<properties>
@@ -24,7 +24,6 @@
 	</scm>
 
 	<modules>
-		<module>import-export-transform</module>
 		<module>orchestration-service</module>
 	</modules>
 
