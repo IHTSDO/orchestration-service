@@ -26,9 +26,9 @@
 						<file Name="der2_cRefset_LanguageFull-en_INT_########.txt"/>
 					</folder>
 					<folder Name="Metadata">
-						<file name='der2_cciRefset_RefsetDescriptorFull_INT_########.txt' />
-						<file name='der2_ciRefset_DescriptionTypeFull_INT_########.txt' />
-						<file name='der2_ssRefset_ModuleDependencyFull_INT_########.txt' />
+						<file Name="der2_cciRefset_RefsetDescriptorFull_INT_########.txt" />
+						<file Name="der2_ciRefset_DescriptionTypeFull_INT_########.txt" />
+						<file Name="der2_ssRefset_ModuleDependencyFull_INT_########.txt" />
 					</folder>
 				</folder>
 			</folder> <!-- Full -->
@@ -56,9 +56,9 @@
 						<file Name="der2_cRefset_LanguageSnapshot-en_INT_########.txt"/>
 					</folder>
 					<folder Name="Metadata">
-						<file name='der2_cciRefset_RefsetDescriptorSnapshot_INT_########.txt' />
-						<file name='der2_ciRefset_DescriptionTypeSnapshot_INT_########.txt' />
-						<file name='der2_ssRefset_ModuleDependencySnapshot_INT_########.txt' />
+						<file Name="der2_cciRefset_RefsetDescriptorSnapshot_INT_########.txt" />
+						<file Name="der2_ciRefset_DescriptionTypeSnapshot_INT_########.txt" />
+						<file Name="der2_ssRefset_ModuleDependencySnapshot_INT_########.txt" />
 					</folder>
 				</folder>
 			</folder> <!-- Snapshot -->
@@ -86,9 +86,9 @@
 						<file Name="der2_cRefset_LanguageDelta-en_INT_########.txt"/>	
 					</folder>
 					<folder Name="Metadata">
-						<file name='der2_cciRefset_RefsetDescriptorDelta_INT_########.txt' />
-						<file name='der2_ciRefset_DescriptionTypeDelta_INT_########.txt' />
-						<file name='der2_ssRefset_ModuleDependencyDelta_INT_########.txt' />
+						<file Name="der2_cciRefset_RefsetDescriptorDelta_INT_########.txt" />
+						<file Name="der2_ciRefset_DescriptionTypeDelta_INT_########.txt" />
+						<file Name="der2_ssRefset_ModuleDependencyDelta_INT_########.txt" />
 					</folder>
 				</folder>
 			</folder> <!-- Delta -->
