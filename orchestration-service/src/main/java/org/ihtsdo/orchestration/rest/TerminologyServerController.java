@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
 
@@ -48,8 +49,7 @@ public class TerminologyServerController {
 	}
 
 	@RequestMapping(value = "/validations/**/latest", method = RequestMethod.GET)
-	@ResponseStatus(HttpStatus.OK)
-	public ValidationReportDTO getLatestValidation(HttpServletRequest request) throws ResourceNotFoundException, IOException {
+	public ResponseEntity<ValidationReportDTO> getLatestValidation(HttpServletRequest request) throws ResourceNotFoundException, IOException {
 		String path = (String) request.getAttribute(
 				HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
 		final String after = "/validations/";
@@ -58,9 +58,10 @@ public class TerminologyServerController {
 		logger.info("Get latest validation for '{}'", path);
 		final ValidationReportDTO latestValidation = validationService.getLatestValidation(path);
 		if (latestValidation != null) {
-			return latestValidation;
+			return new ResponseEntity<ValidationReportDTO>(latestValidation,HttpStatus.OK);
 		} else {
-			throw new ResourceNotFoundException("Validation for path '" + path + "' not found.");
+			logger.warn("Validation for path '" + path + "' not found.");
+			return new ResponseEntity<ValidationReportDTO>(HttpStatus.NOT_FOUND);
 		}
 	}
 
