@@ -55,9 +55,9 @@ public class TerminologyServerController {
 		final String after = "/validations/";
 		final String before = "/latest";
 		path = PathUtil.getStringBetween(path, before, after);
-		logger.info("Get latest validation for '{}'", path);
 		final ValidationReportDTO latestValidation = validationService.getLatestValidation(path);
 		if (latestValidation != null) {
+			logger.info("Got latest validation for '{}' - {} ", path, latestValidation.getExecutionStatus() );
 			return new ResponseEntity<ValidationReportDTO>(latestValidation,HttpStatus.OK);
 		} else {
 			logger.warn("Validation for path '" + path + "' not found.");
