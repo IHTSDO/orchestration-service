@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
@@ -19,6 +20,7 @@ import javax.jms.TextMessage;
 public class ValidationMessageHandler {
 
 	public static final String PATH = "path";
+	public static final String EFFECTIVE_TIME = "effective-time";
 
 	@Autowired
 	private ValidationService validationService;
@@ -31,7 +33,7 @@ public class ValidationMessageHandler {
 	@JmsListener(destination = "orchestration.termserver-release-validation")
 	public void receiveValidationRequest(final TextMessage messageIn) {
 		try {
-			validationService.validate(messageIn.getStringProperty(PATH), new ValidationCallback() {
+			validationService.validate(messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new ValidationCallback() {
 				@Override
 				public void complete(ValidationService.ValidationStatus finalValidationStatus) {
 					Map<String, String> properties = new HashMap<>();

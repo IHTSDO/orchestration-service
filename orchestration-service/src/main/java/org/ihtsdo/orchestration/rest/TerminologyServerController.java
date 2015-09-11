@@ -3,6 +3,7 @@ package org.ihtsdo.orchestration.rest;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ValidationService;
@@ -19,6 +20,7 @@ import org.springframework.web.servlet.HandlerMapping;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
@@ -30,6 +32,7 @@ public class TerminologyServerController {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
+	public static final String EFFECTIVE_DATE_KEY = "effective-date";
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -39,7 +42,8 @@ public class TerminologyServerController {
 			JsonElement options = new JsonParser().parse(json);
 			JsonObject jsonObj = options.getAsJsonObject();
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
-			validationService.validate(branchPath);
+			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
+			validationService.validate(branchPath, effectiveDate);
 		}
 	}
 
@@ -63,15 +67,25 @@ public class TerminologyServerController {
 	@RequestMapping(value = "/validations/bulk/latest/statuses", method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public List<String> getLatestValidation(@RequestParam String[] paths) throws ResourceNotFoundException, IOException {
-		logger.info("Get latest validation statuses for paths '{}'", paths);
+		logger.info("Getting latest validation statuses for paths '{}'", paths);
 		return validationService.getLatestValidationStatuses(Arrays.asList(paths));
 	}
 
-	private String getRequiredParamString(JsonObject jsonObj, String branchPathKey) throws BadRequestException {
-		if (jsonObj.has(branchPathKey)) {
-			return jsonObj.getAsJsonPrimitive(branchPathKey).getAsString();
+	private String getRequiredParamString(JsonObject jsonObj, String key) throws BadRequestException {
+		if (jsonObj.has(key)) {
+			return jsonObj.getAsJsonPrimitive(key).getAsString();
 		} else {
-			throw new BadRequestException(branchPathKey + " param is required");
+			throw new BadRequestException(key + " param is required");
+		}
+	}
+	
+
+	private String getOptionalParamString(JsonObject jsonObj,
+			String key) {
+		if (jsonObj.has(key)) {
+			return jsonObj.getAsJsonPrimitive(key).getAsString();
+		} else {
+			return null;
 		}
 	}
 

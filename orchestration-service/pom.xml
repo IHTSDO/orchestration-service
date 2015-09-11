@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.14</version>
+			<version>0.0.18-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-beans</artifactId>
