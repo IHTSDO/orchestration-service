@@ -67,7 +67,7 @@ public class TerminologyServerController {
 
 	@RequestMapping(value = "/validations/bulk/latest/statuses", method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
-	public List<String> getLatestValidation(@RequestParam String[] paths) throws ResourceNotFoundException, IOException {
+	public List<String> getLatestValidationStatuses(@RequestParam String[] paths) throws ResourceNotFoundException, IOException {
 		logger.info("Getting latest validation statuses for paths '{}'", paths);
 		return validationService.getLatestValidationStatuses(Arrays.asList(paths));
 	}
