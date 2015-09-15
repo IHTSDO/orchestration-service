@@ -50,7 +50,7 @@ public class ValidationDAO {
 
 		InputStream is = new ByteArrayInputStream(jsonObj.toString().getBytes());
 		s3Client.putObject(tsReportBucketName, getStatusFilePath(branchPath, process), is, null);
-		logger.debug("Set {} status to {} for branchPath {}.", process, status, branchPath);
+		logger.info("Set {} status to {} for branchPath {}.", process, status, branchPath);
 	}
 
 	public String getStatus(String branchPath, String process) {

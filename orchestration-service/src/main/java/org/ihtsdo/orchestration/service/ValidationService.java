@@ -49,23 +49,23 @@ public class ValidationService {
 		this.defaultConfiguration = defaultConfiguration;
 	}
 
-	public synchronized void validate(String branchPath) throws EntityAlreadyExistsException {
-		validate(branchPath, null);
+	public synchronized void validate(String branchPath, String effectiveDate) throws EntityAlreadyExistsException {
+		validate(branchPath, effectiveDate, null);
 	}
 
-	public synchronized void validate(String branchPath, ValidationCallback callback) throws EntityAlreadyExistsException {
+	public synchronized void validate(String branchPath, String effectiveDate, ValidationCallback callback) throws EntityAlreadyExistsException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = validationDAO.getStatus(branchPath, VALIDATION_PROCESS);
 		if (status != null && !isFinalState(status)) {
-			throw new EntityAlreadyExistsException("An existing validation has been detected at state " + status);
+			throw new EntityAlreadyExistsException("An in-progress validation has been detected for " + branchPath + " at state " + status);
 		}
 
 		// Update S3 location
 		validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ValidationRunner(branchPath, callback))).start();
+		(new Thread(new ValidationRunner(branchPath, effectiveDate, callback))).start();
 
 	}
 
@@ -102,11 +102,13 @@ public class ValidationService {
 	private class ValidationRunner implements Runnable {
 
 		private final String branchPath;
+		private final String effectiveDate;
 		private final ValidationCallback callback;
 		private SRSProjectConfiguration config;
 
-		private ValidationRunner(String branchPath, ValidationCallback callback) {
+		private ValidationRunner(String branchPath, String effectiveDate, ValidationCallback callback) {
 			this.branchPath = branchPath;
+			this.effectiveDate = effectiveDate;
 			this.callback = callback;
 			config = defaultConfiguration.clone();
 			config.setProductName(branchPath.replace("/", "_"));
@@ -119,7 +121,7 @@ public class ValidationService {
 			try {
 				// Export
 				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.EXPORTING.toString(), null);
-				File exportArchive = snowOwlRestClient.export(branchPath, SnowOwlRestClient.ExtractType.DELTA);
+				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, SnowOwlRestClient.ExtractType.DELTA);
 
 				// Create files for SRS / Initiate SRS
 				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.BUILD_INITIATING.toString(), null);
