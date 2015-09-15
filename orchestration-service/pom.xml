@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.18-SNAPSHOT</version>
+			<version>0.0.18</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-beans</artifactId>
@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
 			<artifactId>com.b2international.commons.base</artifactId>
-			<version>4.2.6-SNAPSHOT</version>
+			<version>4.2.9</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
