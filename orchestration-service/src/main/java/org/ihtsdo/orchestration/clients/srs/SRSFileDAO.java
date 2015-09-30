@@ -129,20 +129,11 @@ public class SRSFileDAO {
 			logger.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
 		}
 
-		// We don't get a Stated Relationship file. We'll form it instead as a subset of the Inferred RelationshipFile
-		File inferred = new File(extractDir, "sct2_Relationship_Delta_INT_" + releaseDate + ".txt");
-		File stated = new File(extractDir, "sct2_StatedRelationship_Delta_INT_" + releaseDate + ".txt");
-		boolean removeFromOriginal = false;
-		boolean removeId = true;
-		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID, removeFromOriginal, removeId);
-
 		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
 		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
 		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
 		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + ".txt");
-		removeFromOriginal = true;
-		removeId = false;
-		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal, removeId);
+		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, true, false);
 
 		//Now pull in an externally maintained refsets from S3
 		if (includeExternalRefsets) {
