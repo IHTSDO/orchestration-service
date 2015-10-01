@@ -17,7 +17,7 @@ public class SRSProjectConfiguration {
 
 	boolean firstTimeRelease = false;
 	boolean workbenchDataFixesRequired = false;
-	boolean inputFileFixesRequired = true;
+	boolean inputFileFixesRequired = false; // No longer need to remove sctids from stated relationships
 	boolean createInferredRelationships = true;
 	boolean justPackage = false;
 	boolean createLegacyIds = true;

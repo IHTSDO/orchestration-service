@@ -109,6 +109,8 @@ public class ValidationService {
 		private ValidationRunner(String branchPath, String effectiveDate, ValidationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
+			//Note that the SRS Release date is determined from the date found in the archive file
+			
 			this.callback = callback;
 			config = defaultConfiguration.clone();
 			config.setProductName(branchPath.replace("/", "_"));

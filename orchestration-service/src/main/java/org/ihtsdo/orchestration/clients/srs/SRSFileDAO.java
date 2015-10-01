@@ -63,34 +63,37 @@ public class SRSFileDAO {
 				"der2_Refset_VirtualTherapeuticMoietySimpleReferenceSet****_INT_########.txt", }));
 
 		refsetMap.put("AssociationReference", new RefsetCombiner("der2_cRefset_AssociationReference****_INT_########.txt", new String[] {
-				"der2_cRefset_AlternativeAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_MovedFromAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_MovedToAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_PossiblyEquivalentToAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_RefersToConceptAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_ReplacedByAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_SameAsAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_WasAAssociationReferenceSet****_INT_########.txt", }));
+				"der2_cRefset_ALTERNATIVEAssociationReferenceSet****_INT_########.txt",
+				"der2_cRefset_MOVEDFROMAssociationReferenceSet****_INT_########.txt",
+				"der2_cRefset_MOVEDTOAssociationReferenceSet****_INT_########.txt",
+				"der2_cRefset_POSSIBLYEQUIVALENTTOAssociationReferenceSet****_INT_########.txt",
+				"der2_cRefset_REFERSTOConceptAssociationReferenceSet****_INT_########.txt",
+				"der2_cRefset_REPLACEDBYAssociationReferenceSet****_INT_########.txt",
+				"der2_cRefset_SAMEASAssociationReferenceSet****_INT_########.txt",
+				"der2_cRefset_WASAAssociationReferenceSet****_INT_########.txt", }));
 
 		refsetMap.put("AttributeValue", new RefsetCombiner("der2_cRefset_AttributeValue****_INT_########.txt", new String[] {
 				"der2_cRefset_ConceptInactivationIndicatorReferenceSet****_INT_########.txt",
 				"der2_cRefset_DescriptionInactivationIndicatorReferenceSet****_INT_########.txt", }));
 
 		refsetMap.put("Language", new RefsetCombiner("der2_cRefset_Language****-en_INT_########.txt", new String[] {
-				"der2_cRefset_GbEnglish****-en-gb_INT_########.txt", "der2_cRefset_UsEnglish****-en-us_INT_########.txt" }));
+				"der2_cRefset_GBEnglish****-en-gb_INT_########.txt", "der2_cRefset_USEnglish****-en-us_INT_########.txt" }));
 
-		refsetMap.put("RefsetDescriptor", new RefsetCombiner("der2_cciRefset_RefsetDescriptor****_INT_########.txt", new String[] {
+		refsetMap.put("RefsetDescriptor", new RefsetCombiner("der2_cciRefset_RefsetDescriptor****_INT_########.txt", new String[] {}));
 
-		}));
 		refsetMap.put("DescriptionType", new RefsetCombiner("der2_ciRefset_DescriptionType****_INT_########.txt",
 				new String[] { "der2_ciRefset_DescriptionFormat****_INT_########.txt" }));
+
 		refsetMap.put("ComplexMap", new RefsetCombiner("der2_iissscRefset_ComplexMap****_INT_########.txt",
-				new String[] { "der2_iissscRefset_Icd9CmEquivalenceComplexMapReferenceSet****_INT_########.txt" }));
+				new String[] { "der2_iissscRefset_ICD-9-CMEquivalenceComplexMapReferenceSet****_INT_########.txt" }));
+
 		refsetMap.put("ExtendedMap", new RefsetCombiner("der2_iisssccRefset_ExtendedMap****_INT_########.txt",
-				new String[] { "der2_iisssccRefset_Icd10ComplexMapReferenceSet****_INT_########.txt" }));
+				new String[] { "der2_iisssccRefset_ICD-10ComplexMapReferenceSet****_INT_########.txt" }));
+
 		refsetMap.put("SimpleMap", new RefsetCombiner("der2_sRefset_SimpleMap****_INT_########.txt", new String[] {
-				"der2_sRefset_Ctv3SimpleMap****_INT_########.txt", "der2_sRefset_IcdOSimpleMapReferenceSet****_INT_########.txt",
-				"der2_sRefset_SnomedRtIdSimpleMap****_INT_########.txt", "der2_sRefset_GmdnSimpleMapReferenceSet****_INT_########.txt" }));
+				"der2_sRefset_CTV3SimpleMap****_INT_########.txt", "der2_sRefset_ICD-OSimpleMapReferenceSet****_INT_########.txt",
+				"der2_sRefset_SNOMEDRTIDSimpleMap****_INT_########.txt", "der2_sRefset_GMDNSimpleMapReferenceSet****_INT_########.txt" }));
+
 		refsetMap.put("ModuleDependency", new RefsetCombiner("der2_ssRefset_ModuleDependency****_INT_########.txt",
 				new String[] { "der2_ssRefset_ModuleDependency****_INT_########.txt" }));
 	}
@@ -126,20 +129,11 @@ public class SRSFileDAO {
 			logger.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
 		}
 
-		// We don't get a Stated Relationship file. We'll form it instead as a subset of the Inferred RelationshipFile
-		File inferred = new File(extractDir, "sct2_Relationship_Delta_INT_" + releaseDate + ".txt");
-		File stated = new File(extractDir, "sct2_StatedRelationship_Delta_INT_" + releaseDate + ".txt");
-		boolean removeFromOriginal = false;
-		boolean removeId = true;
-		createSubsetFile(inferred, stated, CHARACTERISTIC_TYPE_ID_COLUMN, STATED_RELATIONSHIP_SCTID, removeFromOriginal, removeId);
-
 		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
 		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
 		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
 		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + ".txt");
-		removeFromOriginal = true;
-		removeId = false;
-		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, removeFromOriginal, removeId);
+		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, true, false);
 
 		//Now pull in an externally maintained refsets from S3
 		if (includeExternalRefsets) {
