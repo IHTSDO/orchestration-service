@@ -28,7 +28,7 @@ public class ValidationService {
 		SCHEDULED, EXPORTING, BUILD_INITIATING, BUILDING, VALIDATING, COMPLETED, FAILED
 	}
 
-	public static final String README_HEADER_FILENAME = "readme-header.txt";
+	public static final String README_HEADER_FILENAME = "/readme-header.txt";
 
 	public static ValidationStatus[] FINAL_STATES = new ValidationStatus[] { ValidationStatus.COMPLETED, ValidationStatus.FAILED };
 
