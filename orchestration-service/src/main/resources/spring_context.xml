@@ -132,7 +132,7 @@
 		<constructor-arg value="${snowowl.export.fromDate}"/>
 	</bean>
 	
-	<bean class="org.ihtsdo.orchestration.service.ValidationService">
+	<bean class="org.ihtsdo.orchestration.service.ValidationService" init-method="init">
 		<constructor-arg>
 			<bean class="org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration">
 				<property name="readmeEndDate" value="${ts.srs.readmeEndDate}"/>

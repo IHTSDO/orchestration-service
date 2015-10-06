@@ -13,7 +13,7 @@ public class SRSProjectConfiguration {
 	String releaseDate;
 	String productName;
 	String readmeEndDate;
-	String readmeHeader = "Text should be defined in Ochestration context.xml file";
+	String readmeHeader = "Text should be defined in src/main/resources/readme-header.txt";
 
 	boolean firstTimeRelease = false;
 	boolean workbenchDataFixesRequired = false;
@@ -35,6 +35,7 @@ public class SRSProjectConfiguration {
 		clone.releaseDate = this.releaseDate;
 		clone.productName = this.productName;
 		clone.readmeEndDate = this.readmeEndDate;
+		clone.readmeHeader = this.readmeHeader;
 		clone.firstTimeRelease = this.firstTimeRelease;
 		clone.workbenchDataFixesRequired = this.workbenchDataFixesRequired;
 		clone.inputFileFixesRequired = this.inputFileFixesRequired;

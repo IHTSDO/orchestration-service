@@ -1,5 +1,6 @@
 package org.ihtsdo.orchestration.service;
 
+import org.apache.commons.io.IOUtils;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
@@ -15,6 +16,8 @@ import org.springframework.util.Assert;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +27,8 @@ public class ValidationService {
 	public enum ValidationStatus {
 		SCHEDULED, EXPORTING, BUILD_INITIATING, BUILDING, VALIDATING, COMPLETED, FAILED
 	}
+
+	public static final String README_HEADER_FILENAME = "readme-header.txt";
 
 	public static ValidationStatus[] FINAL_STATES = new ValidationStatus[] { ValidationStatus.COMPLETED, ValidationStatus.FAILED };
 
@@ -47,6 +52,17 @@ public class ValidationService {
 
 	public ValidationService(SRSProjectConfiguration defaultConfiguration) {
 		this.defaultConfiguration = defaultConfiguration;
+	}
+
+	public void init() throws IOException {
+		// Load the readme header from our resource into the default configuration
+		// More efficient to do it here than load it each time
+		InputStream is = getClass().getResourceAsStream(README_HEADER_FILENAME);
+		Assert.notNull(is, "Failed to load readme-header.");
+		String readmeHeader = IOUtils.toString(is, StandardCharsets.UTF_8);
+		defaultConfiguration.setReadmeHeader(readmeHeader);
+		logger.info("Loaded ReadmeHeader from resource file " + README_HEADER_FILENAME);
+		IOUtils.closeQuietly(is);
 	}
 
 	public synchronized void validate(String branchPath, String effectiveDate) throws EntityAlreadyExistsException {
