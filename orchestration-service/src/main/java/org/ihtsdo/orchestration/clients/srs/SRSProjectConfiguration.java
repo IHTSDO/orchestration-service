@@ -1,11 +1,10 @@
 package org.ihtsdo.orchestration.clients.srs;
 
-import java.io.File;
-
 import org.ihtsdo.otf.utils.DateUtils;
-
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
+
+import java.io.File;
 
 public class SRSProjectConfiguration {
 
@@ -27,6 +26,7 @@ public class SRSProjectConfiguration {
 	// These parameters are set in the SRS but passed on to the RVF
 	String previousInternationalRelease;
 	String assertionGroupNames;
+	private String failureExportMax;
 
 	// Apache BeanUtils.copyProperties could also be used. Less code but slower
 	public SRSProjectConfiguration clone() {
@@ -109,6 +109,7 @@ public class SRSProjectConfiguration {
 		// These parameters passed through to RVF
 		jsonObj.put("previousInternationalRelease", previousInternationalRelease);
 		jsonObj.put("assertionGroupNames", assertionGroupNames);
+		jsonObj.put("failureExportMax", failureExportMax);
 		return jsonObj;
 	}
 
@@ -198,6 +199,14 @@ public class SRSProjectConfiguration {
 
 	public void setAssertionGroupNames(String assertionGroupNames) {
 		this.assertionGroupNames = assertionGroupNames;
+	}
+
+	public String getFailureExportMax() {
+		return failureExportMax;
+	}
+
+	public void setFailureExportMax(String failureExportMax) {
+		this.failureExportMax = failureExportMax;
 	}
 
 	public String getReadmeHeader() {
