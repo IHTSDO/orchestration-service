@@ -9,6 +9,7 @@ import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
 import org.ihtsdo.orchestration.service.ValidationService;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -18,6 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
+
+import us.monoid.json.JSONException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -56,7 +59,7 @@ public class TerminologyServerController {
 
 	@RequestMapping(value = "/release", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
-	public void createRelease(@RequestBody(required = false) String json) throws BadRequestException, EntityAlreadyExistsException {
+	public void createRelease(@RequestBody(required = false) String json) throws IOException, JSONException, BusinessServiceException {
 		logger.info("Create validation '{}'", json);
 		if (json != null) {
 			JsonElement options = new JsonParser().parse(json);

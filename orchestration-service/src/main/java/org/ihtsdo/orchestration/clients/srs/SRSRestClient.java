@@ -11,6 +11,7 @@ import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
+import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,8 +115,8 @@ public class SRSRestClient {
 		}
 	}
 
-	private String getProductUrl(SRSProjectConfiguration config) {
-		return srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(config.getProductName()) + "/";
+	private String getProductUrl(String productName) {
+		return srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(productName) + "/";
 
 	}
 
@@ -124,10 +125,10 @@ public class SRSRestClient {
 
 		// Lets upload the manifest first
 		File configuredManifest = configureManifest(config.getReleaseDate());
-		String srsProductURL = getProductUrl(config);
+		String srsProductURL = getProductUrl(config.getProductName());
 
 		// Check the product exists and perform standard configuration if needed
-		setupProductIfRequired(srsRootURL + PRODUCT_PREFIX, srsProductURL, config);
+		checkProductExists(config.getProductName(), true);
 
 		uploadFile(srsProductURL + MANIFEST_ENDPOINT, configuredManifest);
 		configuredManifest.delete();
@@ -144,7 +145,7 @@ public class SRSRestClient {
 				.getInputFilesDir().getAbsolutePath());
 
 		initiateRestyIfNeeded();
-		String srsProductURL = getProductUrl(config);
+		String srsProductURL = getProductUrl(config.getProductName());
 
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
@@ -169,18 +170,23 @@ public class SRSRestClient {
 		return recoverItemsOfInterest(json);
 	}
 
-	private void setupProductIfRequired(String srsProductRootUrl, String srsProductURL, SRSProjectConfiguration config) throws IOException,
+	public void checkProductExists(String productName, boolean createIfRequired) throws IOException,
 			JSONException,
 			BusinessServiceException {
-
+		String srsProductRootUrl = srsRootURL + PRODUCT_PREFIX;
+		String srsProductURL = getProductUrl(productName);
 		// Try to recover the product
 		Integer httpStatus = resty.json(srsProductURL).getHTTPStatus();
 		if (httpStatus != null && httpStatus.equals(NOT_FOUND)) {
-			// Create the product by POSTing to the root with the name in a json object
-			JSONObject obj = new JSONObject();
-			obj.put("name", config.getProductName());
-			JSONResource json = resty.json(srsProductRootUrl, obj, CONTENT_TYPE_JSON);
-			RestyServiceHelper.ensureSuccessfull(json);
+			if (createIfRequired) {
+				// Create the product by POSTing to the root with the name in a json object
+				JSONObject obj = new JSONObject();
+				obj.put("name", productName);
+				JSONResource json = resty.json(srsProductRootUrl, obj, CONTENT_TYPE_JSON);
+				RestyServiceHelper.ensureSuccessfull(json);
+			} else {
+				throw new ResourceNotFoundException("Product " + productName + " does not exist in SRS");
+			}
 		}
 	}
 
