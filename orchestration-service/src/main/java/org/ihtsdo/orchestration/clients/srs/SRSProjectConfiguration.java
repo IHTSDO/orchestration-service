@@ -28,6 +28,13 @@ public class SRSProjectConfiguration {
 	String assertionGroupNames;
 	private String failureExportMax;
 
+	public SRSProjectConfiguration() {
+	}
+
+	public SRSProjectConfiguration(String productName) {
+		this.productName = productName;
+	}
+
 	// Apache BeanUtils.copyProperties could also be used. Less code but slower
 	public SRSProjectConfiguration clone() {
 		SRSProjectConfiguration clone = new SRSProjectConfiguration();

@@ -93,7 +93,7 @@
 		</constructor-arg>
 	</bean>
 	
-	<bean class="org.ihtsdo.orchestration.dao.ValidationDAO">
+	<bean class="org.ihtsdo.orchestration.dao.OrchProcDAO">
 		<constructor-arg value="${ts.reportsBucket}"/>
 	</bean>
 
@@ -143,5 +143,8 @@
 			</bean>
 		</constructor-arg>
 	</bean>
+	
+	<bean class="org.ihtsdo.orchestration.service.ReleaseService" />
+
 
 </beans>

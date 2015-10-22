@@ -4,7 +4,7 @@ import org.apache.commons.io.IOUtils;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
-import org.ihtsdo.orchestration.dao.ValidationDAO;
+import org.ihtsdo.orchestration.dao.OrchProcDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -24,20 +24,14 @@ import java.util.Map;
 
 public class ValidationService {
 
-	public enum ValidationStatus {
-		SCHEDULED, EXPORTING, BUILD_INITIATING, BUILDING, VALIDATING, COMPLETED, FAILED
-	}
-
 	public static final String README_HEADER_FILENAME = "/readme-header.txt";
-
-	public static ValidationStatus[] FINAL_STATES = new ValidationStatus[] { ValidationStatus.COMPLETED, ValidationStatus.FAILED };
 
 	public static final String VALIDATION_PROCESS = "validation";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
-	protected ValidationDAO validationDAO;
+	protected OrchProcDAO orchProcDAO;
 
 	@Autowired
 	protected SnowOwlRestClient snowOwlRestClient;
@@ -69,16 +63,16 @@ public class ValidationService {
 		validate(branchPath, effectiveDate, null);
 	}
 
-	public synchronized void validate(String branchPath, String effectiveDate, ValidationCallback callback) throws EntityAlreadyExistsException {
+	public synchronized void validate(String branchPath, String effectiveDate, OrchestrationCallback callback) throws EntityAlreadyExistsException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
-		String status = validationDAO.getStatus(branchPath, VALIDATION_PROCESS);
-		if (status != null && !isFinalState(status)) {
+		String status = orchProcDAO.getStatus(branchPath, VALIDATION_PROCESS);
+		if (status != null && !OrchProcStatus.isFinalState(status)) {
 			throw new EntityAlreadyExistsException("An in-progress validation has been detected for " + branchPath + " at state " + status);
 		}
 
 		// Update S3 location
-		validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.SCHEDULED.toString(), null);
+		orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
 		(new Thread(new ValidationRunner(branchPath, effectiveDate, callback))).start();
@@ -86,11 +80,11 @@ public class ValidationService {
 	}
 
 	public ValidationReportDTO getLatestValidation(String path) throws IOException {
-		final String status = validationDAO.getStatus(path, VALIDATION_PROCESS);
+		final String status = orchProcDAO.getStatus(path, VALIDATION_PROCESS);
 		String latestReport = null;
 		if (status != null) {
-			if (status.equals(ValidationStatus.COMPLETED.toString())) {
-				latestReport = validationDAO.getLatestReport(path);
+			if (status.equals(OrchProcStatus.COMPLETED.toString())) {
+				latestReport = orchProcDAO.getLatestValidationReport(path);
 			}
 			return new ValidationReportDTO(status, latestReport);
 		}
@@ -100,29 +94,21 @@ public class ValidationService {
 	public List<String> getLatestValidationStatuses(List<String> paths) {
 		List<String> statuses = new ArrayList<>();
 		for (String path : paths) {
-			statuses.add(validationDAO.getStatus(path, VALIDATION_PROCESS));
+			statuses.add(orchProcDAO.getStatus(path, VALIDATION_PROCESS));
 		}
 		return statuses;
 	}
 
-	public static boolean isFinalState(String status) {
 
-		for (ValidationStatus thisStatus : FINAL_STATES) {
-			if (status.equals(thisStatus.toString())) {
-				return true;
-			}
-		}
-		return false;
-	}
 
 	private class ValidationRunner implements Runnable {
 
 		private final String branchPath;
 		private final String effectiveDate;
-		private final ValidationCallback callback;
+		private final OrchestrationCallback callback;
 		private SRSProjectConfiguration config;
 
-		private ValidationRunner(String branchPath, String effectiveDate, ValidationCallback callback) {
+		private ValidationRunner(String branchPath, String effectiveDate, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
 			//Note that the SRS Release date is determined from the date found in the archive file
@@ -135,37 +121,38 @@ public class ValidationService {
 		@Override
 		public void run() {
 
-			ValidationStatus finalValidationStatus = ValidationStatus.FAILED;
+			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
 			try {
 				// Export
-				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.EXPORTING.toString(), null);
+				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, SnowOwlRestClient.ExtractType.DELTA);
 
 				// Create files for SRS / Initiate SRS
-				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.BUILD_INITIATING.toString(), null);
+				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				srsClient.prepareSRSFiles(exportArchive, config);
 
 				// Trigger SRS
-				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.BUILDING.toString(), null);
+				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
+				srsClient.configureBuild(config);
 				Map<String, String> srsResponse = srsClient.runBuild(config);
 
 				// Wait for RVF response
 				// Did we obtain the RVF location for the next step in the process to poll?
 				if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
-					validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.VALIDATING.toString(), null);
+					orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
 					JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
-					validationDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
-					validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.COMPLETED.toString(), null);
-					finalValidationStatus = ValidationStatus.COMPLETED;
+					orchProcDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
+					orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
+					finalOrchProcStatus = OrchProcStatus.COMPLETED;
 				} else {
 					String error = "Did not find RVF Response location in SRS Client Response";
-					validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.FAILED.toString(), error);
+					orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), error);
 				}
 			} catch (Exception e) {
-				validationDAO.setStatus(branchPath, VALIDATION_PROCESS, ValidationStatus.FAILED.toString(), e.getMessage());
+				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Validation of {} failed.", branchPath, e);
 			}
-			callback.complete(finalValidationStatus);
+			callback.complete(finalOrchProcStatus);
 		}
 	}
 

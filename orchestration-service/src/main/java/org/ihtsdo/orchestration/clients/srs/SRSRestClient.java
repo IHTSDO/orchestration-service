@@ -69,6 +69,7 @@ public class SRSRestClient {
 	private final String password;
 
 	private final RestyHelper resty;
+	private boolean restyInitiated = false;
 
 	public static final String RVF_RESPONSE = "buildReport.rvf_response";
 	protected static final String[] ITEMS_OF_INTEREST = { "outputfiles_url", "status", "logs_url", RVF_RESPONSE, "buildReport.Message" };
@@ -99,23 +100,31 @@ public class SRSRestClient {
 		config.setInputFilesDir(inputFilesDir);
 	}
 
-	public Map<String, String> runBuild(SRSProjectConfiguration config) throws Exception {
-		Assert.notNull(config.getProductName());
-		logger.info("Running {} build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
-				.getInputFilesDir()
-				.getAbsolutePath());
-		// Authentication first
-		MultipartContent credentials = Resty.form(Resty.data("username", username), Resty.data("password", password));
-		JSONResource json = resty.json(srsRootURL + AUTHENTICATE_ENDPOINT, credentials);
-		Object authToken = json.get(AUTHENTICATION_TOKEN);
-		Assert.notNull(authToken, "Failed to recover SRS Authentication from " + srsRootURL);
+	private void initiateRestyIfNeeded() throws Exception {
+		if (!restyInitiated) {
+			// Authentication first
+			MultipartContent credentials = Resty.form(Resty.data("username", username), Resty.data("password", password));
+			JSONResource json = resty.json(srsRootURL + AUTHENTICATE_ENDPOINT, credentials);
+			Object authToken = json.get(AUTHENTICATION_TOKEN);
+			Assert.notNull(authToken, "Failed to recover SRS Authentication from " + srsRootURL);
 
-		// Now the token received can be set as the username for all subsequent interactions. Blank password.
-		resty.authenticate(srsRootURL, authToken.toString(), BLANK_PASSWORD);
+			// Now the token received can be set as the username for all subsequent interactions. Blank password.
+			resty.authenticate(srsRootURL, authToken.toString(), BLANK_PASSWORD);
+			restyInitiated = true;
+		}
+	}
+
+	private String getProductUrl(SRSProjectConfiguration config) {
+		return srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(config.getProductName()) + "/";
+
+	}
+
+	public void configureBuild(SRSProjectConfiguration config) throws Exception {
+		initiateRestyIfNeeded();
 
 		// Lets upload the manifest first
 		File configuredManifest = configureManifest(config.getReleaseDate());
-		String srsProductURL = srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(config.getProductName()) + "/";
+		String srsProductURL = getProductUrl(config);
 
 		// Check the product exists and perform standard configuration if needed
 		setupProductIfRequired(srsRootURL + PRODUCT_PREFIX, srsProductURL, config);
@@ -127,6 +136,15 @@ public class SRSRestClient {
 		JSONObject productConfig = config.getJson();
 		logger.debug("Configuring SRS Product with " + productConfig.toString(2));
 		resty.put(srsProductURL + PRODUCT_CONFIGURATION_ENDPOINT, productConfig, CONTENT_TYPE_JSON);
+	}
+
+	public Map<String, String> runBuild(SRSProjectConfiguration config) throws Exception {
+		Assert.notNull(config.getProductName());
+		logger.info("Running {} build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
+				.getInputFilesDir().getAbsolutePath());
+
+		initiateRestyIfNeeded();
+		String srsProductURL = getProductUrl(config);
 
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
@@ -138,7 +156,7 @@ public class SRSRestClient {
 		FileUtils.deleteDirectory(config.getInputFilesDir());
 
 		// Create a build. Pass blank content to encourage Resty to use POST
-		json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
+		JSONResource json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
 		Object buildId = json.get(ID);
 		Assert.notNull(buildId, "Failed to recover create build at: " + srsProductURL);
 
