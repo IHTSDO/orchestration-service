@@ -116,7 +116,6 @@ public class SRSProjectConfiguration {
 		// These parameters passed through to RVF
 		jsonObj.put("previousInternationalRelease", previousInternationalRelease);
 		jsonObj.put("assertionGroupNames", assertionGroupNames);
-		jsonObj.put("failureExportMax", failureExportMax);
 		return jsonObj;
 	}
 

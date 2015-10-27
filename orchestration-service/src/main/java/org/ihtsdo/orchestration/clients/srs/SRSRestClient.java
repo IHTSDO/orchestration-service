@@ -12,13 +12,11 @@ import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
-import org.ihtsdo.otf.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
-
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.Content;
@@ -164,7 +162,9 @@ public class SRSRestClient {
 		// Trigger Build
 		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT;
 		logger.debug("Triggering Build: {}", buildTriggerURL);
-		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
+		final JSONObject triggerParams = new JSONObject();
+		triggerParams.put("failureExportMax", config.getFailureExportMax());
+		json = resty.json(buildTriggerURL, triggerParams, CONTENT_TYPE_JSON);
 		logger.debug("Build trigger returned: {}", json.object().toString(2));
 
 		return recoverItemsOfInterest(json);
