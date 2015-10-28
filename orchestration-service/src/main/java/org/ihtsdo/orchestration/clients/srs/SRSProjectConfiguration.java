@@ -53,6 +53,7 @@ public class SRSProjectConfiguration {
 		clone.previousPublishedPackageName = this.previousPublishedPackageName;
 		clone.previousInternationalRelease = this.previousInternationalRelease;
 		clone.assertionGroupNames = this.assertionGroupNames;
+		clone.failureExportMax = this.failureExportMax;
 		return clone;
 	}
 
