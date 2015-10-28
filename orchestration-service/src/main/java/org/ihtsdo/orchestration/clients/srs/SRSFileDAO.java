@@ -106,7 +106,7 @@ public class SRSFileDAO {
 	/*
 	 * @return - the directory containing the files ready for uploading to SRS
 	 */
-	public File readyInputFiles(File archive, String releaseDate, boolean includeExternalRefsets) throws ProcessWorkflowException,
+	public File readyInputFiles(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
 			IOException {
 
 		// We're going to create release files in a temp directory
@@ -136,8 +136,8 @@ public class SRSFileDAO {
 		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, true, false);
 
 		//Now pull in an externally maintained refsets from S3
-		if (includeExternalRefsets) {
-			includeExternallyMaintainedRefsets(extractDir, releaseDate);
+		if (includeExternalFiles) {
+			includeExternallyMaintainedFiles(extractDir, releaseDate);
 		}
 		
 		// Now rename files to make the import compatible
@@ -324,30 +324,30 @@ public class SRSFileDAO {
 		}
 	}
 
-	private void includeExternallyMaintainedRefsets(File extractDir, String releaseDateToday) throws IOException {
+	private void includeExternallyMaintainedFiles(File extractDir, String targetReleaseDate) throws IOException {
 		FileHelper s3 = new FileHelper(this.refsetBucket, s3Client);
 
 		// Recover all files in the folder ready for the next release
-		logger.debug("Recovering External Refsets from {}/{}", this.refsetBucket, this.nextRelease);
-		List<String> refsets = s3.listFiles(this.nextRelease);
+		logger.debug("Recovering External Files from {}/{}", this.refsetBucket, this.nextRelease);
+		List<String> externalFiles = s3.listFiles(this.nextRelease);
 
-		for (String refset : refsets) {
+		for (String externalFile : externalFiles) {
 			// The current directory is also listed
-			if (refset != null && refset.equals("/"))
+			if (externalFile != null && externalFile.equals("/"))
 				continue;
 			
 			InputStream fileStream = null;
 			try {
 				// Note that filename already contains directory separator, so append directly
-				fileStream = s3.getFileStream(this.nextRelease + refset);
+				fileStream = s3.getFileStream(this.nextRelease + externalFile);
 
 				// Files expected to be named for next release date, so rename to this release date
-				String localRefsetName = refset.replace(this.nextRelease, releaseDateToday);
-				File localRefset = new File(extractDir, localRefsetName);
-				logger.debug("Pulling in external refset to {}", localRefset.getAbsolutePath());
-				java.nio.file.Files.copy(fileStream, localRefset.toPath(), StandardCopyOption.REPLACE_EXISTING);
+				String localExternalFileName = externalFile.replace(this.nextRelease, targetReleaseDate);
+				File localExternalFile = new File(extractDir, localExternalFileName);
+				logger.debug("Pulling in external file to {}", localExternalFile.getAbsolutePath());
+				java.nio.file.Files.copy(fileStream, localExternalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} catch (Exception e) {
-				logger.error("Failed to pull external refset from S3: {}{}", this.nextRelease, refset, e);
+				logger.error("Failed to pull external file from S3: {}{}", this.nextRelease, externalFile, e);
 			} finally {
 				IOUtils.closeQuietly(fileStream);
 			}
