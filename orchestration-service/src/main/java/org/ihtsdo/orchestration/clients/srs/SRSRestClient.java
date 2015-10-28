@@ -94,8 +94,8 @@ public class SRSRestClient {
 	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config) throws Exception {
 		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 		config.setReleaseDate(releaseDate);
-		boolean includeExternallyMaintainedRefsets = true;
-		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedRefsets);
+		boolean includeExternallyMaintainedFiles = true;
+		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 	}
 
@@ -159,8 +159,14 @@ public class SRSRestClient {
 		Object buildId = json.get(ID);
 		Assert.notNull(buildId, "Failed to recover create build at: " + srsProductURL);
 
+		// We're now telling the RVF (via the SRS) how many failures we want to see for each assertion
+		String failureExportMaxStr = "";
+		if (config.getFailureExportMax() != null && !config.getFailureExportMax().isEmpty()) {
+			failureExportMaxStr = "?failureExportMax=" + config.getFailureExportMax();
+		}
+
 		// Trigger Build
-		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + "?failureExportMax=" + config.getFailureExportMax();
+		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
 		logger.debug("Triggering Build: {}", buildTriggerURL);
 		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
 		logger.debug("Build trigger returned: {}", json.object().toString(2));
