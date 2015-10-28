@@ -160,11 +160,9 @@ public class SRSRestClient {
 		Assert.notNull(buildId, "Failed to recover create build at: " + srsProductURL);
 
 		// Trigger Build
-		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT;
+		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + "?failureExportMax=" + config.getFailureExportMax();
 		logger.debug("Triggering Build: {}", buildTriggerURL);
-		final JSONObject triggerParams = new JSONObject();
-		triggerParams.put("failureExportMax", config.getFailureExportMax());
-		json = resty.json(buildTriggerURL, triggerParams, CONTENT_TYPE_JSON);
+		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
 		logger.debug("Build trigger returned: {}", json.object().toString(2));
 
 		return recoverItemsOfInterest(json);
