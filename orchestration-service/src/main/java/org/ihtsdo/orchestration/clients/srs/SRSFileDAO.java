@@ -21,6 +21,7 @@ import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.CharEncoding;
 import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.otf.dao.s3.S3ClientImpl;
 import org.ihtsdo.otf.dao.s3.helper.FileHelper;
@@ -211,6 +212,8 @@ public class SRSFileDAO {
 	protected void replaceInFiles(File targetDirectory, String find, String replace, int columnNum) throws IOException {
 		Assert.isTrue(targetDirectory.isDirectory(), targetDirectory.getAbsolutePath()
 				+ " must be a directory in order to replace text from " + find + " to " + replace);
+
+		logger.info("Replacing {} with {} in target directory {}", find, replace, targetDirectory);
 		for (File thisFile : targetDirectory.listFiles()) {
 			if (thisFile.exists() && !thisFile.isDirectory()) {
 				List<String> oldLines = FileUtils.readLines(thisFile, StandardCharsets.UTF_8);
@@ -222,7 +225,7 @@ public class SRSFileDAO {
 					}
 					newLines.add(thisLine);
 				}
-				FileUtils.writeLines(thisFile, newLines);
+				FileUtils.writeLines(thisFile, CharEncoding.UTF_8, newLines);
 			}
 		}
 	}
@@ -259,9 +262,9 @@ public class SRSFileDAO {
 				}
 				lineCount++;
 			}
-			FileUtils.writeLines(target, newLines);
+			FileUtils.writeLines(target, CharEncoding.UTF_8, newLines);
 			if (removeFromOriginal) {
-				FileUtils.writeLines(source, remainingLines);
+				FileUtils.writeLines(source, CharEncoding.UTF_8, remainingLines);
 			}
 		} else {
 			logger.warn("Did not find file {} needed to create subset {}", source, target);
@@ -344,7 +347,7 @@ public class SRSFileDAO {
 				// Files expected to be named for next release date, so rename to this release date
 				String localExternalFileName = externalFile.replace(this.nextRelease, targetReleaseDate);
 				File localExternalFile = new File(extractDir, localExternalFileName);
-				logger.debug("Pulling in external file to {}", localExternalFile.getAbsolutePath());
+				logger.debug("Pulling in external file to {}, replacing any existing", localExternalFile.getAbsolutePath());
 				java.nio.file.Files.copy(fileStream, localExternalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} catch (Exception e) {
 				logger.error("Failed to pull external file from S3: {}{}", this.nextRelease, externalFile, e);
