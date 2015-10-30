@@ -1,15 +1,11 @@
 package org.ihtsdo.orchestration.clients.rvf;
 
 
-import java.io.IOException;
-
 import org.ihtsdo.otf.rest.exception.ProcessingException;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-
 import us.monoid.web.JSONResource;
 import us.monoid.web.RestyMod;
 
@@ -17,13 +13,8 @@ public class RVFRestClient {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
-	public static final String JSON_FIELD_STATUS = "Status";
-	public static enum RVF_STATE { RUNNING, COMPLETE, FAILED, UNKNOWN };
-
-	protected static final String CONTENT_TYPE_ANY = "*/*";
-	protected static final String CONTENT_TYPE_XML = "text/xml";
-	protected static final String CONTENT_TYPE_MULTIPART = "multipart/form-data";
-	protected static final String CONTENT_TYPE_TEXT = "text/plain;charset=UTF-8";
+	public static final String JSON_FIELD_STATUS = "status";
+	public enum RVF_STATE { RUNNING, COMPLETE, FAILED, UNKNOWN };
 
 	private final RestyMod resty;
 	private final int pollPeriod;
@@ -71,7 +62,7 @@ public class RVFRestClient {
 		while (!isFinalState) {
 			json = resty.json(pollURL);
 			Object responseState = json.get(JSON_FIELD_STATUS);
-			RVF_STATE currentState = RVF_STATE.UNKNOWN;
+			RVF_STATE currentState;
 
 			try {
 				currentState = RVF_STATE.valueOf(responseState.toString());

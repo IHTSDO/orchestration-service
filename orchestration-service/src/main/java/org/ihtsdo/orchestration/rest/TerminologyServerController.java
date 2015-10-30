@@ -6,8 +6,10 @@ import com.google.gson.JsonParser;
 
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
+import org.ihtsdo.orchestration.service.ReleaseService;
 import org.ihtsdo.orchestration.service.ValidationService;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
+import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -17,6 +19,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
+
+import us.monoid.json.JSONException;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,10 +34,15 @@ public class TerminologyServerController {
 
 	@Autowired
 	private ValidationService validationService;
+
+	@Autowired
+	private ReleaseService releaseService;
+
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
+	public static final String PRODUCT_NAME = "productName";
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -45,6 +54,21 @@ public class TerminologyServerController {
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
 			validationService.validate(branchPath, effectiveDate);
+		}
+	}
+
+	@RequestMapping(value = "/release", method = RequestMethod.POST)
+	@ResponseStatus(HttpStatus.OK)
+	public void createRelease(@RequestBody(required = false) String json) throws IOException, JSONException, BusinessServiceException {
+		logger.info("Create validation '{}'", json);
+		if (json != null) {
+			JsonElement options = new JsonParser().parse(json);
+			JsonObject jsonObj = options.getAsJsonObject();
+			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
+			String effectiveDate = getRequiredParamString(jsonObj, EFFECTIVE_DATE_KEY);
+			String productName = getRequiredParamString(jsonObj, PRODUCT_NAME);
+			// Passing null callback as this request has not come from a termserver user
+			releaseService.release(productName, branchPath, effectiveDate, null);
 		}
 	}
 

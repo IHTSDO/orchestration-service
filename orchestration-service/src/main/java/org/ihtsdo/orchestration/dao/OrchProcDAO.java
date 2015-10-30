@@ -20,7 +20,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ValidationDAO {
+public class OrchProcDAO {
 
 	private static final String STATUS_FILE_NAME = "status.json";
 	private static final String REPORT_FILE_NAME = "report.json";
@@ -36,7 +36,7 @@ public class ValidationDAO {
 	private String tsReportBucketName;
 
 	@Autowired
-	public ValidationDAO(final String tsReportBucketName) {
+	public OrchProcDAO(final String tsReportBucketName) {
 		this.tsReportBucketName = tsReportBucketName;
 	}
 	
@@ -87,16 +87,16 @@ public class ValidationDAO {
 		s3Client.putObject(tsReportBucketName, getNewReportFilePath(branchPath, process), is, null);
 	}
 
-	public String getLatestReport(String path) throws IOException {
+	public String getLatestValidationReport(String path) throws IOException {
 		path = removeTrailingSlash(path);
-		final List<String> reports = listReportsForPath(path);
+		final List<String> reports = listValidationReportsForPath(path);
 		if (!reports.isEmpty()) {
 			return getReport(path + "/" + VALIDATION + "/" + reports.get(reports.size() - 1));
 		}
 		return null;
 	}
 
-	public List<String> listReportsForPath(String path) {
+	public List<String> listValidationReportsForPath(String path) {
 		List<String> reports = new ArrayList<>();
 		path = removeTrailingSlash(path);
 		final ObjectListing objectListing = s3Client.listObjects(tsReportBucketName, path + "/" + VALIDATION);

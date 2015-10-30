@@ -11,13 +11,12 @@ import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
-import org.ihtsdo.otf.utils.DateUtils;
+import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
-
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.Content;
@@ -69,6 +68,7 @@ public class SRSRestClient {
 	private final String password;
 
 	private final RestyHelper resty;
+	private boolean restyInitiated = false;
 
 	public static final String RVF_RESPONSE = "buildReport.rvf_response";
 	protected static final String[] ITEMS_OF_INTEREST = { "outputfiles_url", "status", "logs_url", RVF_RESPONSE, "buildReport.Message" };
@@ -94,31 +94,39 @@ public class SRSRestClient {
 	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config) throws Exception {
 		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 		config.setReleaseDate(releaseDate);
-		boolean includeExternallyMaintainedRefsets = true;
-		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedRefsets);
+		boolean includeExternallyMaintainedFiles = true;
+		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 	}
 
-	public Map<String, String> runBuild(SRSProjectConfiguration config) throws Exception {
-		Assert.notNull(config.getProductName());
-		logger.info("Running {} build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
-				.getInputFilesDir()
-				.getAbsolutePath());
-		// Authentication first
-		MultipartContent credentials = Resty.form(Resty.data("username", username), Resty.data("password", password));
-		JSONResource json = resty.json(srsRootURL + AUTHENTICATE_ENDPOINT, credentials);
-		Object authToken = json.get(AUTHENTICATION_TOKEN);
-		Assert.notNull(authToken, "Failed to recover SRS Authentication from " + srsRootURL);
+	private void initiateRestyIfNeeded() throws Exception {
+		if (!restyInitiated) {
+			// Authentication first
+			MultipartContent credentials = Resty.form(Resty.data("username", username), Resty.data("password", password));
+			JSONResource json = resty.json(srsRootURL + AUTHENTICATE_ENDPOINT, credentials);
+			Object authToken = json.get(AUTHENTICATION_TOKEN);
+			Assert.notNull(authToken, "Failed to recover SRS Authentication from " + srsRootURL);
 
-		// Now the token received can be set as the username for all subsequent interactions. Blank password.
-		resty.authenticate(srsRootURL, authToken.toString(), BLANK_PASSWORD);
+			// Now the token received can be set as the username for all subsequent interactions. Blank password.
+			resty.authenticate(srsRootURL, authToken.toString(), BLANK_PASSWORD);
+			restyInitiated = true;
+		}
+	}
+
+	private String getProductUrl(String productName) {
+		return srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(productName) + "/";
+
+	}
+
+	public void configureBuild(SRSProjectConfiguration config) throws Exception {
+		initiateRestyIfNeeded();
 
 		// Lets upload the manifest first
 		File configuredManifest = configureManifest(config.getReleaseDate());
-		String srsProductURL = srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(config.getProductName()) + "/";
+		String srsProductURL = getProductUrl(config.getProductName());
 
 		// Check the product exists and perform standard configuration if needed
-		setupProductIfRequired(srsRootURL + PRODUCT_PREFIX, srsProductURL, config);
+		checkProductExists(config.getProductName(), true);
 
 		uploadFile(srsProductURL + MANIFEST_ENDPOINT, configuredManifest);
 		configuredManifest.delete();
@@ -127,6 +135,15 @@ public class SRSRestClient {
 		JSONObject productConfig = config.getJson();
 		logger.debug("Configuring SRS Product with " + productConfig.toString(2));
 		resty.put(srsProductURL + PRODUCT_CONFIGURATION_ENDPOINT, productConfig, CONTENT_TYPE_JSON);
+	}
+
+	public Map<String, String> runBuild(SRSProjectConfiguration config) throws Exception {
+		Assert.notNull(config.getProductName());
+		logger.info("Running {} build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
+				.getInputFilesDir().getAbsolutePath());
+
+		initiateRestyIfNeeded();
+		String srsProductURL = getProductUrl(config.getProductName());
 
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
@@ -138,12 +155,18 @@ public class SRSRestClient {
 		FileUtils.deleteDirectory(config.getInputFilesDir());
 
 		// Create a build. Pass blank content to encourage Resty to use POST
-		json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
+		JSONResource json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
 		Object buildId = json.get(ID);
 		Assert.notNull(buildId, "Failed to recover create build at: " + srsProductURL);
 
+		// We're now telling the RVF (via the SRS) how many failures we want to see for each assertion
+		String failureExportMaxStr = "";
+		if (config.getFailureExportMax() != null && !config.getFailureExportMax().isEmpty()) {
+			failureExportMaxStr = "?failureExportMax=" + config.getFailureExportMax();
+		}
+
 		// Trigger Build
-		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT;
+		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
 		logger.debug("Triggering Build: {}", buildTriggerURL);
 		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
 		logger.debug("Build trigger returned: {}", json.object().toString(2));
@@ -151,18 +174,23 @@ public class SRSRestClient {
 		return recoverItemsOfInterest(json);
 	}
 
-	private void setupProductIfRequired(String srsProductRootUrl, String srsProductURL, SRSProjectConfiguration config) throws IOException,
+	public void checkProductExists(String productName, boolean createIfRequired) throws IOException,
 			JSONException,
 			BusinessServiceException {
-
+		String srsProductRootUrl = srsRootURL + PRODUCT_PREFIX;
+		String srsProductURL = getProductUrl(productName);
 		// Try to recover the product
 		Integer httpStatus = resty.json(srsProductURL).getHTTPStatus();
 		if (httpStatus != null && httpStatus.equals(NOT_FOUND)) {
-			// Create the product by POSTing to the root with the name in a json object
-			JSONObject obj = new JSONObject();
-			obj.put("name", config.getProductName());
-			JSONResource json = resty.json(srsProductRootUrl, obj, CONTENT_TYPE_JSON);
-			RestyServiceHelper.ensureSuccessfull(json);
+			if (createIfRequired) {
+				// Create the product by POSTing to the root with the name in a json object
+				JSONObject obj = new JSONObject();
+				obj.put("name", productName);
+				JSONResource json = resty.json(srsProductRootUrl, obj, CONTENT_TYPE_JSON);
+				RestyServiceHelper.ensureSuccessfull(json);
+			} else {
+				throw new ResourceNotFoundException("Product " + productName + " does not exist in SRS");
+			}
 		}
 	}
 

@@ -1,11 +1,10 @@
 package org.ihtsdo.orchestration.clients.srs;
 
-import java.io.File;
-
 import org.ihtsdo.otf.utils.DateUtils;
-
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
+
+import java.io.File;
 
 public class SRSProjectConfiguration {
 
@@ -13,7 +12,7 @@ public class SRSProjectConfiguration {
 	String releaseDate;
 	String productName;
 	String readmeEndDate;
-	String readmeHeader = "Text should be defined in Ochestration context.xml file";
+	String readmeHeader = "Text should be defined in src/main/resources/readme-header.txt";
 
 	boolean firstTimeRelease = false;
 	boolean workbenchDataFixesRequired = false;
@@ -27,6 +26,14 @@ public class SRSProjectConfiguration {
 	// These parameters are set in the SRS but passed on to the RVF
 	String previousInternationalRelease;
 	String assertionGroupNames;
+	private String failureExportMax;
+
+	public SRSProjectConfiguration() {
+	}
+
+	public SRSProjectConfiguration(String productName) {
+		this.productName = productName;
+	}
 
 	// Apache BeanUtils.copyProperties could also be used. Less code but slower
 	public SRSProjectConfiguration clone() {
@@ -35,6 +42,7 @@ public class SRSProjectConfiguration {
 		clone.releaseDate = this.releaseDate;
 		clone.productName = this.productName;
 		clone.readmeEndDate = this.readmeEndDate;
+		clone.readmeHeader = this.readmeHeader;
 		clone.firstTimeRelease = this.firstTimeRelease;
 		clone.workbenchDataFixesRequired = this.workbenchDataFixesRequired;
 		clone.inputFileFixesRequired = this.inputFileFixesRequired;
@@ -45,6 +53,7 @@ public class SRSProjectConfiguration {
 		clone.previousPublishedPackageName = this.previousPublishedPackageName;
 		clone.previousInternationalRelease = this.previousInternationalRelease;
 		clone.assertionGroupNames = this.assertionGroupNames;
+		clone.failureExportMax = this.failureExportMax;
 		return clone;
 	}
 
@@ -197,6 +206,14 @@ public class SRSProjectConfiguration {
 
 	public void setAssertionGroupNames(String assertionGroupNames) {
 		this.assertionGroupNames = assertionGroupNames;
+	}
+
+	public String getFailureExportMax() {
+		return failureExportMax;
+	}
+
+	public void setFailureExportMax(String failureExportMax) {
+		this.failureExportMax = failureExportMax;
 	}
 
 	public String getReadmeHeader() {

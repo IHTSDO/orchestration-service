@@ -93,7 +93,7 @@
 		</constructor-arg>
 	</bean>
 	
-	<bean class="org.ihtsdo.orchestration.dao.ValidationDAO">
+	<bean class="org.ihtsdo.orchestration.dao.OrchProcDAO">
 		<constructor-arg value="${ts.reportsBucket}"/>
 	</bean>
 
@@ -132,15 +132,19 @@
 		<constructor-arg value="${snowowl.export.fromDate}"/>
 	</bean>
 	
-	<bean class="org.ihtsdo.orchestration.service.ValidationService">
+	<bean class="org.ihtsdo.orchestration.service.ValidationService" init-method="init">
 		<constructor-arg>
 			<bean class="org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration">
 				<property name="readmeEndDate" value="${ts.srs.readmeEndDate}"/>
 				<property name="previousPublishedPackageName" value="${ts.srs.previousPublishedPackageName}"/>
 				<property name="previousInternationalRelease" value="${ts.rvf.previousInternationalRelease}"/>
 				<property name="assertionGroupNames" value="${ts.rvf.assertionGroupNames}"/>
+				<property name="failureExportMax" value="${ts.rvf.failureExportMax:100}"/>
 			</bean>
 		</constructor-arg>
 	</bean>
+	
+	<bean class="org.ihtsdo.orchestration.service.ReleaseService" />
+
 
 </beans>

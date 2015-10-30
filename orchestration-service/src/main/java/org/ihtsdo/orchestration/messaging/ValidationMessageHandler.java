@@ -1,6 +1,7 @@
 package org.ihtsdo.orchestration.messaging;
 
-import org.ihtsdo.orchestration.service.ValidationCallback;
+import org.ihtsdo.orchestration.service.OrchProcStatus;
+import org.ihtsdo.orchestration.service.OrchestrationCallback;
 import org.ihtsdo.orchestration.service.ValidationService;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -33,9 +34,9 @@ public class ValidationMessageHandler {
 	@JmsListener(destination = "orchestration.termserver-release-validation")
 	public void receiveValidationRequest(final TextMessage messageIn) {
 		try {
-			validationService.validate(messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new ValidationCallback() {
+			validationService.validate(messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new OrchestrationCallback() {
 				@Override
-				public void complete(ValidationService.ValidationStatus finalValidationStatus) {
+						public void complete(OrchProcStatus finalValidationStatus) {
 					Map<String, String> properties = new HashMap<>();
 					properties.put("status", finalValidationStatus.toString());
 					messagingHelper.sendResponse(messageIn, "", properties);
