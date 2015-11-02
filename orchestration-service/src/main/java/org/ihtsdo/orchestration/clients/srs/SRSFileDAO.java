@@ -220,7 +220,7 @@ public class SRSFileDAO {
 				List<String> newLines = new ArrayList<String>();
 				for (String thisLine : oldLines) {
 					String[] columns = thisLine.split("\t");
-					if (columns.length > columnNum & columns[columnNum].equals(find)) {
+					if (columns.length > columnNum && columns[columnNum].equals(find)) {
 						thisLine = thisLine.replaceFirst(find, replace); // Would be more generic to rebuild from columns
 					}
 					newLines.add(thisLine);
