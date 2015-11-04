@@ -169,7 +169,14 @@ public class SRSRestClient {
 		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
 		logger.debug("Triggering Build: {}", buildTriggerURL);
 		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
-		logger.debug("Build trigger returned: {}", json.object().toString(2));
+		try {
+			logger.debug("Build trigger returned: {}", json.object().toString(2));
+		} catch (Exception e) {
+			String msg = "Unable to parse response from build trigger.";
+			logger.error(msg, e);
+			logger.error("Build trigger returned status {}", json.getHTTPStatus());
+			throw new BusinessServiceException(msg, e);
+		}
 
 		return recoverItemsOfInterest(json);
 	}
