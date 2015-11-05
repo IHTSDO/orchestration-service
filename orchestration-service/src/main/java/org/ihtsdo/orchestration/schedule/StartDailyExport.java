@@ -22,13 +22,13 @@ public class StartDailyExport implements Runnable {
 
 	@Override
 	public void run() {
-		logger.info("Scheduled export triggered - creating Jira Ticket");
-		try {
-			String taskLabel = "Daily Export - " + DateUtils.now(DateUtils.YYYYMMDD);
-			jira.createTask(jiraDailyExportProjectKey, taskLabel);
-		} catch (Exception e) {
-			logger.error("Failed to initiate daily export", e);
-		}
+		logger.info("Scheduled export disabled");
+		return;
+		/*
+		 * logger.info("Scheduled export triggered - creating Jira Ticket"); try { String taskLabel = "Daily Export - " +
+		 * DateUtils.now(DateUtils.YYYYMMDD); jira.createTask(jiraDailyExportProjectKey, taskLabel); } catch (Exception e) {
+		 * logger.error("Failed to initiate daily export", e); }
+		 */
 	}
 
 }
