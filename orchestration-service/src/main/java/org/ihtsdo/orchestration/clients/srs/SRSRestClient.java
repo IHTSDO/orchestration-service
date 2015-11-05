@@ -210,7 +210,7 @@ public class SRSRestClient {
 		}
 	}
 
-	protected Map<String, String> recoverItemsOfInterest(JSONResource json) throws JSONException, IOException {
+	protected Map<String, String> recoverItemsOfInterest(JSONResource json) throws Exception {
 		// Recover some things the users might be interested in, to store in the Jira Ticket
 		Map<String, String> response = new HashMap<String, String>();
 		int itemsFound = 0;

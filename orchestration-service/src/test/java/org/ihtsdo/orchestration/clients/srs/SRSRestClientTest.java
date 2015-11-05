@@ -9,10 +9,7 @@ import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import us.monoid.json.JSONException;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 import us.monoid.web.RestyMod;
@@ -20,8 +17,6 @@ import us.monoid.web.RestyMod;
 //@RunWith(SpringJUnit4ClassRunner.class)
 //@ContextConfiguration({ "file:src/main/resources/ApplicationContext.xml" })
 public class SRSRestClientTest {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	private SRSRestClient srs;
 
@@ -40,7 +35,7 @@ public class SRSRestClientTest {
 	}
 
 	@Test
-	public void testItemsOfInterest() throws IOException, JSONException {
+	public void testItemsOfInterest() throws Exception {
 
 		// Use Resty to open a local resource
 		Resty resty = new RestyMod();
