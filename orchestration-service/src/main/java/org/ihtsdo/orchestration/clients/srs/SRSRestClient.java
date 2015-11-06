@@ -91,21 +91,30 @@ public class SRSRestClient {
 	}
 
 	// Pulled out this section so it can be tested in isolation from Jira Issue
-	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config) throws Exception {
+	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config, boolean includeExternallyMaintainedFiles)
+			throws Exception {
 		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 		config.setReleaseDate(releaseDate);
-		boolean includeExternallyMaintainedFiles = true;
 		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 	}
 
-	private void initiateRestyIfNeeded() throws Exception {
+	private void initiateRestyIfNeeded() throws BusinessServiceException {
 		if (!restyInitiated) {
 			// Authentication first
 			MultipartContent credentials = Resty.form(Resty.data("username", username), Resty.data("password", password));
-			JSONResource json = resty.json(srsRootURL + AUTHENTICATE_ENDPOINT, credentials);
-			Object authToken = json.get(AUTHENTICATION_TOKEN);
-			Assert.notNull(authToken, "Failed to recover SRS Authentication from " + srsRootURL);
+			Object authToken = null;
+			try {
+				JSONResource json = resty.json(srsRootURL + AUTHENTICATE_ENDPOINT, credentials);
+				authToken = json.get(AUTHENTICATION_TOKEN);
+				if (authToken == null) {
+					throw new BusinessServiceException("null authentication token received, no further information available.");
+				}
+			} catch (Exception e) {
+				String error = "Failed to recover SRS Authentication at " + srsRootURL + AUTHENTICATE_ENDPOINT + " using "
+						+ credentials.toString();
+				throw new BusinessServiceException(error, e);
+			}
 
 			// Now the token received can be set as the username for all subsequent interactions. Blank password.
 			resty.authenticate(srsRootURL, authToken.toString(), BLANK_PASSWORD);
@@ -201,7 +210,7 @@ public class SRSRestClient {
 		}
 	}
 
-	protected Map<String, String> recoverItemsOfInterest(JSONResource json) throws JSONException, IOException {
+	protected Map<String, String> recoverItemsOfInterest(JSONResource json) throws Exception {
 		// Recover some things the users might be interested in, to store in the Jira Ticket
 		Map<String, String> response = new HashMap<String, String>();
 		int itemsFound = 0;

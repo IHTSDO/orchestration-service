@@ -129,7 +129,8 @@ public class ValidationService {
 
 				// Create files for SRS / Initiate SRS
 				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
-				srsClient.prepareSRSFiles(exportArchive, config);
+				boolean includeExternallyMaintainedFiles = false;
+				srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
 
 				// Trigger SRS
 				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);

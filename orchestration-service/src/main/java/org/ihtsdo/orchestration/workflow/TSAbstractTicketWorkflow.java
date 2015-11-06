@@ -142,7 +142,8 @@ public abstract class TSAbstractTicketWorkflow implements TicketWorkflow {
 		Assert.notNull(exportArchiveLocation, EXPORT_ARCHIVE_LOCATION + " can not be null.");
 		File exportArchive = new File(exportArchiveLocation);
 		SRSProjectConfiguration config = new SRSProjectConfiguration();
-		srsClient.prepareSRSFiles(exportArchive, config);
+		boolean includeExternallyMaintainedFiles = true;
+		srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
 		srsClient.configureBuild(config);
 		Map<String, String> srsResponse = srsClient.runBuild(config);
 		jiraProjectSync.updateStatus(issue, TRANSITION_TO_BUILT);

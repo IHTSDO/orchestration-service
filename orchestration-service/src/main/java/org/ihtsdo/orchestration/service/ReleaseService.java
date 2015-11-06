@@ -87,7 +87,8 @@ public class ReleaseService {
 				// Create files for SRS / Initiate SRS
 				SRSProjectConfiguration config = new SRSProjectConfiguration(productName);
 				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
-				srsClient.prepareSRSFiles(exportArchive, config);
+				boolean includeExternallyMaintainedFiles = true;
+				srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
 
 				// Note that unlike validation, we will not configure the build here.
 
