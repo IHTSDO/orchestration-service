@@ -14,7 +14,10 @@ public class RVFRestClient {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
 	public static final String JSON_FIELD_STATUS = "status";
-	public enum RVF_STATE { RUNNING, COMPLETE, FAILED, UNKNOWN };
+
+	public enum RVF_STATE {
+		QUEUED, RUNNING, COMPLETE, FAILED, UNKNOWN
+	};
 
 	private final RestyMod resty;
 	private final int pollPeriod;
@@ -76,6 +79,7 @@ public class RVFRestClient {
 			}
 
 			switch (currentState){
+				case QUEUED:
 				case RUNNING:
 					Thread.sleep(pollPeriod);
 					msElapsed += pollPeriod;

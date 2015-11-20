@@ -331,8 +331,8 @@ public class SRSFileDAO {
 		FileHelper s3 = new FileHelper(this.refsetBucket, s3Client);
 
 		// Recover all files in the folder ready for the next release
-		logger.debug("Recovering External Files from {}/{}", this.refsetBucket, this.nextRelease);
-		List<String> externalFiles = s3.listFiles(this.nextRelease);
+		logger.debug("Recovering External Files from {}/{}", this.refsetBucket, targetReleaseDate);
+		List<String> externalFiles = s3.listFiles(targetReleaseDate);
 
 		for (String externalFile : externalFiles) {
 			// The current directory is also listed
@@ -342,15 +342,12 @@ public class SRSFileDAO {
 			InputStream fileStream = null;
 			try {
 				// Note that filename already contains directory separator, so append directly
-				fileStream = s3.getFileStream(this.nextRelease + externalFile);
-
-				// Files expected to be named for next release date, so rename to this release date
-				String localExternalFileName = externalFile.replace(this.nextRelease, targetReleaseDate);
-				File localExternalFile = new File(extractDir, localExternalFileName);
+				fileStream = s3.getFileStream(targetReleaseDate + externalFile);
+				File localExternalFile = new File(extractDir, externalFile);
 				logger.debug("Pulling in external file to {}, replacing any existing", localExternalFile.getAbsolutePath());
 				java.nio.file.Files.copy(fileStream, localExternalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} catch (Exception e) {
-				logger.error("Failed to pull external file from S3: {}{}", this.nextRelease, externalFile, e);
+				logger.error("Failed to pull external file from S3: {}{}", targetReleaseDate, externalFile, e);
 			} finally {
 				IOUtils.closeQuietly(fileStream);
 			}
