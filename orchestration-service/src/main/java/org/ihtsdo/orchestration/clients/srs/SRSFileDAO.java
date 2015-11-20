@@ -332,7 +332,7 @@ public class SRSFileDAO {
 
 		// Recover all files in the folder ready for the next release
 		logger.debug("Recovering External Files from {}/{}", this.refsetBucket, targetReleaseDate);
-		List<String> externalFiles = s3.listFiles(this.nextRelease);
+		List<String> externalFiles = s3.listFiles(targetReleaseDate);
 
 		for (String externalFile : externalFiles) {
 			// The current directory is also listed
