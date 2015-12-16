@@ -41,7 +41,8 @@ public class ReleaseService {
 	protected RVFRestClient rvfClient;
 
 
-	public synchronized void release(String productName, String branchPath, String effectiveDate, OrchestrationCallback callback)
+	public synchronized void release(String productName, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
+			OrchestrationCallback callback)
 			throws IOException, JSONException, BusinessServiceException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
@@ -57,7 +58,7 @@ public class ReleaseService {
 		orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ReleaseRunner(productName, branchPath, effectiveDate, callback))).start();
+		(new Thread(new ReleaseRunner(productName, branchPath, effectiveDate, exportType, callback))).start();
 	}
 
 
@@ -66,13 +67,16 @@ public class ReleaseService {
 		private final String branchPath;
 		private final String effectiveDate;
 		private final String productName;
+		private final SnowOwlRestClient.ExportType exportType;
 		private final OrchestrationCallback callback;
 
-		private ReleaseRunner(String productName, String branchPath, String effectiveDate, OrchestrationCallback callback) {
+		private ReleaseRunner(String productName, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
+				OrchestrationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
 			this.callback = callback;
 			this.productName = productName;
+			this.exportType = exportType;
 		}
 
 		@Override
@@ -82,15 +86,16 @@ public class ReleaseService {
 			try {
 				// Export
 				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
-				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, SnowOwlRestClient.ExtractType.DELTA);
+				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportType, SnowOwlRestClient.ExtractType.DELTA);
 
 				// Create files for SRS / Initiate SRS
-				SRSProjectConfiguration config = new SRSProjectConfiguration(productName);
+				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.effectiveDate);
 				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				boolean includeExternallyMaintainedFiles = true;
 				srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
 
 				// Note that unlike validation, we will not configure the build here.
+				// That will be done externally eg srs-script-client calls.
 
 				// Trigger SRS
 				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILDING.toString(), null);
@@ -112,7 +117,10 @@ public class ReleaseService {
 				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Release of {} failed.", branchPath, e);
 			}
-			callback.complete(finalOrchProcStatus);
+
+			if (callback != null) {
+				callback.complete(finalOrchProcStatus);
+			}
 		}
 	}
 

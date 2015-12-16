@@ -51,8 +51,6 @@ public class SRSFileDAO {
 	@Autowired
 	S3ClientImpl s3Client;
 
-	private String nextRelease;
-
 	private String refsetBucket;
 
 	static Map<String, RefsetCombiner> refsetMap;
@@ -99,8 +97,7 @@ public class SRSFileDAO {
 				new String[] { "der2_ssRefset_ModuleDependency****_INT_########.txt" }));
 	}
 
-	public SRSFileDAO(String nextRelease, String refsetBucket) {
-		this.nextRelease = nextRelease;
+	public SRSFileDAO(String refsetBucket) {
 		this.refsetBucket = refsetBucket;
 	}
 
@@ -114,6 +111,9 @@ public class SRSFileDAO {
 		File extractDir = Files.createTempDir();
 		unzipFlat(archive, extractDir);
 		logger.debug("Unzipped files to {}", extractDir.getAbsolutePath());
+
+		// Ensure all files have the correct release date
+		enforceReleaseDate(extractDir, releaseDate);
 
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
@@ -148,6 +148,19 @@ public class SRSFileDAO {
 		return extractDir;
 	}
 
+
+	private void enforceReleaseDate(File extractDir, String enforcedReleaseDate) throws ProcessWorkflowException {
+		//Loop through all the files in the directory and change the release date if required
+		for (File thisFile : extractDir.listFiles()) {
+			if (thisFile.isFile()) {
+				String thisReleaseDate = findDateInString(thisFile.getName(), true);
+				if (thisReleaseDate != null && !thisReleaseDate.equals(enforcedReleaseDate)) {
+					logger.debug("Modifying releaseDate in " + thisFile.getName() + " to " + enforcedReleaseDate);
+					renameFile(extractDir, thisFile, thisReleaseDate, enforcedReleaseDate);
+				}
+			}
+		}
+	}
 
 	private void mergeRefsets(File extractDir, String fileType, String releaseDate) throws IOException {
 		// Loop through our map of refsets required, and see what contributing files we can match
@@ -190,13 +203,17 @@ public class SRSFileDAO {
 		Assert.isTrue(targetDirectory.isDirectory(), targetDirectory.getAbsolutePath()
 				+ " must be a directory in order to rename files from " + find + " to " + replace);
 		for (File thisFile : targetDirectory.listFiles()) {
-			if (thisFile.exists() && !thisFile.isDirectory()) {
-				String currentName = thisFile.getName();
-				String newName = currentName.replace(find, replace);
-				if (!newName.equals(currentName)) {
-					File newFile = new File(targetDirectory, newName);
-					thisFile.renameTo(newFile);
-				}
+			renameFile(targetDirectory, thisFile, find, replace);
+		}
+	}
+
+	private void renameFile(File parentDir, File thisFile, String find, String replace) {
+		if (thisFile.exists() && !thisFile.isDirectory()) {
+			String currentName = thisFile.getName();
+			String newName = currentName.replace(find, replace);
+			if (!newName.equals(currentName)) {
+				File newFile = new File(parentDir, newName);
+				thisFile.renameTo(newFile);
 			}
 		}
 	}
@@ -282,7 +299,7 @@ public class SRSFileDAO {
 		try {
 			while (ze != null) {
 				if (!ze.isDirectory()) {
-					return findDateInString(ze.getName());
+					return findDateInString(ze.getName(), false);
 				}
 				ze = zis.getNextEntry();
 			}
@@ -293,12 +310,18 @@ public class SRSFileDAO {
 		throw new ProcessWorkflowException("No files found in archive: " + archive.getAbsolutePath());
 	}
 
-	public String findDateInString(String str) throws ProcessWorkflowException {
+	public String findDateInString(String str, boolean optional) throws ProcessWorkflowException {
 		Matcher dateMatcher = Pattern.compile("(\\d{8})").matcher(str);
 		if (dateMatcher.find()) {
 			return dateMatcher.group();
+		} else {
+			if (optional) {
+				logger.warn("Did not find a date in: " + str);
+			} else {
+				throw new ProcessWorkflowException("Unable to determine date from " + str);
+			}
 		}
-		throw new ProcessWorkflowException("Unable to determine date from " + str);
+		return null;
 	}
 
 	public void unzipFlat(File archive, File targetDir) throws ProcessWorkflowException, IOException {
