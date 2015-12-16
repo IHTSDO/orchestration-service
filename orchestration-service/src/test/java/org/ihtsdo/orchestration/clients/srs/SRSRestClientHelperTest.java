@@ -33,13 +33,13 @@ public class SRSRestClientHelperTest {
 			throw new Exception("Unable to load test resource: " + TEST_ARCHIVE);
 		}
 
-		srsFileDAO = new SRSFileDAO(null, null);
+		srsFileDAO = new SRSFileDAO(null);
 	}
 
 	@Test
 	public void testReleaseDateRecovery() throws ProcessWorkflowException {
 		String testFileName = "der2_cRefset_DescriptionInactivationIndicatorReferenceSetDelta_INT_20150318.txt";
-		String actualDate = srsFileDAO.findDateInString(testFileName);
+		String actualDate = srsFileDAO.findDateInString(testFileName, false);
 		Assert.assertEquals(TEST_DATE, actualDate);
 	}
 

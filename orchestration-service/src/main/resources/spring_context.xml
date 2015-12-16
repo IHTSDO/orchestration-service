@@ -73,7 +73,6 @@
 	</bean>
 	
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSFileDAO">
-		<constructor-arg value="${srs.next.release}"/>
 		<constructor-arg value="${aws.bucket.refsets}"/>
 	</bean>
 	

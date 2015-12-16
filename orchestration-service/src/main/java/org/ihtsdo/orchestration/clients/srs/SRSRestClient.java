@@ -93,9 +93,11 @@ public class SRSRestClient {
 	// Pulled out this section so it can be tested in isolation from Jira Issue
 	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config, boolean includeExternallyMaintainedFiles)
 			throws Exception {
-		String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
-		config.setReleaseDate(releaseDate);
-		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, releaseDate, includeExternallyMaintainedFiles);
+		if (config.getReleaseDate() == null) {
+			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
+			config.setReleaseDate(releaseDate);
+		}
+		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseDate(), includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 	}
 

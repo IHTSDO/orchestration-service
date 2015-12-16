@@ -8,6 +8,7 @@ import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
 import org.ihtsdo.orchestration.service.ValidationService;
+import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -43,6 +44,7 @@ public class TerminologyServerController {
 	public static final String BRANCH_PATH_KEY = "branchPath";
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
 	public static final String PRODUCT_NAME = "productName";
+	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -67,8 +69,10 @@ public class TerminologyServerController {
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getRequiredParamString(jsonObj, EFFECTIVE_DATE_KEY);
 			String productName = getRequiredParamString(jsonObj, PRODUCT_NAME);
+			String exportTypeStr = getRequiredParamString(jsonObj, EXPORT_TYPE);
+			SnowOwlRestClient.ExportType exportType = SnowOwlRestClient.ExportType.valueOf(exportTypeStr);
 			// Passing null callback as this request has not come from a termserver user
-			releaseService.release(productName, branchPath, effectiveDate, null);
+			releaseService.release(productName, branchPath, effectiveDate, exportType, null);
 		}
 	}
 

@@ -1,6 +1,7 @@
 package org.ihtsdo.orchestration.clients.srs;
 
 import org.ihtsdo.otf.utils.DateUtils;
+
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 
@@ -28,11 +29,12 @@ public class SRSProjectConfiguration {
 	String assertionGroupNames;
 	private String failureExportMax;
 
-	public SRSProjectConfiguration() {
+	public SRSProjectConfiguration(String productName, String releaseDate) {
+		this.productName = productName;
+		this.releaseDate = releaseDate;
 	}
 
-	public SRSProjectConfiguration(String productName) {
-		this.productName = productName;
+	public SRSProjectConfiguration() {
 	}
 
 	// Apache BeanUtils.copyProperties could also be used. Less code but slower
