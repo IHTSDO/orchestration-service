@@ -1,10 +1,12 @@
 package org.ihtsdo.orchestration.clients.srs;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -144,6 +146,11 @@ public class SRSFileDAO {
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
 		renameFiles(extractDir, "der2", "rel2");
+
+		// PGW 17/12/15 As a one off we're receiving CTV3 and SNOMED IDs in the SimpleMap file because this
+		// Data was received from Termmed. Strip this file for the moment.
+		File simpleMapFile = new File(extractDir, "rel2_sRefset_SimpleMapDelta_INT_" + releaseDate + ".txt");
+		stripAllExceptHeader(simpleMapFile);
 
 		return extractDir;
 	}
@@ -286,6 +293,33 @@ public class SRSFileDAO {
 		} else {
 			logger.warn("Did not find file {} needed to create subset {}", source, target);
 		}
+	}
+
+	private void stripAllExceptHeader(File target) throws IOException {
+
+		logger.debug("Stripping all but header from: " + target.getAbsolutePath());
+		// Move target file out of the way for a moment so it can be recreated
+		// with just the header row
+		File tempFile = null;
+		try {
+			tempFile = new File(target.getParent(), target.getName() + ".delete");
+			Files.move(target, tempFile);
+		} catch (IOException e) {
+			logger.warn("Failed to strip all but headers from " + target.getAbsolutePath() + " due to " + e.getMessage());
+			return;
+		}
+
+		// Read the first line from the temp file and write back to the original file
+		InputStream fis = new FileInputStream(tempFile);
+		InputStreamReader isr = new InputStreamReader(fis, CharEncoding.UTF_8);
+		BufferedReader br = new BufferedReader(isr);
+		String header = br.readLine();
+		FileUtils.writeStringToFile(target, header, CharEncoding.UTF_8);
+		br.close();
+		isr.close();
+		fis.close();
+
+		tempFile.delete();
 	}
 
 	public String recoverReleaseDate(File archive) throws ProcessWorkflowException, IOException {

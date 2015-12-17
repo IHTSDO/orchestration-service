@@ -9,7 +9,7 @@
 
 	<groupId>org.ihtsdo.orchestration</groupId>
 	<artifactId>orchestration-service-parent</artifactId>
-	<version>1.16</version>
+	<version>1.17</version>
 	<packaging>pom</packaging>
 
 	<properties>
