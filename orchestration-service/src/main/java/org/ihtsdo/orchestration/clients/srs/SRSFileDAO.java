@@ -14,8 +14,10 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -45,10 +47,13 @@ public class SRSFileDAO {
 	public static final String UNKNOWN_EFFECTIVE_DATE = "Unpublished";
 	public static final int EFFECTIVE_DATE_COLUMN = 1;
 	public static final int CHARACTERISTIC_TYPE_ID_COLUMN = 8;
+	public static final int REFSET_ID_COLUMN = 4;
 	public static final int TYPE_ID_COLUMN = 6;
 
 	public static final String STATED_RELATIONSHIP_SCTID = "900000000000010007";
 	public static final String TEXT_DEFINITION_SCTID = "900000000000550004";
+	public static final String ICDO_REFSET_ID = "446608001";
+	public static Set<String> ACCEPTABLE_SIMPLEMAP_VALUES;
 
 	@Autowired
 	S3ClientImpl s3Client;
@@ -97,6 +102,9 @@ public class SRSFileDAO {
 
 		refsetMap.put("ModuleDependency", new RefsetCombiner("der2_ssRefset_ModuleDependency****_INT_########.txt",
 				new String[] { "der2_ssRefset_ModuleDependency****_INT_########.txt" }));
+
+		ACCEPTABLE_SIMPLEMAP_VALUES = new HashSet<String>();
+		ACCEPTABLE_SIMPLEMAP_VALUES.add(ICDO_REFSET_ID);
 	}
 
 	public SRSFileDAO(String refsetBucket) {
@@ -150,7 +158,7 @@ public class SRSFileDAO {
 		// PGW 17/12/15 As a one off we're receiving CTV3 and SNOMED IDs in the SimpleMap file because this
 		// Data was received from Termmed. Strip this file for the moment.
 		File simpleMapFile = new File(extractDir, "rel2_sRefset_SimpleMapDelta_INT_" + releaseDate + ".txt");
-		stripAllExceptHeader(simpleMapFile);
+		filterUnacceptableValues(simpleMapFile, REFSET_ID_COLUMN, ACCEPTABLE_SIMPLEMAP_VALUES);
 
 		return extractDir;
 	}
@@ -292,6 +300,28 @@ public class SRSFileDAO {
 			}
 		} else {
 			logger.warn("Did not find file {} needed to create subset {}", source, target);
+		}
+	}
+
+	/*
+	 * Creates a file containing all the rows which have "mustMatch" in columnNum. Plus the header row.
+	 */
+	protected void filterUnacceptableValues(File target, int columnNum, Set<String> acceptableValues) throws IOException {
+		if (target.exists() && !target.isDirectory()) {
+			logger.debug("Filtering unacceptable values from " + target.getAbsolutePath());
+			List<String> allLines = FileUtils.readLines(target, StandardCharsets.UTF_8);
+			List<String> acceptableLines = new ArrayList<String>();
+			int lineCount = 1;
+			for (String thisLine : allLines) {
+				String[] columns = thisLine.split("\t");
+				if (lineCount == 1 || (columns.length > columnNum && acceptableValues.contains(columns[columnNum]))) {
+					acceptableLines.add(thisLine);
+				}
+				lineCount++;
+			}
+			FileUtils.writeLines(target, CharEncoding.UTF_8, acceptableLines);
+		} else {
+			logger.warn("Did not find file {} needed to filter out unacceptable values", target);
 		}
 	}
 
