@@ -1,5 +1,13 @@
 package org.ihtsdo.orchestration.service;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
@@ -13,14 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class ValidationService {
 
