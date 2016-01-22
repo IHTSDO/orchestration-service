@@ -144,9 +144,10 @@ public class RVFRestClient {
 		multipartEntityBuilder.addTextBody("rf2DeltaOnly", Boolean.TRUE.toString());
 		multipartEntityBuilder.addTextBody("previousIntReleaseVersion", config.getPreviousInternationalRelease());
 		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
-		multipartEntityBuilder.addTextBody("runId", Long.toString(System.currentTimeMillis()));
+		String runId = Long.toString(System.currentTimeMillis());
+		multipartEntityBuilder.addTextBody("runId", runId);
 		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());
-		multipartEntityBuilder.addTextBody("storageLocation", RVF_TS);
+		multipartEntityBuilder.addTextBody("storageLocation", RVF_TS + "/" + runId );
 		multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 		HttpEntity httpEntity = multipartEntityBuilder.build();
 		JSONResource response;
