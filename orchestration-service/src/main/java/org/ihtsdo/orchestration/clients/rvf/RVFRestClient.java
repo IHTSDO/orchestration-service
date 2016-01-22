@@ -26,7 +26,7 @@ import us.monoid.web.RestyMod;
 
 public class RVFRestClient {
 
-	private static final String RVF_TS = "RVF_TS";
+	private static final String RVF_TS = "RVF_TS/";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -147,7 +147,7 @@ public class RVFRestClient {
 		String runId = Long.toString(System.currentTimeMillis());
 		multipartEntityBuilder.addTextBody("runId", runId);
 		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());
-		multipartEntityBuilder.addTextBody("storageLocation", RVF_TS + "/" + runId );
+		multipartEntityBuilder.addTextBody("storageLocation", RVF_TS + runId );
 		multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 		HttpEntity httpEntity = multipartEntityBuilder.build();
 		JSONResource response;

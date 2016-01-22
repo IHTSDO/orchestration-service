@@ -54,6 +54,7 @@ public class SRSFileDAO {
 	public static final String TEXT_DEFINITION_SCTID = "900000000000550004";
 	public static final String ICDO_REFSET_ID = "446608001";
 	public static Set<String> ACCEPTABLE_SIMPLEMAP_VALUES;
+	public static final String LINE_ENDING = "\r\n";
 
 	@Autowired
 	S3ClientImpl s3Client;
@@ -199,7 +200,7 @@ public class SRSFileDAO {
 						fileLines.remove(0);
 					}
 					boolean append = !isFirstContributor;
-					FileUtils.writeLines(combinedRefsetFile, fileLines, append);
+					FileUtils.writeLines(combinedRefsetFile, CharEncoding.UTF_8, fileLines, LINE_ENDING, append);
 					isFirstContributor = false;
 					// Now we can delete the contributor so it doesn't get uploaded as another input file
 					contributorFile.delete();
@@ -260,7 +261,7 @@ public class SRSFileDAO {
 					}
 					newLines.add(thisLine);
 				}
-				FileUtils.writeLines(thisFile, CharEncoding.UTF_8, newLines);
+				FileUtils.writeLines(thisFile, CharEncoding.UTF_8, newLines, LINE_ENDING);
 			}
 		}
 	}
@@ -297,9 +298,9 @@ public class SRSFileDAO {
 				}
 				lineCount++;
 			}
-			FileUtils.writeLines(target, CharEncoding.UTF_8, newLines);
+			FileUtils.writeLines(target, CharEncoding.UTF_8, newLines, LINE_ENDING);
 			if (removeFromOriginal) {
-				FileUtils.writeLines(source, CharEncoding.UTF_8, remainingLines);
+				FileUtils.writeLines(source, CharEncoding.UTF_8, remainingLines, LINE_ENDING);
 			}
 		} else {
 			logger.warn("Did not find file {} needed to create subset {}", source, target);
@@ -322,7 +323,7 @@ public class SRSFileDAO {
 				}
 				lineCount++;
 			}
-			FileUtils.writeLines(target, CharEncoding.UTF_8, acceptableLines);
+			FileUtils.writeLines(target, CharEncoding.UTF_8, acceptableLines, LINE_ENDING);
 		} else {
 			logger.warn("Did not find file {} needed to filter out unacceptable values", target);
 		}
