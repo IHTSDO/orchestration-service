@@ -110,13 +110,9 @@ public class SRSFileDAO {
 	public SRSFileDAO(String refsetBucket) {
 		this.refsetBucket = refsetBucket;
 	}
-
-	/*
-	 * @return - the directory containing the files ready for uploading to SRS
-	 */
-	public File readyInputFiles(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
-			IOException {
-
+	
+	
+	public File extractAndConvertExportWithRF2FileNameFormat(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
 		// We're going to create release files in a temp directory
 		File extractDir = Files.createTempDir();
 		unzipFlat(archive, extractDir);
@@ -150,16 +146,23 @@ public class SRSFileDAO {
 		if (includeExternalFiles) {
 			includeExternallyMaintainedFiles(extractDir, releaseDate);
 		}
-		
+		return extractDir;
+	}
+
+	/*
+	 * @return - the directory containing the files ready for uploading to SRS
+	 */
+	public File readyInputFiles(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
+			IOException {
+
+		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseDate, includeExternalFiles);
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
 		renameFiles(extractDir, "der2", "rel2");
-
 		// PGW 17/12/15 As a one off we're receiving CTV3 and SNOMED IDs in the SimpleMap file because this
 		// Data was received from Termmed. Strip this file for the moment.
 		File simpleMapFile = new File(extractDir, "rel2_sRefset_SimpleMapDelta_INT_" + releaseDate + ".txt");
 		filterUnacceptableValues(simpleMapFile, REFSET_ID_COLUMN, ACCEPTABLE_SIMPLEMAP_VALUES);
-
 		return extractDir;
 	}
 
@@ -181,7 +184,7 @@ public class SRSFileDAO {
 		// Loop through our map of refsets required, and see what contributing files we can match
 		for (Map.Entry<String, RefsetCombiner> refset : refsetMap.entrySet()) {
 
-			RefsetCombiner rc = (RefsetCombiner) refset.getValue();
+			RefsetCombiner rc = refset.getValue();
 			String combinedRefset = getFilename(rc.targetFilePattern, fileType, releaseDate);
 			// Now can we find any of the contributing files to add to that file?
 			boolean isFirstContributor = true;

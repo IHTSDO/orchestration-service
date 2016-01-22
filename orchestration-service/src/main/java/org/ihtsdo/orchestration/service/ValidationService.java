@@ -60,10 +60,15 @@ public class ValidationService {
 	}
 
 	public synchronized void validate(String branchPath, String effectiveDate) throws EntityAlreadyExistsException {
-		validate(branchPath, effectiveDate, null);
+		validate(branchPath, effectiveDate, false, null);
+	}
+	
+	public synchronized void validate(String branchPath, String effectiveDate, OrchestrationCallback callback) throws EntityAlreadyExistsException {
+		//skip srs build for rvf validation but leave the option open in case we need it
+		validate(branchPath, effectiveDate, false, callback);
 	}
 
-	public synchronized void validate(String branchPath, String effectiveDate, OrchestrationCallback callback) throws EntityAlreadyExistsException {
+	public synchronized void validate(String branchPath, String effectiveDate, boolean isSrsBuildRequired, OrchestrationCallback callback) throws EntityAlreadyExistsException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = orchProcDAO.getStatus(branchPath, VALIDATION_PROCESS);
@@ -75,7 +80,7 @@ public class ValidationService {
 		orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ValidationRunner(branchPath, effectiveDate, callback))).start();
+		(new Thread(new ValidationRunner(branchPath, effectiveDate, callback, isSrsBuildRequired))).start();
 
 	}
 
@@ -107,15 +112,16 @@ public class ValidationService {
 		private final String effectiveDate;
 		private final OrchestrationCallback callback;
 		private SRSProjectConfiguration config;
+		private boolean isSrsBuildRequired;
 
-		private ValidationRunner(String branchPath, String effectiveDate, OrchestrationCallback callback) {
+		private ValidationRunner(String branchPath, String effectiveDate, OrchestrationCallback callback, boolean isSrsBuildRequired) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
 			//Note that the SRS Release date is determined from the date found in the archive file
-			
 			this.callback = callback;
 			config = defaultConfiguration.clone();
 			config.setProductName(branchPath.replace("/", "_"));
+			this.isSrsBuildRequired = isSrsBuildRequired;
 		}
 
 		@Override
@@ -127,28 +133,11 @@ public class ValidationService {
 				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, SnowOwlRestClient.ExportType.UNPUBLISHED,
 						SnowOwlRestClient.ExtractType.DELTA);
-
-				// Create files for SRS / Initiate SRS
-				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
-				boolean includeExternallyMaintainedFiles = false;
-				srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
-
-				// Trigger SRS
-				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
-				srsClient.configureBuild(config);
-				Map<String, String> srsResponse = srsClient.runBuild(config);
-
-				// Wait for RVF response
-				// Did we obtain the RVF location for the next step in the process to poll?
-				if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
-					orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
-					JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
-					orchProcDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
-					orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
-					finalOrchProcStatus = OrchProcStatus.COMPLETED;
+				if (isSrsBuildRequired) {
+					 finalOrchProcStatus = validationWithSrsBuild(exportArchive);
 				} else {
-					String error = "Did not find RVF Response location in SRS Client Response";
-					orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), error);
+					//send delta export directly for RVF validation
+					finalOrchProcStatus = validateByRvfDirectly(exportArchive);
 				}
 			} catch (Exception e) {
 				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
@@ -156,6 +145,49 @@ public class ValidationService {
 			}
 			callback.complete(finalOrchProcStatus);
 		}
-	}
 
+		private OrchProcStatus validationWithSrsBuild(File exportArchive)
+				throws Exception {
+			OrchProcStatus status = OrchProcStatus.FAILED;
+			// Create files for SRS / Initiate SRS
+			orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
+			boolean includeExternallyMaintainedFiles = false;
+			srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
+			// Trigger SRS
+			orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
+			srsClient.configureBuild(config);
+			Map<String, String> srsResponse = srsClient.runBuild(config);
+
+			// Wait for RVF response
+			// Did we obtain the RVF location for the next step in the process to poll?
+			if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
+				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
+				JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
+				orchProcDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
+				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
+				status = OrchProcStatus.COMPLETED;
+			} else {
+				String error = "Did not find RVF Response location in SRS Client Response";
+				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), error);
+			}
+			return status;
+		}
+		
+		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
+			OrchProcStatus status = OrchProcStatus.FAILED;
+			//change file name exported to RF2 format
+			orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
+			File zipFile = rvfClient.prepareExportFilesForValidation(exportArchive, config, false);
+			orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
+			//call validation API
+			String rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(zipFile, config);
+			//polling results
+			orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
+			JSONObject rvfReport = rvfClient.waitForResponse(rvfResultUrl);
+			orchProcDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
+			orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
+			status = OrchProcStatus.COMPLETED;
+			return status;
+		}
+	}
 }

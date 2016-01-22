@@ -1,15 +1,32 @@
 package org.ihtsdo.orchestration.clients.rvf;
 
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.ihtsdo.orchestration.clients.srs.SRSFileDAO;
+import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
+import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
+import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
+import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
+import org.ihtsdo.otf.utils.ZipFileUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+
 import us.monoid.web.JSONResource;
 import us.monoid.web.RestyMod;
 
 public class RVFRestClient {
+
+	private static final String RVF_TS = "RVF_TS";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -23,6 +40,12 @@ public class RVFRestClient {
 	private final int pollPeriod;
 	private final int maxElapsedTime;
 	private final int INDENT = 2;
+	
+	@Autowired
+	protected SRSFileDAO srsDAO;
+
+	private String rvfRootUrl;
+	
 
 	/**
 	 * 
@@ -31,8 +54,9 @@ public class RVFRestClient {
 	 * @param timeout
 	 *            time to continue polling for in minutes
 	 */
-	public RVFRestClient(int pollPeriod, int timeout) {
+	public RVFRestClient(String rvfRootUrl,int pollPeriod, int timeout) {
 		this.resty = new RestyMod();
+		this.rvfRootUrl = rvfRootUrl;
 		this.pollPeriod = pollPeriod * 1000;
 		maxElapsedTime = timeout * 60 * 1000;
 	}
@@ -103,6 +127,36 @@ public class RVFRestClient {
 		return json;
 
 	}
-	
+
+	public File prepareExportFilesForValidation(File exportArchive, SRSProjectConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
+		File extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseDate(), includeExternalFiles);
+		File zipFile = File.createTempFile(config.getProductName() + "_" + config.getReleaseDate(), ".zip");
+		logger.debug("zip updated file into:" + zipFile);
+		ZipFileUtils.zip(extractDir.getAbsolutePath(), zipFile.getAbsolutePath());
+		return zipFile;
+	}
+
+	public String runValidationForRF2DeltaExport(File zipFile, SRSProjectConfiguration config) throws ProcessingException {
+		String rvfResultUrl = null;
+		String validaitonUrl = rvfRootUrl + "/run-post";
+		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
+		multipartEntityBuilder.addBinaryBody("file", zipFile, ContentType.create("multipart/form-data"), zipFile.getName());
+		multipartEntityBuilder.addTextBody("rf2DeltaOnly", Boolean.TRUE.toString());
+		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
+		multipartEntityBuilder.addTextBody("runId", Long.toString(System.currentTimeMillis()));
+		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());
+		multipartEntityBuilder.addTextBody("storageLocation", RVF_TS);
+		multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+		HttpEntity httpEntity = multipartEntityBuilder.build();
+		JSONResource response;
+		try {
+			response = resty.json(validaitonUrl, new HttpEntityContent(httpEntity));
+			RestyServiceHelper.ensureSuccessfull(response);
+			rvfResultUrl = response.get("resultURL").toString();
+		} catch ( Exception e) {
+			throw new ProcessingException("Failed to upload " + zipFile.getName() + " to RVF for validation", e);
+		}
+		return rvfResultUrl;
+	}
 
 }

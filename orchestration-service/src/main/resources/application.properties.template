@@ -23,6 +23,7 @@ srs.next.release =
 #RVF Server
 rvf.pollPeriod = 60  #Polling interval in seconds
 rvf.timeout = 120 #Timeout in minutes
+rvf.root.url = https://localhost/api/v1/
 
 # Jira
 jira.url = http://localhost:8080/jira
