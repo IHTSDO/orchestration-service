@@ -142,6 +142,7 @@ public class RVFRestClient {
 		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
 		multipartEntityBuilder.addBinaryBody("file", zipFile, ContentType.create("multipart/form-data"), zipFile.getName());
 		multipartEntityBuilder.addTextBody("rf2DeltaOnly", Boolean.TRUE.toString());
+		multipartEntityBuilder.addTextBody("previousIntReleaseVersion", config.getPreviousInternationalRelease());
 		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
 		multipartEntityBuilder.addTextBody("runId", Long.toString(System.currentTimeMillis()));
 		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());
