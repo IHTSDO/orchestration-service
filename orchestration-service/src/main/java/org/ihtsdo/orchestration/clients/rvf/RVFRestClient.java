@@ -131,7 +131,7 @@ public class RVFRestClient {
 	public File prepareExportFilesForValidation(File exportArchive, SRSProjectConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
 		File extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseDate(), includeExternalFiles);
 		File zipFile = File.createTempFile(config.getProductName() + "_" + config.getReleaseDate(), ".zip");
-		logger.debug("zip updated file into:" + zipFile);
+		logger.debug("zip updated file into:" + zipFile.getName());
 		ZipFileUtils.zip(extractDir.getAbsolutePath(), zipFile.getAbsolutePath());
 		return zipFile;
 	}
@@ -154,6 +154,7 @@ public class RVFRestClient {
 			response = resty.json(validaitonUrl, new HttpEntityContent(httpEntity));
 			RestyServiceHelper.ensureSuccessfull(response);
 			rvfResultUrl = response.get("resultURL").toString();
+			logger.debug("RVFResult URL:" + rvfResultUrl);
 		} catch ( Exception e) {
 			throw new ProcessingException("Failed to upload " + zipFile.getName() + " to RVF for validation", e);
 		}
