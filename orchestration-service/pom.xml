@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.ihtsdo.orchestration</groupId>
 		<artifactId>orchestration-service-parent</artifactId>
-		<version>1.19</version>
+		<version>1.20</version>
 	</parent>
 
 	<artifactId>orchestration-service</artifactId>
@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>org.ihtsdo.otf.common</groupId>
 			<artifactId>otf-common</artifactId>
-			<version>0.0.21</version>
+			<version>0.0.22</version>
 			<exclusions>
 				<exclusion>
 					<artifactId>spring-beans</artifactId>

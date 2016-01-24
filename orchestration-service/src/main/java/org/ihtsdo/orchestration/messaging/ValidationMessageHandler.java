@@ -1,5 +1,11 @@
 package org.ihtsdo.orchestration.messaging;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.jms.JMSException;
+import javax.jms.TextMessage;
+
 import org.ihtsdo.orchestration.service.OrchProcStatus;
 import org.ihtsdo.orchestration.service.OrchestrationCallback;
 import org.ihtsdo.orchestration.service.ValidationService;
@@ -10,12 +16,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.jms.JMSException;
-import javax.jms.TextMessage;
 
 @Component
 public class ValidationMessageHandler {

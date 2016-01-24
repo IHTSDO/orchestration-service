@@ -77,6 +77,7 @@
 	</bean>
 	
 	<bean class="org.ihtsdo.orchestration.clients.rvf.RVFRestClient" >
+		<constructor-arg value="${rvf.root.url}"/>
 		<constructor-arg value="${rvf.pollPeriod}"/>
 		<constructor-arg value="${rvf.timeout}"/>
 	</bean>
