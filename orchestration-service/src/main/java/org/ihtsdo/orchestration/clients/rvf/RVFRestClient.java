@@ -24,9 +24,11 @@ import org.springframework.util.Assert;
 import us.monoid.web.JSONResource;
 import us.monoid.web.RestyMod;
 
+import com.google.common.io.Files;
+
 public class RVFRestClient {
 
-	private static final String RVF_TS = "RVF_TS/";
+	private static final String RVF_TS = "RVF_TS";
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
@@ -130,7 +132,8 @@ public class RVFRestClient {
 
 	public File prepareExportFilesForValidation(File exportArchive, SRSProjectConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
 		File extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseDate(), includeExternalFiles);
-		File zipFile = File.createTempFile(config.getProductName() + "_" + config.getReleaseDate(), ".zip");
+		File tempDir = Files.createTempDir();
+		File zipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
 		logger.debug("zip updated file into:" + zipFile.getName());
 		ZipFileUtils.zip(extractDir.getAbsolutePath(), zipFile.getAbsolutePath());
 		return zipFile;
@@ -138,7 +141,6 @@ public class RVFRestClient {
 
 	public String runValidationForRF2DeltaExport(File zipFile, SRSProjectConfiguration config) throws ProcessingException {
 		String rvfResultUrl = null;
-		String validaitonUrl = rvfRootUrl + "/run-post";
 		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
 		multipartEntityBuilder.addBinaryBody("file", zipFile, ContentType.create("multipart/form-data"), zipFile.getName());
 		multipartEntityBuilder.addTextBody("rf2DeltaOnly", Boolean.TRUE.toString());
@@ -147,12 +149,14 @@ public class RVFRestClient {
 		String runId = Long.toString(System.currentTimeMillis());
 		multipartEntityBuilder.addTextBody("runId", runId);
 		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());
-		multipartEntityBuilder.addTextBody("storageLocation", RVF_TS + runId );
+		String storageLocation = RVF_TS  + "/" + config.getProductName() + "/" + runId;
+		multipartEntityBuilder.addTextBody("storageLocation", storageLocation );
+		logger.debug("Validation storage location" + storageLocation);
 		multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 		HttpEntity httpEntity = multipartEntityBuilder.build();
 		JSONResource response;
 		try {
-			response = resty.json(validaitonUrl, new HttpEntityContent(httpEntity));
+			response = resty.json(rvfRootUrl + "/run-post", new HttpEntityContent(httpEntity));
 			RestyServiceHelper.ensureSuccessfull(response);
 			rvfResultUrl = response.get("resultURL").toString();
 			logger.debug("RVFResult URL:" + rvfResultUrl);
