@@ -59,8 +59,8 @@ public class ValidationService {
 		IOUtils.closeQuietly(is);
 	}
 
-	public synchronized void validate(String branchPath, String effectiveDate) throws EntityAlreadyExistsException {
-		validate(branchPath, effectiveDate, false, null);
+	public synchronized void validate(String branchPath, String effectiveDate, boolean isSrsBuildRequired) throws EntityAlreadyExistsException {
+		validate(branchPath, effectiveDate, isSrsBuildRequired, null);
 	}
 	
 	public synchronized void validate(String branchPath, String effectiveDate, OrchestrationCallback callback) throws EntityAlreadyExistsException {

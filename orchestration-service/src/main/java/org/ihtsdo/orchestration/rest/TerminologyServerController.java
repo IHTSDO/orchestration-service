@@ -50,6 +50,7 @@ public class TerminologyServerController {
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
 	public static final String PRODUCT_NAME = "productName";
 	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
+	public static final String SRS_BUILD_REQUIRED = "srsBuildRequired";
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -60,7 +61,12 @@ public class TerminologyServerController {
 			JsonObject jsonObj = options.getAsJsonObject();
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
-			validationService.validate(branchPath, effectiveDate);
+			String srsBuildRequired = getOptionalParamString(jsonObj, SRS_BUILD_REQUIRED);
+			boolean isSrsBuildRequired = false;
+			if ( Boolean.TRUE.toString().equalsIgnoreCase(srsBuildRequired)) {
+				isSrsBuildRequired = true;
+			}
+			validationService.validate(branchPath, effectiveDate, isSrsBuildRequired);
 		}
 	}
 
@@ -101,7 +107,7 @@ public class TerminologyServerController {
 	@RequestMapping(value = "/validations/bulk/latest/statuses", method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public List<String> getLatestValidationStatuses(@RequestParam String[] paths) throws ResourceNotFoundException, IOException {
-		logger.info("Getting latest validation statuses for paths '{}'", paths);
+		logger.info("Getting latest validation statuses for paths '{}'", (Object[]) paths);
 		return validationService.getLatestValidationStatuses(Arrays.asList(paths));
 	}
 
