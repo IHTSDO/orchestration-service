@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -55,6 +57,8 @@ public class SRSFileDAO {
 	public static final String ICDO_REFSET_ID = "446608001";
 	public static Set<String> ACCEPTABLE_SIMPLEMAP_VALUES;
 	public static final String LINE_ENDING = "\r\n";
+
+	private static final String[] FILE_NAMES_TO_BE_EXCLUDED = {"der2_iissscRefset_ICD-9-CMEquivalenceComplexMapReferenceSet"};
 
 	@Autowired
 	S3ClientImpl s3Client;
@@ -118,7 +122,8 @@ public class SRSFileDAO {
 
 		// Ensure all files have the correct release date
 		enforceReleaseDate(extractDir, releaseDate);
-
+		// suppress files that no longer to be released.
+		suppressFilesNotRequired(FILE_NAMES_TO_BE_EXCLUDED, extractDir);
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
 		mergeRefsets(extractDir, "Delta", releaseDate);
@@ -146,6 +151,32 @@ public class SRSFileDAO {
 		}
 		return extractDir;
 	}
+
+	private void suppressFilesNotRequired(String[] filenamesToBeExcluded, File extractDir) {
+		
+		List<String> filesToBeRemoved = new ArrayList<>();
+		for (final String fileName : filenamesToBeExcluded) {
+			String[] filesFound = extractDir.list(new FilenameFilter() {
+				
+				@Override
+				public boolean accept(File dir, String name) {
+					if (name.startsWith(fileName)) {
+						return true;
+					}
+					return false;
+				}
+			});
+			filesToBeRemoved.addAll(Arrays.asList(filesFound));
+		}
+		for (String fileName : filesToBeRemoved) {
+			File file = new File(extractDir,fileName);
+			if (file.exists()) {
+				logger.debug("File is excluded:" + file.getName());
+				file.delete();
+			}
+		}
+	}
+
 
 	/*
 	 * @return - the directory containing the files ready for uploading to SRS
