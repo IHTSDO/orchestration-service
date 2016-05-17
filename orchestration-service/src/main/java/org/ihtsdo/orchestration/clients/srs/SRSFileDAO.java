@@ -91,9 +91,6 @@ public class SRSFileDAO {
 		refsetMap.put("DescriptionType", new RefsetCombiner("der2_ciRefset_DescriptionType****_INT_########.txt",
 				new String[] { "der2_ciRefset_DescriptionFormat****_INT_########.txt" }));
 
-		refsetMap.put("ComplexMap", new RefsetCombiner("der2_iissscRefset_ComplexMap****_INT_########.txt",
-				new String[] { "der2_iissscRefset_ICD-9-CMEquivalenceComplexMapReferenceSet****_INT_########.txt" }));
-
 		refsetMap.put("ExtendedMap", new RefsetCombiner("der2_iisssccRefset_ExtendedMap****_INT_########.txt",
 				new String[] { "der2_iisssccRefset_ICD-10ComplexMapReferenceSet****_INT_########.txt" }));
 
