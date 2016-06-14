@@ -1,11 +1,8 @@
 package org.ihtsdo.orchestration.rest;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
@@ -20,19 +17,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
-
 import us.monoid.json.JSONException;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/REST/termserver")
@@ -96,10 +88,10 @@ public class TerminologyServerController {
 		path = PathUtil.getStringBetween(path, before, after);
 		final ValidationReportDTO latestValidation = validationService.getLatestValidation(path);
 		if (latestValidation != null) {
-			logger.info("Got latest validation for '{}' - {} ", path, latestValidation.getExecutionStatus() );
+			logger.debug("Got latest validation for '{}' - {} ", path, latestValidation.getExecutionStatus() );
 			return new ResponseEntity<ValidationReportDTO>(latestValidation,HttpStatus.OK);
 		} else {
-			logger.warn("Validation for path '" + path + "' not found.");
+			logger.info("Validation for path '" + path + "' not found.");
 			return new ResponseEntity<ValidationReportDTO>(HttpStatus.NOT_FOUND);
 		}
 	}
@@ -107,7 +99,7 @@ public class TerminologyServerController {
 	@RequestMapping(value = "/validations/bulk/latest/statuses", method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public List<String> getLatestValidationStatuses(@RequestParam String[] paths) throws ResourceNotFoundException, IOException {
-		logger.info("Getting latest validation statuses for paths '{}'", (Object[]) paths);
+		logger.debug("Getting latest validation statuses for paths '{}'", (Object[]) paths);
 		return validationService.getLatestValidationStatuses(Arrays.asList(paths));
 	}
 

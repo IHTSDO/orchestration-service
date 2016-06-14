@@ -1,13 +1,5 @@
 package org.ihtsdo.orchestration.service;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.io.IOUtils;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
@@ -21,6 +13,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
 
 public class ValidationService {
 
@@ -43,12 +44,14 @@ public class ValidationService {
 	protected RVFRestClient rvfClient;
 
 	private SRSProjectConfiguration defaultConfiguration;
+	private ExecutorService executorService;
 
 	public ValidationService(SRSProjectConfiguration defaultConfiguration) {
 		this.defaultConfiguration = defaultConfiguration;
 	}
 
 	public void init() throws IOException {
+		executorService = Executors.newCachedThreadPool();
 		// Load the readme header from our resource into the default configuration
 		// More efficient to do it here than load it each time
 		InputStream is = getClass().getResourceAsStream(README_HEADER_FILENAME);
@@ -62,7 +65,7 @@ public class ValidationService {
 	public synchronized void validate(String branchPath, String effectiveDate, boolean isSrsBuildRequired) throws EntityAlreadyExistsException {
 		validate(branchPath, effectiveDate, isSrsBuildRequired, null);
 	}
-	
+
 	public synchronized void validate(String branchPath, String effectiveDate, OrchestrationCallback callback) throws EntityAlreadyExistsException {
 		//skip srs build for rvf validation but leave the option open in case we need it
 		validate(branchPath, effectiveDate, false, callback);
@@ -96,15 +99,27 @@ public class ValidationService {
 		return null;
 	}
 
-	public List<String> getLatestValidationStatuses(List<String> paths) {
-		List<String> statuses = new ArrayList<>();
-		for (String path : paths) {
-			statuses.add(orchProcDAO.getStatus(path, VALIDATION_PROCESS));
+	public List<String> getLatestValidationStatuses(List<String> paths) throws IOException {
+		List<Callable<String>> tasks = new ArrayList<>();
+		for (final String path : paths) {
+			tasks.add(new Callable<String>() {
+				@Override
+				public String call() throws Exception {
+					return orchProcDAO.getStatus(path, VALIDATION_PROCESS);
+				}
+			});
 		}
-		return statuses;
+		try {
+			final List<Future<String>> futures = executorService.invokeAll(tasks);
+			final List<String> statuses = new ArrayList<>();
+			for (Future<String> future : futures) {
+				statuses.add(future.get());
+			}
+			return statuses;
+		} catch (InterruptedException | ExecutionException e) {
+			throw new IOException("Failed to load validation statuses.", e);
+		}
 	}
-
-
 
 	private class ValidationRunner implements Runnable {
 
@@ -134,7 +149,7 @@ public class ValidationService {
 				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, SnowOwlRestClient.ExportType.UNPUBLISHED,
 						SnowOwlRestClient.ExtractType.DELTA);
 				if (isSrsBuildRequired) {
-					 finalOrchProcStatus = validationWithSrsBuild(exportArchive);
+					finalOrchProcStatus = validationWithSrsBuild(exportArchive);
 				} else {
 					//send delta export directly for RVF validation
 					finalOrchProcStatus = validateByRvfDirectly(exportArchive);
@@ -172,7 +187,7 @@ public class ValidationService {
 			}
 			return status;
 		}
-		
+
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
 			OrchProcStatus status = OrchProcStatus.FAILED;
 			//change file name exported to RF2 format
