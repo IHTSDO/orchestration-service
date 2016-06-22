@@ -8,52 +8,7 @@
 
 	<context:annotation-config />
 
-	<import resource="classpath*:common_context.xml"/>
 	<import resource="jms-api-context.xml"/>
-
-	<bean class="org.springframework.scheduling.config.ScheduledTaskRegistrar">
-		<property name="cronTasks">
-			<map>
-				<entry>
-					<key>
-						<bean class="org.ihtsdo.orchestration.schedule.StartFilteredImport">
-							<property name="importEverything" value="${schedule.startDailyImport.importEverything}"/>
-						</bean>
-					</key>
-					<value>${schedule.startDailyImport.cron}</value>
-				</entry>
-				<entry>
-					<key>
-						<bean class="org.ihtsdo.orchestration.schedule.StartDailyExport"/>
-					</key>
-					<value>${schedule.startDailyExport.cron}</value>
-				</entry>
-				<entry>
-					<key>
-						<bean class="org.ihtsdo.orchestration.schedule.CheckJiraTickets"/>
-					</key>
-					<value>${schedule.pollJiraTickets.cron}</value>
-				</entry>
-			</map>
-		</property>
-	</bean>
-	
-	<bean class="org.ihtsdo.orchestration.importer.ImporterService"/>
-	
-	<bean class="org.ihtsdo.orchestration.importer.Importer"/>
-
-	<bean class="org.ihtsdo.orchestration.workflow.TicketWorkflowManager">
-		<constructor-arg>
-			<map>
-				<entry key="DailyDelta" value-ref="dailyDeltaTicketWorkflow"/>
-				<entry key="DailyExport">
-					<bean class="org.ihtsdo.orchestration.workflow.DailyExportTicketWorkflow"/>
-				</entry>
-			</map>
-		</constructor-arg>
-	</bean>
-
-	<bean id="dailyDeltaTicketWorkflow" class="org.ihtsdo.orchestration.workflow.DailyDeltaTicketWorkflow"/>
 
 	<bean class="org.ihtsdo.otf.rest.client.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
@@ -93,7 +48,7 @@
 		</constructor-arg>
 	</bean>
 	
-	<bean class="org.ihtsdo.orchestration.dao.OrchProcDAO">
+	<bean class="org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO">
 		<constructor-arg value="${ts.reportsBucket}"/>
 	</bean>
 
@@ -110,19 +65,6 @@
 	<bean name="jiraDailyExportProjectKey" class="java.lang.String" >
 		<constructor-arg value="${jira.dailyExportProjectKey}"/>
 	</bean>
-
-	<bean class="org.ihtsdo.orchestration.clients.jira.JiraDataHelper" >
-		<constructor-arg>
-			<util:constant static-field="org.ihtsdo.orchestration.workflow.TSAbstractTicketWorkflow.JIRA_DATA_MARKER"/>
-		</constructor-arg>
-	</bean>
-
-	<bean class="org.ihtsdo.orchestration.clients.workbenchdata.WorkbenchWorkflowClient"/>
-
-	<bean class="org.ihtsdo.orchestration.clients.snowowl.ImportErrorParser"/>
-	<bean class="org.ihtsdo.orchestration.importer.ImportBlacklistService"/>
-
-	<bean class="org.ihtsdo.orchestration.importer.DevTestTool"/>
 
 	<bean name="snowowlProjectBranch" class="java.lang.String">
 		<constructor-arg value="${snowowl.projectBranch}"/>
