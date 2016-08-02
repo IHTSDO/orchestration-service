@@ -31,7 +31,7 @@ public class ValidationMessageHandler {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	@JmsListener(destination = "orchestration.termserver-release-validation")
+	@JmsListener(destination = "${orchestration.name}.orchestration.termserver-release-validation")
 	public void receiveValidationRequest(final TextMessage messageIn) {
 		try {
 			validationService.validate(messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new OrchestrationCallback() {
