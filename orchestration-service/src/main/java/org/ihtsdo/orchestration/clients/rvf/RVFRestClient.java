@@ -9,7 +9,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.orchestration.clients.srs.SRSFileDAO;
-import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
@@ -130,7 +129,7 @@ public class RVFRestClient {
 
 	}
 
-	public File prepareExportFilesForValidation(File exportArchive, SRSProjectConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
+	public File prepareExportFilesForValidation(File exportArchive, ValidationConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
 		File extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseDate(), includeExternalFiles);
 		File tempDir = Files.createTempDir();
 		File zipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
@@ -139,12 +138,14 @@ public class RVFRestClient {
 		return zipFile;
 	}
 
-	public String runValidationForRF2DeltaExport(File zipFile, SRSProjectConfiguration config) throws ProcessingException {
+	public String runValidationForRF2DeltaExport(File zipFile, ValidationConfiguration config) throws ProcessingException {
 		String rvfResultUrl = null;
 		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
 		multipartEntityBuilder.addBinaryBody("file", zipFile, ContentType.create("multipart/form-data"), zipFile.getName());
 		multipartEntityBuilder.addTextBody("rf2DeltaOnly", Boolean.TRUE.toString());
 		multipartEntityBuilder.addTextBody("previousIntReleaseVersion", config.getPreviousInternationalRelease());
+		multipartEntityBuilder.addTextBody("previousExtensionReleaseVersion", config.getPreviousExtensionRelease());
+		multipartEntityBuilder.addTextBody("extensionDependencyReleaseVersion", config.getExentsionDependencyRelease());
 		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
 		String runId = Long.toString(System.currentTimeMillis());
 		multipartEntityBuilder.addTextBody("runId", runId);

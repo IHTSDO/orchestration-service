@@ -1,11 +1,16 @@
 package org.ihtsdo.orchestration.messaging;
 
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.ASSERTION_GROUP_NAMES;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.EXTENSION_DEPENDENCY_RELEASE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_EXTENSION_RELEASE;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
+import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.service.OrchProcStatus;
 import org.ihtsdo.orchestration.service.OrchestrationCallback;
 import org.ihtsdo.orchestration.service.ValidationService;
@@ -28,13 +33,17 @@ public class ValidationMessageHandler {
 
 	@Autowired
 	private MessagingHelper messagingHelper;
+	
+	@Autowired
+	private ValidationConfiguration defaultValidationConfig;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@JmsListener(destination = "${orchestration.name}.orchestration.termserver-release-validation")
 	public void receiveValidationRequest(final TextMessage messageIn) {
 		try {
-			validationService.validate(messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new OrchestrationCallback() {
+			ValidationConfiguration validationConfig = constructValidaitonConfig(messageIn);
+			validationService.validate(validationConfig,messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new OrchestrationCallback() {
 				@Override
 						public void complete(OrchProcStatus finalValidationStatus) {
 					Map<String, String> properties = new HashMap<>();
@@ -46,6 +55,24 @@ public class ValidationMessageHandler {
 			logger.error("Failed to handle message, responding with error.", e);
 			messagingHelper.sendErrorResponse(messageIn, e);
 		}
+	}
+
+	private ValidationConfiguration constructValidaitonConfig(final TextMessage messageIn)
+			throws JMSException {
+		ValidationConfiguration validationConfig = defaultValidationConfig.clone();
+		String assertionGroups = messageIn.getStringProperty(ASSERTION_GROUP_NAMES);
+		if ( assertionGroups != null) {
+			validationConfig.setAssertionGroupNames(assertionGroups);
+		}
+		String previousExtension = messageIn.getStringProperty(PREVIOUS_EXTENSION_RELEASE);
+		if (previousExtension != null) {
+			validationConfig.setPreviousExtensionRelease(previousExtension);
+		}
+		String extensionDependencyRelease = messageIn.getStringProperty(EXTENSION_DEPENDENCY_RELEASE);
+		if (extensionDependencyRelease != null) {
+			validationConfig.setExentsionDependencyRelease(extensionDependencyRelease);
+		}
+		return validationConfig;
 	}
 
 
