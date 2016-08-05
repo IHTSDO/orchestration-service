@@ -9,6 +9,7 @@ public class ValidationConfiguration {
 	private String previousExtensionRelease;
 	private String exentsionDependencyRelease;
 	private String productName;
+	
 	public void setProductName(String productName) {
 		this.productName = productName;
 	}
@@ -28,8 +29,17 @@ public class ValidationConfiguration {
 	}
 
 	@Override
-	public ValidationConfiguration clone() {
-		return this.clone();
+	public ValidationConfiguration clone()  {
+		ValidationConfiguration config = new ValidationConfiguration();
+		config.setAssertionGroupNames(this.assertionGroupNames);
+		config.setExentsionDependencyRelease(this.exentsionDependencyRelease);
+		config.setFailureExportMax(this.failureExportMax);
+		config.setPreviousExtensionRelease(this.previousExtensionRelease);
+		config.setProductName(this.productName);
+		config.setReleaseDate(this.releaseDate);
+		config.setPreviousInternationalRelease(this.previousInternationalRelease);
+		return config;
+	
 	}
 	
 	public String getPreviousInternationalRelease() {
