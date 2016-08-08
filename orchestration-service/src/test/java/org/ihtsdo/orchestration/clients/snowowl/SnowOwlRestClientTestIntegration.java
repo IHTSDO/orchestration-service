@@ -1,5 +1,10 @@
 package org.ihtsdo.orchestration.clients.snowowl;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
 import org.ihtsdo.orchestration.Config;
 import org.ihtsdo.orchestration.TestProperties;
 import org.ihtsdo.otf.rest.client.RestClientException;
@@ -12,10 +17,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {Config.class, TestProperties.class})
@@ -57,6 +58,15 @@ public class SnowOwlRestClientTestIntegration {
 		for (String branchToDelete : taskBranchesToDelete) {
 			client.deleteTaskBranch(INTEGRATION_TESTING, branchToDelete);
 		}
+	}
+	
+	@Test
+	public void testExport() throws Exception {
+		
+		String branchPath="MAIN/2016-01-31/SNOMEDCT-DK/DKA/DKA-56";
+		String effectiveDate="20170131";
+		File exportArchive = client.export(branchPath, effectiveDate, SnowOwlRestClient.ExportType.UNPUBLISHED,
+				SnowOwlRestClient.ExtractType.DELTA);
 	}
 
 }

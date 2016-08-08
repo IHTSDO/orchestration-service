@@ -130,7 +130,9 @@ public class ValidationService {
 				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Validation of {} failed.", branchPath, e);
 			}
-			callback.complete(finalOrchProcStatus);
+			if ( callback != null) {
+				callback.complete(finalOrchProcStatus);
+			}
 		}
 
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
