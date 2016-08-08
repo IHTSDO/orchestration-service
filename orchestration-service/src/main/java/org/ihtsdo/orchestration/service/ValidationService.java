@@ -17,6 +17,7 @@ import org.ihtsdo.orchestration.dao.OrchProcDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
+import org.ihtsdo.otf.utils.DateUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,7 +113,11 @@ public class ValidationService {
 			this.callback = callback;
 			config = ValidationConfiguration.copy(validationConfig);
 			config.setProductName(branchPath.replace("/", "_"));
-			config.setReleaseDate(effectiveDate);
+			if (effectiveDate != null) {
+				config.setReleaseDate(effectiveDate);
+			} else {
+				config.setReleaseDate(DateUtils.now(DateUtils.YYYYMMDD));
+			}
 		}
 
 		@Override

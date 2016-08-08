@@ -1,8 +1,8 @@
 package org.ihtsdo.orchestration.rest;
 
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.ASSERTION_GROUP_NAMES;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.EXTENSION_DEPENDENCY_RELEASE;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_EXTENSION_RELEASE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.DEPENDENCY_RELEASE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_RELEASE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -69,8 +69,16 @@ public class TerminologyServerController {
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
 			ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultConfig);
-			validationConfig.setPreviousExtensionRelease(getOptionalParamString(jsonObj, PREVIOUS_EXTENSION_RELEASE));
-			validationConfig.setExtensionDependencyRelease(getOptionalParamString(jsonObj, EXTENSION_DEPENDENCY_RELEASE));
+			String previousRelease = getOptionalParamString(jsonObj, PREVIOUS_RELEASE);
+			validationConfig.setPreviousExtensionRelease(previousRelease);
+			String dependencyRelease = getOptionalParamString(jsonObj, DEPENDENCY_RELEASE);
+			if (dependencyRelease != null) {
+				validationConfig.setExtensionDependencyRelease(dependencyRelease);
+				validationConfig.setPreviousExtensionRelease(previousRelease);
+			} else {
+				validationConfig.setPreviousInternationalRelease(previousRelease);
+			}
+			
 			String assertionGroups = getOptionalParamString(jsonObj, ASSERTION_GROUP_NAMES);
 			if (assertionGroups != null && !assertionGroups.trim().isEmpty()) {
 				validationConfig.setAssertionGroupNames(assertionGroups);

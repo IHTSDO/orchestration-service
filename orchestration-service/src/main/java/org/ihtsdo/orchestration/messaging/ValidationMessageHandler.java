@@ -1,8 +1,11 @@
 package org.ihtsdo.orchestration.messaging;
 
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.ASSERTION_GROUP_NAMES;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.EXTENSION_DEPENDENCY_RELEASE;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_EXTENSION_RELEASE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.DEPENDENCY_RELEASE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.INT;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_RELEASE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.SHORT_NAME;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.UNDER_SCORE;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -64,13 +67,16 @@ public class ValidationMessageHandler {
 		if ( assertionGroups != null) {
 			validationConfig.setAssertionGroupNames(assertionGroups);
 		}
-		String previousExtension = messageIn.getStringProperty(PREVIOUS_EXTENSION_RELEASE);
-		if (previousExtension != null) {
-			validationConfig.setPreviousExtensionRelease(previousExtension);
-		}
-		String extensionDependencyRelease = messageIn.getStringProperty(EXTENSION_DEPENDENCY_RELEASE);
+		String previousRelease = messageIn.getStringProperty(PREVIOUS_RELEASE);
+		String extensionDependencyRelease = messageIn.getStringProperty(DEPENDENCY_RELEASE);
+		String productShortName = messageIn.getStringProperty(SHORT_NAME);
 		if (extensionDependencyRelease != null) {
-			validationConfig.setExtensionDependencyRelease(extensionDependencyRelease);
+			validationConfig.setExtensionDependencyRelease(INT + UNDER_SCORE + extensionDependencyRelease);
+			validationConfig.setPreviousExtensionRelease(productShortName + UNDER_SCORE + previousRelease);
+		} else {
+			if (previousRelease != null) {
+				validationConfig.setPreviousInternationalRelease(INT + UNDER_SCORE + previousRelease);
+			}
 		}
 		return validationConfig;
 	}
