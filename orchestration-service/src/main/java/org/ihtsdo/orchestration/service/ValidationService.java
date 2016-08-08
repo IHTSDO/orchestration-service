@@ -110,14 +110,14 @@ public class ValidationService {
 			this.effectiveDate = effectiveDate;
 			//Note that the SRS Release date is determined from the date found in the archive file
 			this.callback = callback;
-			config = validationConfig;
+			config = ValidationConfiguration.copy(validationConfig);
 			config.setProductName(branchPath.replace("/", "_"));
 			config.setReleaseDate(effectiveDate);
 		}
 
 		@Override
 		public void run() {
-
+			logger.debug("ValidationConfig:" + config);
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
 			try {
 				// Export

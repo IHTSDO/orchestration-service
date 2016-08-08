@@ -68,13 +68,14 @@ public class TerminologyServerController {
 			JsonObject jsonObj = options.getAsJsonObject();
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
-			ValidationConfiguration validationConfig = defaultConfig.clone();
+			ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultConfig);
 			validationConfig.setPreviousExtensionRelease(getOptionalParamString(jsonObj, PREVIOUS_EXTENSION_RELEASE));
-			validationConfig.setExentsionDependencyRelease(getOptionalParamString(jsonObj, EXTENSION_DEPENDENCY_RELEASE));
+			validationConfig.setExtensionDependencyRelease(getOptionalParamString(jsonObj, EXTENSION_DEPENDENCY_RELEASE));
 			String assertionGroups = getOptionalParamString(jsonObj, ASSERTION_GROUP_NAMES);
 			if (assertionGroups != null && !assertionGroups.trim().isEmpty()) {
 				validationConfig.setAssertionGroupNames(assertionGroups);
 			}
+			validationConfig.setReleaseDate(effectiveDate);
 			validationService.validate(validationConfig, branchPath, effectiveDate, null);
 		}
 	}

@@ -143,9 +143,15 @@ public class RVFRestClient {
 		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
 		multipartEntityBuilder.addBinaryBody("file", zipFile, ContentType.create("multipart/form-data"), zipFile.getName());
 		multipartEntityBuilder.addTextBody("rf2DeltaOnly", Boolean.TRUE.toString());
-		multipartEntityBuilder.addTextBody("previousIntReleaseVersion", config.getPreviousInternationalRelease());
-		multipartEntityBuilder.addTextBody("previousExtensionReleaseVersion", config.getPreviousExtensionRelease());
-		multipartEntityBuilder.addTextBody("extensionDependencyReleaseVersion", config.getExentsionDependencyRelease());
+		if (config.getPreviousInternationalRelease() != null) {
+			multipartEntityBuilder.addTextBody("previousIntReleaseVersion", config.getPreviousInternationalRelease());
+		}
+		if (config.getPreviousExtensionRelease() != null) {
+			multipartEntityBuilder.addTextBody("previousExtensionReleaseVersion", config.getPreviousExtensionRelease());
+		}
+		if (config.getExtensionDependencyRelease() != null) {
+			multipartEntityBuilder.addTextBody("extensionDependencyReleaseVersion", config.getExtensionDependencyRelease());
+		}
 		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
 		String runId = Long.toString(System.currentTimeMillis());
 		multipartEntityBuilder.addTextBody("runId", runId);

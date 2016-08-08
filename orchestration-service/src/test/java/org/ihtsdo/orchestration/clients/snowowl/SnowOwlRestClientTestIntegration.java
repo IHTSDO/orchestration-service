@@ -68,5 +68,4 @@ public class SnowOwlRestClientTestIntegration {
 		File exportArchive = client.export(branchPath, effectiveDate, SnowOwlRestClient.ExportType.UNPUBLISHED,
 				SnowOwlRestClient.ExtractType.DELTA);
 	}
-
 }

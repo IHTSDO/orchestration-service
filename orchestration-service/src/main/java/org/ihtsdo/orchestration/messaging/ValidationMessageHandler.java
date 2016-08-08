@@ -59,7 +59,7 @@ public class ValidationMessageHandler {
 
 	private ValidationConfiguration constructValidaitonConfig(final TextMessage messageIn)
 			throws JMSException {
-		ValidationConfiguration validationConfig = defaultValidationConfig.clone();
+		ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultValidationConfig);
 		String assertionGroups = messageIn.getStringProperty(ASSERTION_GROUP_NAMES);
 		if ( assertionGroups != null) {
 			validationConfig.setAssertionGroupNames(assertionGroups);
@@ -70,7 +70,7 @@ public class ValidationMessageHandler {
 		}
 		String extensionDependencyRelease = messageIn.getStringProperty(EXTENSION_DEPENDENCY_RELEASE);
 		if (extensionDependencyRelease != null) {
-			validationConfig.setExentsionDependencyRelease(extensionDependencyRelease);
+			validationConfig.setExtensionDependencyRelease(extensionDependencyRelease);
 		}
 		return validationConfig;
 	}
