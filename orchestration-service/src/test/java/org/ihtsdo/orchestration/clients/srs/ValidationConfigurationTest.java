@@ -17,7 +17,7 @@ public class ValidationConfigurationTest {
 	@Autowired ValidationConfiguration defaultConfig;
 	
 	@Test
-	public void testValidaitonConfig() {
+	public void testValidationConfig() {
 		Assert.assertNotNull(defaultConfig);
 		ValidationConfiguration newConfig = ValidationConfiguration.copy(defaultConfig);
 		Assert.assertEquals(newConfig, defaultConfig);
