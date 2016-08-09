@@ -1,8 +1,16 @@
 package org.ihtsdo.orchestration.rest;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.ASSERTION_GROUP_NAMES;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.DEPENDENCY_RELEASE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_RELEASE;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
@@ -17,14 +25,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.HandlerMapping;
+
 import us.monoid.json.JSONException;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 @RestController
 @RequestMapping("/REST/termserver")
@@ -35,6 +48,9 @@ public class TerminologyServerController {
 
 	@Autowired
 	private ReleaseService releaseService;
+	
+	@Autowired
+	private ValidationConfiguration defaultConfig;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -42,7 +58,6 @@ public class TerminologyServerController {
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
 	public static final String PRODUCT_NAME = "productName";
 	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
-	public static final String SRS_BUILD_REQUIRED = "srsBuildRequired";
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -53,12 +68,23 @@ public class TerminologyServerController {
 			JsonObject jsonObj = options.getAsJsonObject();
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
-			String srsBuildRequired = getOptionalParamString(jsonObj, SRS_BUILD_REQUIRED);
-			boolean isSrsBuildRequired = false;
-			if ( Boolean.TRUE.toString().equalsIgnoreCase(srsBuildRequired)) {
-				isSrsBuildRequired = true;
+			ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultConfig);
+			String previousRelease = getOptionalParamString(jsonObj, PREVIOUS_RELEASE);
+			validationConfig.setPreviousExtensionRelease(previousRelease);
+			String dependencyRelease = getOptionalParamString(jsonObj, DEPENDENCY_RELEASE);
+			if (dependencyRelease != null) {
+				validationConfig.setExtensionDependencyRelease(dependencyRelease);
+				validationConfig.setPreviousExtensionRelease(previousRelease);
+			} else {
+				validationConfig.setPreviousInternationalRelease(previousRelease);
 			}
-			validationService.validate(branchPath, effectiveDate, isSrsBuildRequired);
+			
+			String assertionGroups = getOptionalParamString(jsonObj, ASSERTION_GROUP_NAMES);
+			if (assertionGroups != null && !assertionGroups.trim().isEmpty()) {
+				validationConfig.setAssertionGroupNames(assertionGroups);
+			}
+			validationConfig.setReleaseDate(effectiveDate);
+			validationService.validate(validationConfig, branchPath, effectiveDate, null);
 		}
 	}
 

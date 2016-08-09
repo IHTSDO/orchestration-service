@@ -1,9 +1,12 @@
 package org.ihtsdo.orchestration.dao;
 
-import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.httpclient.HttpStatus;
 import org.ihtsdo.otf.dao.s3.S3Client;
 import org.ihtsdo.otf.utils.DateUtils;
@@ -13,12 +16,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StreamUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 
 public class OrchProcDAO {
 
@@ -38,6 +39,7 @@ public class OrchProcDAO {
 	@Autowired
 	public OrchProcDAO(final String tsReportBucketName) {
 		this.tsReportBucketName = tsReportBucketName;
+		logger.info("tsReportBucketName=" + tsReportBucketName);
 	}
 	
 	public void setStatus(String branchPath, String process, String status, String msg) {
