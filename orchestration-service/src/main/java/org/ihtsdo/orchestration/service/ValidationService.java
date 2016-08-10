@@ -16,6 +16,7 @@ import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.OrchProcDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.json.JSONObject;
@@ -125,6 +126,11 @@ public class ValidationService {
 			logger.debug("ValidationConfig:" + config);
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
 			try {
+				//check the config is set correctly
+				String errorMsg = config.checkMissingParameters();
+				if (errorMsg != null) {
+					throw new BadRequestException("Validation configuration is not set correctly:" + errorMsg);
+				}
 				// Export
 				orchProcDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, SnowOwlRestClient.ExportType.UNPUBLISHED,

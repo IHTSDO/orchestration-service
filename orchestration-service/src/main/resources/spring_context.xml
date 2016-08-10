@@ -133,8 +133,6 @@
 	</bean>
 	
 	<bean class="org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration">
-		<property name="previousInternationalRelease" value="${ts.rvf.previousInternationalRelease}"/>
-		<property name="assertionGroupNames" value="${ts.rvf.assertionGroupNames}"/>
 		<property name="failureExportMax" value="${ts.rvf.failureExportMax:100}"/>
 	</bean>
 	

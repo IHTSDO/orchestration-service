@@ -70,7 +70,6 @@ public class TerminologyServerController {
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
 			ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultConfig);
 			String previousRelease = getOptionalParamString(jsonObj, PREVIOUS_RELEASE);
-			validationConfig.setPreviousExtensionRelease(previousRelease);
 			String dependencyRelease = getOptionalParamString(jsonObj, DEPENDENCY_RELEASE);
 			if (dependencyRelease != null) {
 				validationConfig.setExtensionDependencyRelease(dependencyRelease);

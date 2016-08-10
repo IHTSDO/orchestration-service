@@ -1,6 +1,7 @@
 package org.ihtsdo.orchestration.clients.rvf;
 
 
+
 public class ValidationConfiguration {
 
 	private String previousInternationalRelease;
@@ -23,6 +24,27 @@ public class ValidationConfiguration {
 		return config;
 	
 	}
+	
+	public String checkMissingParameters() {
+		StringBuilder msgBuilder = new StringBuilder();
+		if (this.assertionGroupNames == null) {
+			msgBuilder.append("assertionGroupNames can't be null.");
+		}
+		if (extensionDependencyRelease == null && previousInternationalRelease == null && previousExtensionRelease == null) {
+			msgBuilder.append("previousInternationalRelease,extensionDependencyRelease and previousExtensionRelease can't be all null.");
+		} else {
+			if (previousInternationalRelease == null) {
+				if (extensionDependencyRelease ==null || previousExtensionRelease == null) {
+					msgBuilder.append("previousExtensionRelease and extensionDependencyRelease can't be null for extension validation.");
+				}
+			}
+		}
+		if (!msgBuilder.toString().isEmpty()) {
+			return msgBuilder.toString();
+		}
+		return null;
+	}
+	
 	
 	public String getExtensionDependencyRelease() {
 		return extensionDependencyRelease;
