@@ -78,7 +78,7 @@ public class TerminologyServerController {
 				validationConfig.setPreviousInternationalRelease(previousRelease);
 			}
 			
-			String assertionGroups = getOptionalParamString(jsonObj, ASSERTION_GROUP_NAMES);
+			String assertionGroups = getRequiredParamString(jsonObj, ASSERTION_GROUP_NAMES);
 			if (assertionGroups != null && !assertionGroups.trim().isEmpty()) {
 				validationConfig.setAssertionGroupNames(assertionGroups);
 			}
