@@ -69,7 +69,7 @@ public class TerminologyServerController {
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
 			ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultConfig);
-			String previousRelease = getOptionalParamString(jsonObj, PREVIOUS_RELEASE);
+			String previousRelease = getRequiredParamString(jsonObj, PREVIOUS_RELEASE);
 			String dependencyRelease = getOptionalParamString(jsonObj, DEPENDENCY_RELEASE);
 			if (dependencyRelease != null) {
 				validationConfig.setExtensionDependencyRelease(dependencyRelease);
