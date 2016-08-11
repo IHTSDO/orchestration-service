@@ -52,20 +52,6 @@
 		<constructor-arg value="${ts.reportsBucket}"/>
 	</bean>
 
-	<bean name="jiraContentProjectSync" class="org.ihtsdo.orchestration.clients.jira.JiraProjectSync">
-		<constructor-arg value="${jira.url}"/>
-		<constructor-arg value="${jira.username}"/>
-		<constructor-arg value="${jira.password}"/>
-	</bean>
-
-	<bean name="jiraProjectKey" class="java.lang.String" >
-		<constructor-arg value="${jira.contentProjectKey}"/>
-	</bean>
-	
-	<bean name="jiraDailyExportProjectKey" class="java.lang.String" >
-		<constructor-arg value="${jira.dailyExportProjectKey}"/>
-	</bean>
-
 	<bean name="snowowlProjectBranch" class="java.lang.String">
 		<constructor-arg value="${snowowl.projectBranch}"/>
 	</bean>
