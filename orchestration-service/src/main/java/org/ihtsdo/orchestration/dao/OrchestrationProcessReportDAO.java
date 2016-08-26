@@ -21,7 +21,7 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 
-public class OrchProcDAO {
+public class OrchestrationProcessReportDAO {
 
 	private static final String STATUS_FILE_NAME = "status.json";
 	private static final String REPORT_FILE_NAME = "report.json";
@@ -37,7 +37,7 @@ public class OrchProcDAO {
 	private String tsReportBucketName;
 
 	@Autowired
-	public OrchProcDAO(final String tsReportBucketName) {
+	public OrchestrationProcessReportDAO(final String tsReportBucketName) {
 		this.tsReportBucketName = tsReportBucketName;
 		logger.info("tsReportBucketName=" + tsReportBucketName);
 	}

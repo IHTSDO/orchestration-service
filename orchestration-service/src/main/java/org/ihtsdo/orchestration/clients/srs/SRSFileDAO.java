@@ -128,6 +128,9 @@ public class SRSFileDAO {
 		// with today's date
 		mergeRefsets(extractDir, "Delta", releaseDate);
 		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
+		
+		//WRP-3036 temp fix invalid file names for DK exported files
+		renameInvalidFilenamesForDK(extractDir, releaseDate);
 
 		// The description file is currently named sct2_Description_${extractType}-en-gb_INT_<date>.txt
 		// and we need it to be sct2_Description_${extractType}-en_INT_<date>.txt
@@ -151,6 +154,21 @@ public class SRSFileDAO {
 		}
 		return extractDir;
 	}
+
+	/**Wrong file name exported: der2_cRefset_554461000005103Delta-null_INT_20160731.txt
+	 * The correct name: der2_cRefset_LanguageDelta-da_DK1000005_20160731.txt
+	 * @param extractDir
+	 */
+	private void renameInvalidFilenamesForDK(File extractDir, String releaseDate) {
+		
+		File fileWithWrongName = new File(extractDir, "der2_cRefset_554461000005103Delta-null_INT_" + releaseDate + ".txt");
+		File correctedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-da_DK_" + releaseDate + ".txt");
+		if (fileWithWrongName.exists()) {
+			logger.info("Found wrong file name {} and changed it to {}", fileWithWrongName, correctedFileName);
+			fileWithWrongName.renameTo(correctedFileName);
+		} 
+	}
+
 
 	private void suppressFilesNotRequired(String[] filenamesToBeExcluded, File extractDir) {
 		

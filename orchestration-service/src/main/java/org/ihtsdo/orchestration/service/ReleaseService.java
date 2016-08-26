@@ -3,7 +3,7 @@ package org.ihtsdo.orchestration.service;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
-import org.ihtsdo.orchestration.dao.OrchProcDAO;
+import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -29,7 +29,7 @@ public class ReleaseService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
-	protected OrchProcDAO orchProcDAO;
+	protected OrchestrationProcessReportDAO processReportDAO;
 
 	@Autowired
 	protected SnowOwlRestClient snowOwlRestClient;
@@ -46,7 +46,7 @@ public class ReleaseService {
 			throws IOException, JSONException, BusinessServiceException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
-		String status = orchProcDAO.getStatus(branchPath, RELEASE_PROCESS);
+		String status = processReportDAO.getStatus(branchPath, RELEASE_PROCESS);
 		if (status != null && !OrchProcStatus.isFinalState(status)) {
 			throw new EntityAlreadyExistsException("An in-progress release has been detected for " + branchPath + " at state " + status);
 		}
@@ -55,7 +55,7 @@ public class ReleaseService {
 		srsClient.checkProductExists(productName, false);
 
 		// Update S3 location
-		orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
+		processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
 		(new Thread(new ReleaseRunner(productName, branchPath, effectiveDate, exportType, callback))).start();
@@ -85,12 +85,12 @@ public class ReleaseService {
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
 			try {
 				// Export
-				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
+				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportType, SnowOwlRestClient.ExtractType.DELTA);
 
 				// Create files for SRS / Initiate SRS
 				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.effectiveDate);
-				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
+				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				boolean includeExternallyMaintainedFiles = true;
 				srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
 
@@ -98,23 +98,23 @@ public class ReleaseService {
 				// That will be done externally eg srs-script-client calls.
 
 				// Trigger SRS
-				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILDING.toString(), null);
+				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILDING.toString(), null);
 				Map<String, String> srsResponse = srsClient.runBuild(config);
 
 				// Wait for RVF response
 				// Did we obtain the RVF location for the next step in the process to poll?
 				if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
-					orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
+					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
 					JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
-					orchProcDAO.saveReport(branchPath, RELEASE_PROCESS, rvfReport);
-					orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
+					processReportDAO.saveReport(branchPath, RELEASE_PROCESS, rvfReport);
+					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
 					finalOrchProcStatus = OrchProcStatus.COMPLETED;
 				} else {
 					String error = "Did not find RVF Response location in SRS Client Response";
-					orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), error);
+					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), error);
 				}
 			} catch (Exception e) {
-				orchProcDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
+				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Release of {} failed.", branchPath, e);
 			}
 

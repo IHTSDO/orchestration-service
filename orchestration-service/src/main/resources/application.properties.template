@@ -15,7 +15,6 @@ ts.reportsBucket =
 
 #SRS Server
 srs.root.url = https://localhost/api/v1/
-srs.product = centers/international/products/snomed_ct_release/
 srs.username =
 srs.password =
 srs.next.release = 
@@ -34,16 +33,7 @@ jira.dailyExportProjectKey =
 
 aws.key =
 aws.secretKey =
-aws.bucket.archives =
-aws.bucket.filter =
-aws.bucket.refsets = 
-
-import.archive.prefix = WBRP_INT_EXTRACTION_DELTA_20
-
-schedule.startDailyImport.cron = 0 0 2 * * *
-schedule.startDailyImport.importEverything = false
-schedule.startDailyExport.cron = 0 0 15 * * *
-schedule.pollJiraTickets.cron = 0 */3 * * * *
+aws.bucket.refsets =
 
 orchestration.jms.url = tcp://localhost:61616
 orchestration.jms.username =
