@@ -119,6 +119,9 @@ public class SRSFileDAO {
 		File extractDir = Files.createTempDir();
 		unzipFlat(archive, extractDir);
 		logger.debug("Unzipped files to {}", extractDir.getAbsolutePath());
+		
+		//WRP-3036 temp fix invalid file names for DK exported files
+		renameInvalidFilenamesForDK(extractDir, releaseDate);
 
 		// Ensure all files have the correct release date
 		enforceReleaseDate(extractDir, releaseDate);
@@ -128,9 +131,7 @@ public class SRSFileDAO {
 		// with today's date
 		mergeRefsets(extractDir, "Delta", releaseDate);
 		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
-		
-		//WRP-3036 temp fix invalid file names for DK exported files
-		renameInvalidFilenamesForDK(extractDir, releaseDate);
+	
 
 		// The description file is currently named sct2_Description_${extractType}-en-gb_INT_<date>.txt
 		// and we need it to be sct2_Description_${extractType}-en_INT_<date>.txt
