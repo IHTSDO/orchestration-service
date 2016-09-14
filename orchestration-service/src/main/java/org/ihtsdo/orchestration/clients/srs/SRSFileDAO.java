@@ -174,10 +174,9 @@ public class SRSFileDAO {
 				return false;
 			}
 		});
-		
 		for (String invalid : invalidFilenames) {
 			File invalidFile = new File(extractDir,invalid);
-			if (invalid.contains("der2_cRefset_554461000005103Delta-null_INT_")) {
+			if (invalid.matches("der2_cRefset_.*0005103Delta-null_INT_.*")) {
 				File dkCorrectedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-da_DK_" + releaseDate + ".txt");
 				invalidFile.renameTo(dkCorrectedFileName);
 				logger.info("Found wrong file name {} and changed it to {}", invalidFile.getName(), dkCorrectedFileName);
