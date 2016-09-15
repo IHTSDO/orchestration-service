@@ -120,8 +120,8 @@ public class SRSFileDAO {
 		unzipFlat(archive, extractDir);
 		logger.debug("Unzipped files to {}", extractDir.getAbsolutePath());
 		
-		//WRP-3036 temp fix invalid file names for DK exported files
-		renameInvalidFilenamesForDK(extractDir, releaseDate);
+		//WRP-3036 and WRP-3089 temp fix invalid file names for DK and SE exported files
+		renameInvalidFilenames(extractDir, releaseDate);
 
 		// Ensure all files have the correct release date
 		enforceReleaseDate(extractDir, releaseDate);
@@ -155,19 +155,39 @@ public class SRSFileDAO {
 		}
 		return extractDir;
 	}
-
+	
+	
+	
 	/**Wrong file name exported: der2_cRefset_554461000005103Delta-null_INT_20160731.txt
 	 * The correct name: der2_cRefset_LanguageDelta-da_DK1000005_20160731.txt
 	 * @param extractDir
 	 */
-	private void renameInvalidFilenamesForDK(File extractDir, String releaseDate) {
+	private void renameInvalidFilenames(File extractDir, String releaseDate) {
 		
-		File fileWithWrongName = new File(extractDir, "der2_cRefset_554461000005103Delta-null_INT_" + releaseDate + ".txt");
-		File correctedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-da_DK_" + releaseDate + ".txt");
-		if (fileWithWrongName.exists()) {
-			logger.info("Found wrong file name {} and changed it to {}", fileWithWrongName, correctedFileName);
-			fileWithWrongName.renameTo(correctedFileName);
-		} 
+		String[] invalidFilenames = extractDir.list(new FilenameFilter() {
+			
+			@Override
+			public boolean accept(File dir, String name) {
+				if (name.contains("-null")) {
+					return true;
+				}
+				return false;
+			}
+		});
+		for (String invalid : invalidFilenames) {
+			File invalidFile = new File(extractDir,invalid);
+			if (invalid.matches("der2_cRefset_.*0005103Delta-null_INT_.*")) {
+				File dkCorrectedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-da_DK_" + releaseDate + ".txt");
+				invalidFile.renameTo(dkCorrectedFileName);
+				logger.info("Found wrong file name {} and changed it to {}", invalidFile.getName(), dkCorrectedFileName);
+			} else if (invalid.matches("der2_cRefset_.*052107Delta-null_INT_.*")) {
+				File seCorrectedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-sv_SE_" + releaseDate + ".txt");
+				invalidFile.renameTo(seCorrectedFileName);
+				logger.info("Found wrong file name {} and changed it to {}", invalidFile.getName(), seCorrectedFileName);
+			} else {
+				logger.info("Found wrong file name {} but no fixes are implemented yet", invalidFile.getName());
+			}
+		}		
 	}
 
 
