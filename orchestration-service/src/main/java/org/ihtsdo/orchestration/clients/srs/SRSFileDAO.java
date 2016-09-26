@@ -41,6 +41,8 @@ import com.google.common.io.Files;
 
 public class SRSFileDAO {
 
+	private static final String INTERNATIONAL = "international";
+
 	private static final String TXT = ".txt";
 
 	private final Logger logger = LoggerFactory.getLogger(SRSFileDAO.class);
@@ -62,6 +64,8 @@ public class SRSFileDAO {
 	public static final String LINE_ENDING = "\r\n";
 
 	private static final String[] FILE_NAMES_TO_BE_EXCLUDED = {"der2_iissscRefset_ICD-9-CMEquivalenceComplexMapReferenceSet"};
+
+	private static final String[] EXTENSION_EXCLUDED_FILES = {"der2_iisssccRefset_ICD-10ComplexMapReferenceSet","der2_sRefset_CTV3SimpleMap","der2_sRefset_SNOMEDRTIDSimpleMap"};
 
 	@Autowired
 	S3ClientImpl s3Client;
@@ -134,6 +138,11 @@ public class SRSFileDAO {
 		enforceReleaseDate(extractDir, releaseDate);
 		// suppress files that no longer to be released.
 		suppressFilesNotRequired(FILE_NAMES_TO_BE_EXCLUDED, extractDir);
+		//exclude files for extension releasee
+		if (!INTERNATIONAL.equalsIgnoreCase(releaseCenter)){
+			suppressFilesNotRequired(EXTENSION_EXCLUDED_FILES, extractDir);
+		}
+	
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
 		mergeRefsets(extractDir, "Delta",countryNamespace, releaseDate);
