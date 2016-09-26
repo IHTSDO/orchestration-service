@@ -1,6 +1,9 @@
 package org.ihtsdo.orchestration.clients.srs;
 
-import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+
 import org.apache.commons.io.FileUtils;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
 import org.junit.Assert;
@@ -9,9 +12,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
+import com.google.common.io.Files;
 
 public class SRSRestClientHelperTest {
 
@@ -51,7 +52,7 @@ public class SRSRestClientHelperTest {
 
 	@Test
 	public void testPrepareFiles() throws ProcessWorkflowException, IOException {
-		File location = srsFileDAO.readyInputFiles(testArchive, TEST_DATE, false);
+		File location = srsFileDAO.readyInputFiles(testArchive, "international", TEST_DATE, false);
 		logger.debug("Test files made ready for SRS input at {}", location.getAbsolutePath());
 		logger.debug("Tidying up folder at {}", location.getAbsolutePath());
 		FileUtils.deleteDirectory(location);

@@ -117,7 +117,7 @@ public class SRSFileDAO {
 	}
 	
 	
-	public File extractAndConvertExportWithRF2FileNameFormat(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
+	public File extractAndConvertExportWithRF2FileNameFormat(File archive, String releaseCenter, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
 		// We're going to create release files in a temp directory
 		File extractDir = Files.createTempDir();
 		unzipFlat(archive, extractDir);
@@ -158,7 +158,7 @@ public class SRSFileDAO {
 
 		//Now pull in an externally maintained refsets from S3
 		if (includeExternalFiles) {
-			includeExternallyMaintainedFiles(extractDir, releaseDate);
+			includeExternallyMaintainedFiles(extractDir, releaseCenter, releaseDate);
 		}
 		return extractDir;
 	}
@@ -263,10 +263,10 @@ public class SRSFileDAO {
 	/*
 	 * @return - the directory containing the files ready for uploading to SRS
 	 */
-	public File readyInputFiles(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
+	public File readyInputFiles(File archive, String releaseCenter, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
 			IOException {
 
-		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseDate, includeExternalFiles);
+		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseCenter, releaseDate, includeExternalFiles);
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
 		renameFiles(extractDir, "der2", "rel2");
@@ -528,12 +528,12 @@ public class SRSFileDAO {
 		}
 	}
 
-	private void includeExternallyMaintainedFiles(File extractDir, String targetReleaseDate) throws IOException {
+	private void includeExternallyMaintainedFiles(File extractDir,String releaseCenter,String targetReleaseDate) throws IOException {
 		FileHelper s3 = new FileHelper(this.refsetBucket, s3Client);
 
 		// Recover all files in the folder ready for the next release
-		logger.debug("Recovering External Files from {}/{}", this.refsetBucket, targetReleaseDate);
-		List<String> externalFiles = s3.listFiles(targetReleaseDate);
+		logger.debug("Recovering External Files from {}/{}/{}", this.refsetBucket, releaseCenter,targetReleaseDate);
+		List<String> externalFiles = s3.listFiles(releaseCenter + "/" + targetReleaseDate);
 
 		for (String externalFile : externalFiles) {
 			// The current directory is also listed

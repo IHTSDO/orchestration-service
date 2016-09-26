@@ -98,7 +98,7 @@ public class SRSRestClient {
 			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 			config.setReleaseDate(releaseDate);
 		}
-		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseDate(), includeExternallyMaintainedFiles);
+		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 	}
 

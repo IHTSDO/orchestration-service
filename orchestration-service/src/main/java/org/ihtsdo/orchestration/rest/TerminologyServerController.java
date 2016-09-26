@@ -43,6 +43,8 @@ import com.google.gson.JsonParser;
 @RequestMapping("/REST/termserver")
 public class TerminologyServerController {
 
+	private static final String INTERNATIONAL = "international";
+
 	@Autowired
 	private ValidationService validationService;
 
@@ -58,6 +60,7 @@ public class TerminologyServerController {
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
 	public static final String PRODUCT_NAME = "productName";
 	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
+	public static final String SHORT_NAME ="shortname";
 
 	private static final String RELEASE_CENTER = "releaseCenter";
 
@@ -78,6 +81,13 @@ public class TerminologyServerController {
 				validationConfig.setPreviousExtensionRelease(previousRelease);
 			} else {
 				validationConfig.setPreviousInternationalRelease(previousRelease);
+			}
+			
+			String releaseCenter = getOptionalParamString(jsonObj, SHORT_NAME);
+			if (releaseCenter != null) {
+				validationConfig.setReleaseCenter(releaseCenter);
+			} else {
+				validationConfig.setReleaseCenter(INTERNATIONAL);
 			}
 			
 			String assertionGroups = getRequiredParamString(jsonObj, ASSERTION_GROUP_NAMES);
@@ -103,7 +113,7 @@ public class TerminologyServerController {
 			String releaseCenter = getOptionalParamString(jsonObj, RELEASE_CENTER);
 			if (releaseCenter == null) {
 				//default to international
-				releaseCenter = "international";
+				releaseCenter = INTERNATIONAL;
 			}
 			SnowOwlRestClient.ExportType exportType = SnowOwlRestClient.ExportType.valueOf(exportTypeStr);
 			// Passing null callback as this request has not come from a termserver user

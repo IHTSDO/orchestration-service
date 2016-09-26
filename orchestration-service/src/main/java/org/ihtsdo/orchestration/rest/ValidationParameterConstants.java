@@ -7,4 +7,5 @@ public class ValidationParameterConstants {
 	public static final String SHORT_NAME ="shortname";
 	public static final String UNDER_SCORE = "_";
 	public static final String INT ="int";
+	public static final String INTERNATIONAL ="international";
 }
