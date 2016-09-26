@@ -128,6 +128,7 @@ public class SRSFileDAO {
 		
 		//WRP-3036 and WRP-3089 temp fix invalid file names for DK and SE exported files
 		renameInvalidFilenames(extractDir, releaseDate);
+		renameDKTranslatedConceptsRefsetFile(extractDir, releaseDate);
 
 		// Ensure all files have the correct release date
 		enforceReleaseDate(extractDir, releaseDate);
@@ -216,9 +217,22 @@ public class SRSFileDAO {
 			} else {
 				logger.info("Found wrong file name {} but no fixes are implemented yet", invalidFile.getName());
 			}
-		}		
+		}	
 	}
 
+	/**
+	 * rename dk and se translated concepts file.
+	 *der2_Refset_554831000005107Delta_DK1000005_20160926.txt 
+	 */
+	private void renameDKTranslatedConceptsRefsetFile(File extractDir, String releaseDate) {
+		File wrongName = new File(extractDir, "der2_Refset_554831000005107Delta_DK1000005_" + releaseDate + TXT);
+		File updatedName = new File(extractDir, "der2_Refset_DanishTranslatedConceptsSimpleDelta_DK1000005_" + releaseDate + TXT);
+		if (wrongName.exists()) {
+			wrongName.renameTo(updatedName);
+			logger.warn("found wrong file name:" + wrongName +  " and updated it to :" + updatedName);
+		} 
+	
+	}
 
 	private void suppressFilesNotRequired(String[] filenamesToBeExcluded, File extractDir) {
 		

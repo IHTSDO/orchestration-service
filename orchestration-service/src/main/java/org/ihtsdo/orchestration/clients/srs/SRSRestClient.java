@@ -208,7 +208,7 @@ public class SRSRestClient {
 				JSONResource json = resty.json(srsProductRootUrl, obj, CONTENT_TYPE_JSON);
 				RestyServiceHelper.ensureSuccessfull(json);
 			} else {
-				throw new ResourceNotFoundException("Product " + productName + " does not exist in SRS via URL" + srsProductRootUrl );
+				throw new ResourceNotFoundException("Product " + productName + " does not exist in SRS via URL:" + srsProductRootUrl );
 			}
 		}
 	}
