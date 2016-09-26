@@ -59,6 +59,8 @@ public class TerminologyServerController {
 	public static final String PRODUCT_NAME = "productName";
 	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
 
+	private static final String RELEASE_CENTER = "releaseCenter";
+
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
 	public void createValidation(@RequestBody(required = false) String json) throws BadRequestException, EntityAlreadyExistsException {
@@ -98,9 +100,14 @@ public class TerminologyServerController {
 			String effectiveDate = getRequiredParamString(jsonObj, EFFECTIVE_DATE_KEY);
 			String productName = getRequiredParamString(jsonObj, PRODUCT_NAME);
 			String exportTypeStr = getRequiredParamString(jsonObj, EXPORT_TYPE);
+			String releaseCenter = getOptionalParamString(jsonObj, RELEASE_CENTER);
+			if (releaseCenter == null) {
+				//default to international
+				releaseCenter = "international";
+			}
 			SnowOwlRestClient.ExportType exportType = SnowOwlRestClient.ExportType.valueOf(exportTypeStr);
 			// Passing null callback as this request has not come from a termserver user
-			releaseService.release(productName, branchPath, effectiveDate, exportType, null);
+			releaseService.release(productName, releaseCenter, branchPath, effectiveDate, exportType, null);
 		}
 	}
 
