@@ -65,7 +65,8 @@ public class SRSFileDAO {
 
 	private static final String[] FILE_NAMES_TO_BE_EXCLUDED = {"der2_iissscRefset_ICD-9-CMEquivalenceComplexMapReferenceSet"};
 
-	private static final String[] EXTENSION_EXCLUDED_FILES = {"der2_iisssccRefset_ICD-10ComplexMapReferenceSet","der2_sRefset_CTV3SimpleMap","der2_sRefset_SNOMEDRTIDSimpleMap"};
+	private static final String[] EXTENSION_EXCLUDED_FILES = {"der2_iisssccRefset_ICD-10ComplexMapReferenceSet","der2_sRefset_CTV3SimpleMap",
+		"der2_sRefset_SNOMEDRTIDSimpleMap","der2_sRefset_ICD-OSimpleMapReferenceSet"};
 
 	@Autowired
 	S3ClientImpl s3Client;
