@@ -43,6 +43,8 @@ import com.google.gson.JsonParser;
 @RequestMapping("/REST/termserver")
 public class TerminologyServerController {
 
+	private static final String INTERNATIONAL = "international";
+
 	@Autowired
 	private ValidationService validationService;
 
@@ -58,6 +60,9 @@ public class TerminologyServerController {
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
 	public static final String PRODUCT_NAME = "productName";
 	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
+	public static final String SHORT_NAME ="shortname";
+
+	private static final String RELEASE_CENTER = "releaseCenter";
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -76,6 +81,13 @@ public class TerminologyServerController {
 				validationConfig.setPreviousExtensionRelease(previousRelease);
 			} else {
 				validationConfig.setPreviousInternationalRelease(previousRelease);
+			}
+			
+			String releaseCenter = getOptionalParamString(jsonObj, SHORT_NAME);
+			if (releaseCenter != null) {
+				validationConfig.setReleaseCenter(releaseCenter);
+			} else {
+				validationConfig.setReleaseCenter(INTERNATIONAL);
 			}
 			
 			String assertionGroups = getRequiredParamString(jsonObj, ASSERTION_GROUP_NAMES);
@@ -98,9 +110,14 @@ public class TerminologyServerController {
 			String effectiveDate = getRequiredParamString(jsonObj, EFFECTIVE_DATE_KEY);
 			String productName = getRequiredParamString(jsonObj, PRODUCT_NAME);
 			String exportTypeStr = getRequiredParamString(jsonObj, EXPORT_TYPE);
+			String releaseCenter = getOptionalParamString(jsonObj, RELEASE_CENTER);
+			if (releaseCenter == null) {
+				//default to international
+				releaseCenter = INTERNATIONAL;
+			}
 			SnowOwlRestClient.ExportType exportType = SnowOwlRestClient.ExportType.valueOf(exportTypeStr);
 			// Passing null callback as this request has not come from a termserver user
-			releaseService.release(productName, branchPath, effectiveDate, exportType, null);
+			releaseService.release(productName, releaseCenter, branchPath, effectiveDate, exportType, null);
 		}
 	}
 

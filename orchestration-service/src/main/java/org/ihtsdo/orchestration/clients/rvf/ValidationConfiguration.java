@@ -11,6 +11,7 @@ public class ValidationConfiguration {
 	private String extensionDependencyRelease;
 	private String productName;
 	private String releaseDate;
+	private String releaseCenter;
 	
 	public static ValidationConfiguration copy(ValidationConfiguration defaultConfig)  {
 		ValidationConfiguration config = new ValidationConfiguration();
@@ -111,7 +112,16 @@ public class ValidationConfiguration {
 				+ failureExportMax + ", previousInternationalRelease="
 				+ previousInternationalRelease + ", previousExtensionRelease="
 				+ previousExtensionRelease + ", exentsionDependencyRelease="
-				+ extensionDependencyRelease + "]";
+				+ extensionDependencyRelease + ",releaseCenter="
+				+ releaseCenter + "]";
+	}	
+
+	public void setReleaseCenter(String releaseCenter) {
+		this.releaseCenter = releaseCenter;
+	}
+
+	public String getReleaseCenter() {
+		return this.releaseCenter;
 	}
 
 	@Override
@@ -139,6 +149,8 @@ public class ValidationConfiguration {
 						: previousInternationalRelease.hashCode());
 		result = prime * result
 				+ ((productName == null) ? 0 : productName.hashCode());
+		result = prime * result
+				+ ((releaseCenter == null) ? 0 : releaseCenter.hashCode());
 		result = prime * result
 				+ ((releaseDate == null) ? 0 : releaseDate.hashCode());
 		return result;
@@ -186,12 +198,16 @@ public class ValidationConfiguration {
 				return false;
 		} else if (!productName.equals(other.productName))
 			return false;
+		if (releaseCenter == null) {
+			if (other.releaseCenter != null)
+				return false;
+		} else if (!releaseCenter.equals(other.releaseCenter))
+			return false;
 		if (releaseDate == null) {
 			if (other.releaseDate != null)
 				return false;
 		} else if (!releaseDate.equals(other.releaseDate))
 			return false;
 		return true;
-	}
-	
+	}	
 }

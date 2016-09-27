@@ -1,5 +1,9 @@
 package org.ihtsdo.orchestration.service;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
@@ -14,10 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import us.monoid.json.JSONException;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Release is very similar to Validation, but assumes that configuration has been performed externally eg via script
@@ -41,7 +41,7 @@ public class ReleaseService {
 	protected RVFRestClient rvfClient;
 
 
-	public synchronized void release(String productName, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
+	public synchronized void release(String productName, String releaseCenter, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
 			OrchestrationCallback callback)
 			throws IOException, JSONException, BusinessServiceException {
 		Assert.notNull(branchPath);
@@ -52,13 +52,13 @@ public class ReleaseService {
 		}
 
 		// Check to make sure this product exists in SRS because we won't configure a new one!
-		srsClient.checkProductExists(productName, false);
+		srsClient.checkProductExists(productName, releaseCenter,false);
 
 		// Update S3 location
 		processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ReleaseRunner(productName, branchPath, effectiveDate, exportType, callback))).start();
+		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportType, callback))).start();
 	}
 
 
@@ -69,14 +69,16 @@ public class ReleaseService {
 		private final String productName;
 		private final SnowOwlRestClient.ExportType exportType;
 		private final OrchestrationCallback callback;
+		private String releaseCenter;
 
-		private ReleaseRunner(String productName, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
+		private ReleaseRunner(String productName, String releaseCenter, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
 				OrchestrationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
 			this.callback = callback;
 			this.productName = productName;
 			this.exportType = exportType;
+			this.releaseCenter = releaseCenter;
 		}
 
 		@Override
@@ -89,7 +91,7 @@ public class ReleaseService {
 				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportType, SnowOwlRestClient.ExtractType.DELTA);
 
 				// Create files for SRS / Initiate SRS
-				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.effectiveDate);
+				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				boolean includeExternallyMaintainedFiles = true;
 				srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);

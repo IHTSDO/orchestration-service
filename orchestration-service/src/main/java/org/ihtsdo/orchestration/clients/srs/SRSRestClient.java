@@ -1,5 +1,13 @@
 package org.ihtsdo.orchestration.clients.srs;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -17,20 +25,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
 import us.monoid.web.Content;
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 import us.monoid.web.mime.MultipartContent;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.Map;
 
 public class SRSRestClient {
 
@@ -52,7 +53,7 @@ public class SRSRestClient {
 	private static final String TRIGGER_BUILD_ENDPOINT = "/trigger";
 	private static final String PRODUCT_CONFIGURATION_ENDPOINT = "/configuration";
 	private static final String AUTHENTICATION_TOKEN = "authenticationToken";
-	private static final String PRODUCT_PREFIX = "centers/international/products/";
+	private static final String PRODUCT_PREFIX = "centers/{releaseCenter}/products/";
 	private static final String ID = "id";
 	private static final char[] BLANK_PASSWORD = "".toCharArray();
 	private static final byte[] EMPTY_CONTENT_ARRAY = new byte[0];
@@ -97,7 +98,7 @@ public class SRSRestClient {
 			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 			config.setReleaseDate(releaseDate);
 		}
-		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseDate(), includeExternallyMaintainedFiles);
+		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 	}
 
@@ -124,8 +125,8 @@ public class SRSRestClient {
 		}
 	}
 
-	private String getProductUrl(String productName) {
-		return srsRootURL + PRODUCT_PREFIX + formatAsBusinessKey(productName) + "/";
+	private String getProductUrl(String productName, String releaseCenter) {
+		return srsRootURL + PRODUCT_PREFIX.replace("{releaseCenter}", releaseCenter) + formatAsBusinessKey(productName) + "/";
 
 	}
 
@@ -134,10 +135,10 @@ public class SRSRestClient {
 
 		// Lets upload the manifest first
 		File configuredManifest = configureManifest(config.getReleaseDate());
-		String srsProductURL = getProductUrl(config.getProductName());
+		String srsProductURL = getProductUrl(config.getProductName(), config.getReleaseCenter());
 
 		// Check the product exists and perform standard configuration if needed
-		checkProductExists(config.getProductName(), true);
+		checkProductExists(config.getProductName(), config.getReleaseCenter(), true);
 
 		uploadFile(srsProductURL + MANIFEST_ENDPOINT, configuredManifest);
 		configuredManifest.delete();
@@ -154,7 +155,7 @@ public class SRSRestClient {
 				.getInputFilesDir().getAbsolutePath());
 
 		initiateRestyIfNeeded();
-		String srsProductURL = getProductUrl(config.getProductName());
+		String srsProductURL = getProductUrl(config.getProductName(),config.getReleaseCenter());
 
 		// Delete any previously uploaded input files
 		logger.debug("Deleting previous input files");
@@ -192,11 +193,11 @@ public class SRSRestClient {
 		return recoverItemsOfInterest(json);
 	}
 
-	public void checkProductExists(String productName, boolean createIfRequired) throws IOException,
+	public void checkProductExists(String productName, String releaseCenter, boolean createIfRequired) throws IOException,
 			JSONException,
 			BusinessServiceException {
-		String srsProductRootUrl = srsRootURL + PRODUCT_PREFIX;
-		String srsProductURL = getProductUrl(productName);
+		String srsProductRootUrl = srsRootURL + PRODUCT_PREFIX.replace("{releaseCenter}", releaseCenter);
+		String srsProductURL = getProductUrl(productName, releaseCenter);
 		// Try to recover the product
 		Integer httpStatus = resty.json(srsProductURL).getHTTPStatus();
 		if (httpStatus != null && httpStatus.equals(NOT_FOUND)) {
@@ -207,7 +208,7 @@ public class SRSRestClient {
 				JSONResource json = resty.json(srsProductRootUrl, obj, CONTENT_TYPE_JSON);
 				RestyServiceHelper.ensureSuccessfull(json);
 			} else {
-				throw new ResourceNotFoundException("Product " + productName + " does not exist in SRS");
+				throw new ResourceNotFoundException("Product " + productName + " does not exist in SRS via URL:" + srsProductRootUrl );
 			}
 		}
 	}

@@ -1,11 +1,11 @@
 package org.ihtsdo.orchestration.clients.srs;
 
+import java.io.File;
+
 import org.ihtsdo.otf.utils.DateUtils;
 
 import us.monoid.json.JSONException;
 import us.monoid.json.JSONObject;
-
-import java.io.File;
 
 public class SRSProjectConfiguration {
 
@@ -28,10 +28,12 @@ public class SRSProjectConfiguration {
 	String previousInternationalRelease;
 	String assertionGroupNames;
 	private String failureExportMax;
+	private String releaseCenter;
 
-	public SRSProjectConfiguration(String productName, String releaseDate) {
+	public SRSProjectConfiguration(String productName, String releaseCenter, String releaseDate) {
 		this.productName = productName;
 		this.releaseDate = releaseDate;
+		this.releaseCenter = releaseCenter;
 	}
 
 	public SRSProjectConfiguration() {
@@ -224,5 +226,13 @@ public class SRSProjectConfiguration {
 
 	public void setReadmeHeader(String readmeHeader) {
 		this.readmeHeader = readmeHeader;
+	}
+
+	public void setReleaseCenter(String releaseCenter) {
+		this.releaseCenter = releaseCenter;
+	}
+
+	public String getReleaseCenter() {
+		return releaseCenter;
 	}
 }

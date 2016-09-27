@@ -130,7 +130,7 @@ public class RVFRestClient {
 	}
 
 	public File prepareExportFilesForValidation(File exportArchive, ValidationConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
-		File extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseDate(), includeExternalFiles);
+		File extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternalFiles);
 		File tempDir = Files.createTempDir();
 		File zipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
 		logger.debug("zip updated file into:" + zipFile.getName());

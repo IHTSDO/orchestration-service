@@ -41,10 +41,15 @@ import com.google.common.io.Files;
 
 public class SRSFileDAO {
 
+	private static final String INTERNATIONAL = "international";
+
+	private static final String TXT = ".txt";
+
 	private final Logger logger = LoggerFactory.getLogger(SRSFileDAO.class);
 
 	private static final String FILE_TYPE_INSERT = "****";
 	private static final String RELEASE_DATE_INSERT = "########";
+	private static final String COUNTRY_OR_NAMSPACE ="$$$";
 
 	public static final String UNKNOWN_EFFECTIVE_DATE = "Unpublished";
 	public static final int EFFECTIVE_DATE_COLUMN = 1;
@@ -60,6 +65,9 @@ public class SRSFileDAO {
 
 	private static final String[] FILE_NAMES_TO_BE_EXCLUDED = {"der2_iissscRefset_ICD-9-CMEquivalenceComplexMapReferenceSet"};
 
+	private static final String[] EXTENSION_EXCLUDED_FILES = {"der2_iisssccRefset_ICD-10ComplexMapReferenceSet","der2_sRefset_CTV3SimpleMap",
+		"der2_sRefset_SNOMEDRTIDSimpleMap","der2_sRefset_ICD-OSimpleMapReferenceSet"};
+
 	@Autowired
 	S3ClientImpl s3Client;
 
@@ -68,42 +76,42 @@ public class SRSFileDAO {
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
 		refsetMap = new HashMap<String, RefsetCombiner>();
-		refsetMap.put("Simple", new RefsetCombiner("der2_Refset_Simple****_INT_########.txt", new String[] {
-				"der2_Refset_NonHumanSimpleReferenceSet****_INT_########.txt",
-				"der2_Refset_VirtualMedicinalProductSimpleReferenceSet****_INT_########.txt",
-				"der2_Refset_VirtualTherapeuticMoietySimpleReferenceSet****_INT_########.txt", }));
+		refsetMap.put("Simple", new RefsetCombiner("der2_Refset_Simple****_$$$_########.txt", new String[] {
+				"der2_Refset_NonHumanSimpleReferenceSet****_$$$_########.txt",
+				"der2_Refset_VirtualMedicinalProductSimpleReferenceSet****_$$$_########.txt",
+				"der2_Refset_VirtualTherapeuticMoietySimpleReferenceSet****_$$$_########.txt", }));
 
-		refsetMap.put("AssociationReference", new RefsetCombiner("der2_cRefset_AssociationReference****_INT_########.txt", new String[] {
-				"der2_cRefset_ALTERNATIVEAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_MOVEDFROMAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_MOVEDTOAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_POSSIBLYEQUIVALENTTOAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_REFERSTOConceptAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_REPLACEDBYAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_SAMEASAssociationReferenceSet****_INT_########.txt",
-				"der2_cRefset_WASAAssociationReferenceSet****_INT_########.txt", }));
+		refsetMap.put("AssociationReference", new RefsetCombiner("der2_cRefset_AssociationReference****_$$$_########.txt", new String[] {
+				"der2_cRefset_ALTERNATIVEAssociationReferenceSet****_$$$_########.txt",
+				"der2_cRefset_MOVEDFROMAssociationReferenceSet****_$$$_########.txt",
+				"der2_cRefset_MOVEDTOAssociationReferenceSet****_$$$_########.txt",
+				"der2_cRefset_POSSIBLYEQUIVALENTTOAssociationReferenceSet****_$$$_########.txt",
+				"der2_cRefset_REFERSTOConceptAssociationReferenceSet****_$$$_########.txt",
+				"der2_cRefset_REPLACEDBYAssociationReferenceSet****_$$$_########.txt",
+				"der2_cRefset_SAMEASAssociationReferenceSet****_$$$_########.txt",
+				"der2_cRefset_WASAAssociationReferenceSet****_$$$_########.txt", }));
 
-		refsetMap.put("AttributeValue", new RefsetCombiner("der2_cRefset_AttributeValue****_INT_########.txt", new String[] {
-				"der2_cRefset_ConceptInactivationIndicatorReferenceSet****_INT_########.txt",
-				"der2_cRefset_DescriptionInactivationIndicatorReferenceSet****_INT_########.txt", }));
+		refsetMap.put("AttributeValue", new RefsetCombiner("der2_cRefset_AttributeValue****_$$$_########.txt", new String[] {
+				"der2_cRefset_ConceptInactivationIndicatorReferenceSet****_$$$_########.txt",
+				"der2_cRefset_DescriptionInactivationIndicatorReferenceSet****_$$$_########.txt", }));
 
-		refsetMap.put("Language", new RefsetCombiner("der2_cRefset_Language****-en_INT_########.txt", new String[] {
-				"der2_cRefset_GBEnglish****-en-gb_INT_########.txt", "der2_cRefset_USEnglish****-en-us_INT_########.txt" }));
+		refsetMap.put("Language", new RefsetCombiner("der2_cRefset_Language****-en_$$$_########.txt", new String[] {
+				"der2_cRefset_GBEnglish****-en-gb_$$$_########.txt", "der2_cRefset_USEnglish****-en-us_$$$_########.txt" }));
 
-		refsetMap.put("RefsetDescriptor", new RefsetCombiner("der2_cciRefset_RefsetDescriptor****_INT_########.txt", new String[] {}));
+		refsetMap.put("RefsetDescriptor", new RefsetCombiner("der2_cciRefset_RefsetDescriptor****_$$$_########.txt", new String[] {}));
 
-		refsetMap.put("DescriptionType", new RefsetCombiner("der2_ciRefset_DescriptionType****_INT_########.txt",
-				new String[] { "der2_ciRefset_DescriptionFormat****_INT_########.txt" }));
+		refsetMap.put("DescriptionType", new RefsetCombiner("der2_ciRefset_DescriptionType****_$$$_########.txt",
+				new String[] { "der2_ciRefset_DescriptionFormat****_$$$_########.txt" }));
 
-		refsetMap.put("ExtendedMap", new RefsetCombiner("der2_iisssccRefset_ExtendedMap****_INT_########.txt",
-				new String[] { "der2_iisssccRefset_ICD-10ComplexMapReferenceSet****_INT_########.txt" }));
+		refsetMap.put("ExtendedMap", new RefsetCombiner("der2_iisssccRefset_ExtendedMap****_$$$_########.txt",
+				new String[] { "der2_iisssccRefset_ICD-10ComplexMapReferenceSet****_$$$_########.txt" }));
 
-		refsetMap.put("SimpleMap", new RefsetCombiner("der2_sRefset_SimpleMap****_INT_########.txt", new String[] {
-				"der2_sRefset_CTV3SimpleMap****_INT_########.txt", "der2_sRefset_ICD-OSimpleMapReferenceSet****_INT_########.txt",
-				"der2_sRefset_SNOMEDRTIDSimpleMap****_INT_########.txt", "der2_sRefset_GMDNSimpleMapReferenceSet****_INT_########.txt" }));
+		refsetMap.put("SimpleMap", new RefsetCombiner("der2_sRefset_SimpleMap****_$$$_########.txt", new String[] {
+				"der2_sRefset_CTV3SimpleMap****_$$$_########.txt", "der2_sRefset_ICD-OSimpleMapReferenceSet****_$$$_########.txt",
+				"der2_sRefset_SNOMEDRTIDSimpleMap****_$$$_########.txt", "der2_sRefset_GMDNSimpleMapReferenceSet****_$$$_########.txt" }));
 
-		refsetMap.put("ModuleDependency", new RefsetCombiner("der2_ssRefset_ModuleDependency****_INT_########.txt",
-				new String[] { "der2_ssRefset_ModuleDependency****_INT_########.txt" }));
+		refsetMap.put("ModuleDependency", new RefsetCombiner("der2_ssRefset_ModuleDependency****_$$$_########.txt",
+				new String[] { "der2_ssRefset_ModuleDependency****_$$$_########.txt" }));
 
 		ACCEPTABLE_SIMPLEMAP_VALUES = new HashSet<String>();
 		ACCEPTABLE_SIMPLEMAP_VALUES.add(ICDO_REFSET_ID);
@@ -114,29 +122,36 @@ public class SRSFileDAO {
 	}
 	
 	
-	public File extractAndConvertExportWithRF2FileNameFormat(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
+	public File extractAndConvertExportWithRF2FileNameFormat(File archive, String releaseCenter, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
 		// We're going to create release files in a temp directory
 		File extractDir = Files.createTempDir();
 		unzipFlat(archive, extractDir);
 		logger.debug("Unzipped files to {}", extractDir.getAbsolutePath());
 		
-		//WRP-3036 and WRP-3089 temp fix invalid file names for DK and SE exported files
-		renameInvalidFilenames(extractDir, releaseDate);
+		String countryNamespace = getCountryOrNamespace(extractDir);
+		logger.debug("Country or namespace found from file name:" + countryNamespace);
+		
+		renameDKTranslatedConceptsRefsetFile(extractDir, releaseDate);
 
 		// Ensure all files have the correct release date
 		enforceReleaseDate(extractDir, releaseDate);
 		// suppress files that no longer to be released.
 		suppressFilesNotRequired(FILE_NAMES_TO_BE_EXCLUDED, extractDir);
+		//exclude files for extension releasee
+		if (!INTERNATIONAL.equalsIgnoreCase(releaseCenter)){
+			suppressFilesNotRequired(EXTENSION_EXCLUDED_FILES, extractDir);
+		}
+	
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
-		mergeRefsets(extractDir, "Delta", releaseDate);
+		mergeRefsets(extractDir, "Delta",countryNamespace, releaseDate);
 		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
 	
 
 		// The description file is currently named sct2_Description_${extractType}-en-gb_INT_<date>.txt
 		// and we need it to be sct2_Description_${extractType}-en_INT_<date>.txt
-		File descriptionFileWrongName = new File(extractDir, "sct2_Description_Delta-en-gb_INT_" + releaseDate + ".txt");
-		File descriptionFileRightName = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
+		File descriptionFileWrongName = new File(extractDir, "sct2_Description_Delta-en-gb_INT_" + releaseDate + TXT);
+		File descriptionFileRightName = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + TXT);
 		if (descriptionFileWrongName.exists()) {
 			descriptionFileWrongName.renameTo(descriptionFileRightName);
 		} else {
@@ -145,51 +160,55 @@ public class SRSFileDAO {
 
 		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
 		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
-		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + ".txt");
-		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + ".txt");
+		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + TXT);
+		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + TXT);
 		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, true, false);
 
 		//Now pull in an externally maintained refsets from S3
 		if (includeExternalFiles) {
-			includeExternallyMaintainedFiles(extractDir, releaseDate);
+			includeExternallyMaintainedFiles(extractDir, releaseCenter, releaseDate);
 		}
 		return extractDir;
 	}
 	
 	
 	
-	/**Wrong file name exported: der2_cRefset_554461000005103Delta-null_INT_20160731.txt
-	 * The correct name: der2_cRefset_LanguageDelta-da_DK1000005_20160731.txt
-	 * @param extractDir
-	 */
-	private void renameInvalidFilenames(File extractDir, String releaseDate) {
+	private String getCountryOrNamespace(File extractDir) {
 		
-		String[] invalidFilenames = extractDir.list(new FilenameFilter() {
+		String[] rf2Filenames = extractDir.list(new FilenameFilter() {
 			
 			@Override
 			public boolean accept(File dir, String name) {
-				if (name.contains("-null")) {
+				if (name.startsWith("sct2_Concept_") && name.endsWith(TXT)) {
 					return true;
 				}
 				return false;
 			}
 		});
-		for (String invalid : invalidFilenames) {
-			File invalidFile = new File(extractDir,invalid);
-			if (invalid.matches("der2_cRefset_.*0005103Delta-null_INT_.*")) {
-				File dkCorrectedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-da_DK_" + releaseDate + ".txt");
-				invalidFile.renameTo(dkCorrectedFileName);
-				logger.info("Found wrong file name {} and changed it to {}", invalidFile.getName(), dkCorrectedFileName);
-			} else if (invalid.matches("der2_cRefset_.*052107Delta-null_INT_.*")) {
-				File seCorrectedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-sv_SE_" + releaseDate + ".txt");
-				invalidFile.renameTo(seCorrectedFileName);
-				logger.info("Found wrong file name {} and changed it to {}", invalidFile.getName(), seCorrectedFileName);
-			} else {
-				logger.info("Found wrong file name {} but no fixes are implemented yet", invalidFile.getName());
+		
+		if (rf2Filenames.length == 1) {
+			String[] splits = rf2Filenames[0].split("_");
+			if (splits.length == 5) {
+				return splits[3];
 			}
-		}		
+		}
+		return null;
 	}
 
+
+	/**
+	 * rename dk and se translated concepts file.
+	 *der2_Refset_554831000005107Delta_DK1000005_20160926.txt 
+	 */
+	private void renameDKTranslatedConceptsRefsetFile(File extractDir, String releaseDate) {
+		File wrongName = new File(extractDir, "der2_Refset_554831000005107Delta_DK1000005_" + releaseDate + TXT);
+		File updatedName = new File(extractDir, "der2_Refset_DanishTranslatedConceptsSimpleDelta_DK1000005_" + releaseDate + TXT);
+		if (wrongName.exists()) {
+			wrongName.renameTo(updatedName);
+			logger.warn("found wrong file name:" + wrongName +  " and updated it to :" + updatedName);
+		} 
+	
+	}
 
 	private void suppressFilesNotRequired(String[] filenamesToBeExcluded, File extractDir) {
 		
@@ -220,16 +239,16 @@ public class SRSFileDAO {
 	/*
 	 * @return - the directory containing the files ready for uploading to SRS
 	 */
-	public File readyInputFiles(File archive, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
+	public File readyInputFiles(File archive, String releaseCenter, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
 			IOException {
 
-		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseDate, includeExternalFiles);
+		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseCenter, releaseDate, includeExternalFiles);
 		// Now rename files to make the import compatible
 		renameFiles(extractDir, "sct2", "rel2");
 		renameFiles(extractDir, "der2", "rel2");
 		// PGW 17/12/15 As a one off we're receiving CTV3 and SNOMED IDs in the SimpleMap file because this
 		// Data was received from Termmed. Strip this file for the moment.
-		File simpleMapFile = new File(extractDir, "rel2_sRefset_SimpleMapDelta_INT_" + releaseDate + ".txt");
+		File simpleMapFile = new File(extractDir, "rel2_sRefset_SimpleMapDelta_INT_" + releaseDate + TXT);
 		filterUnacceptableValues(simpleMapFile, REFSET_ID_COLUMN, ACCEPTABLE_SIMPLEMAP_VALUES);
 		return extractDir;
 	}
@@ -248,16 +267,16 @@ public class SRSFileDAO {
 		}
 	}
 
-	private void mergeRefsets(File extractDir, String fileType, String releaseDate) throws IOException {
+	private void mergeRefsets(File extractDir, String fileType, String countryNamespace,String releaseDate) throws IOException {
 		// Loop through our map of refsets required, and see what contributing files we can match
 		for (Map.Entry<String, RefsetCombiner> refset : refsetMap.entrySet()) {
 
 			RefsetCombiner rc = refset.getValue();
-			String combinedRefset = getFilename(rc.targetFilePattern, fileType, releaseDate);
+			String combinedRefset = getFilename(rc.targetFilePattern, fileType, countryNamespace, releaseDate);
 			// Now can we find any of the contributing files to add to that file?
 			boolean isFirstContributor = true;
 			for (String contributorPattern : rc.sourceFilePatterns) {
-				String contributorFilename = getFilename(contributorPattern, fileType, releaseDate);
+				String contributorFilename = getFilename(contributorPattern, fileType, countryNamespace, releaseDate);
 				File contributorFile = new File(extractDir, contributorFilename);
 				File combinedRefsetFile = new File(extractDir, combinedRefset);
 				if (contributorFile.exists()) {
@@ -281,8 +300,8 @@ public class SRSFileDAO {
 		}
 	}
 
-	private String getFilename(String filenamePattern, String fileType, String date) {
-		return filenamePattern.replace(FILE_TYPE_INSERT, fileType).replace(RELEASE_DATE_INSERT, date);
+	private String getFilename(String filenamePattern, String fileType, String countryNamespace,String date) {
+		return filenamePattern.replace(FILE_TYPE_INSERT, fileType).replace(COUNTRY_OR_NAMSPACE,countryNamespace).replace(RELEASE_DATE_INSERT, date);
 	}
 
 	private void renameFiles(File targetDirectory, String find, String replace) {
@@ -485,12 +504,12 @@ public class SRSFileDAO {
 		}
 	}
 
-	private void includeExternallyMaintainedFiles(File extractDir, String targetReleaseDate) throws IOException {
+	private void includeExternallyMaintainedFiles(File extractDir,String releaseCenter,String targetReleaseDate) throws IOException {
 		FileHelper s3 = new FileHelper(this.refsetBucket, s3Client);
 
 		// Recover all files in the folder ready for the next release
-		logger.debug("Recovering External Files from {}/{}", this.refsetBucket, targetReleaseDate);
-		List<String> externalFiles = s3.listFiles(targetReleaseDate);
+		logger.debug("Recovering External Files from {}/{}/{}", this.refsetBucket, releaseCenter,targetReleaseDate);
+		List<String> externalFiles = s3.listFiles(releaseCenter + "/" + targetReleaseDate);
 
 		for (String externalFile : externalFiles) {
 			// The current directory is also listed

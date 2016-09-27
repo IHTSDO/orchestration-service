@@ -3,6 +3,7 @@ package org.ihtsdo.orchestration.messaging;
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.ASSERTION_GROUP_NAMES;
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.DEPENDENCY_RELEASE;
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.INT;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.INTERNATIONAL;
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_RELEASE;
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.SHORT_NAME;
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.UNDER_SCORE;
@@ -73,10 +74,12 @@ public class ValidationMessageHandler {
 		if (extensionDependencyRelease != null) {
 			validationConfig.setExtensionDependencyRelease(INT + UNDER_SCORE + extensionDependencyRelease);
 			validationConfig.setPreviousExtensionRelease(productShortName + UNDER_SCORE + previousRelease);
+			validationConfig.setReleaseCenter(productShortName);
 		} else {
 			if (previousRelease != null) {
 				validationConfig.setPreviousInternationalRelease(INT + UNDER_SCORE + previousRelease);
 			}
+			validationConfig.setReleaseCenter(INTERNATIONAL);
 		}
 		return validationConfig;
 	}
