@@ -196,38 +196,6 @@ public class SRSFileDAO {
 	}
 
 
-	/**Wrong file name exported: der2_cRefset_554461000005103Delta-null_DK1000005_20160926.txt 
-	 * The correct name: der2_cRefset_LanguageDelta-da_DK1000005_20160731.txt
-	 * @param extractDir
-	 */
-	private void renameInvalidFilenames(File extractDir, String releaseDate) {
-		
-		String[] invalidFilenames = extractDir.list(new FilenameFilter() {
-			
-			@Override
-			public boolean accept(File dir, String name) {
-				if (name.contains("-null")) {
-					return true;
-				}
-				return false;
-			}
-		});
-		for (String invalid : invalidFilenames) {
-			File invalidFile = new File(extractDir,invalid);
-			if (invalid.matches("der2_cRefset_.*0005103Delta-null_.*_.*")) {
-				File dkCorrectedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-da_DK1000005_" + releaseDate + TXT);
-				invalidFile.renameTo(dkCorrectedFileName);
-				logger.info("Found wrong file name {} and changed it to {}", invalidFile.getName(), dkCorrectedFileName);
-			} else if (invalid.matches("der2_cRefset_.*052107Delta-null_.*_.*")) {
-				File seCorrectedFileName = new File(extractDir, "der2_cRefset_LanguageDelta-sv_SE_" + releaseDate + TXT);
-				invalidFile.renameTo(seCorrectedFileName);
-				logger.info("Found wrong file name {} and changed it to {}", invalidFile.getName(), seCorrectedFileName);
-			} else {
-				logger.info("Found wrong file name {} but no fixes are implemented yet", invalidFile.getName());
-			}
-		}	
-	}
-
 	/**
 	 * rename dk and se translated concepts file.
 	 *der2_Refset_554831000005107Delta_DK1000005_20160926.txt 
