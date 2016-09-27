@@ -95,6 +95,9 @@ public class SRSFileDAO {
 				"der2_cRefset_ConceptInactivationIndicatorReferenceSet****_$$$_########.txt",
 				"der2_cRefset_DescriptionInactivationIndicatorReferenceSet****_$$$_########.txt", }));
 
+		refsetMap.put("Language", new RefsetCombiner("der2_cRefset_Language****-en_$$$_########.txt", new String[] {
+				"der2_cRefset_GBEnglish****-en-gb_$$$_########.txt", "der2_cRefset_USEnglish****-en-us_$$$_########.txt" }));
+
 		refsetMap.put("RefsetDescriptor", new RefsetCombiner("der2_cciRefset_RefsetDescriptor****_$$$_########.txt", new String[] {}));
 
 		refsetMap.put("DescriptionType", new RefsetCombiner("der2_ciRefset_DescriptionType****_$$$_########.txt",
@@ -144,6 +147,23 @@ public class SRSFileDAO {
 		mergeRefsets(extractDir, "Delta",countryNamespace, releaseDate);
 		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
 	
+
+		// The description file is currently named sct2_Description_${extractType}-en-gb_INT_<date>.txt
+		// and we need it to be sct2_Description_${extractType}-en_INT_<date>.txt
+		File descriptionFileWrongName = new File(extractDir, "sct2_Description_Delta-en-gb_INT_" + releaseDate + TXT);
+		File descriptionFileRightName = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + TXT);
+		if (descriptionFileWrongName.exists()) {
+			descriptionFileWrongName.renameTo(descriptionFileRightName);
+		} else {
+			logger.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
+		}
+
+		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
+		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
+		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + TXT);
+		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + TXT);
+		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, true, false);
+
 		//Now pull in an externally maintained refsets from S3
 		if (includeExternalFiles) {
 			includeExternallyMaintainedFiles(extractDir, releaseCenter, releaseDate);
