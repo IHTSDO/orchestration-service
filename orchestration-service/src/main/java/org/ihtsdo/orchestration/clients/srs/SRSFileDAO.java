@@ -509,22 +509,22 @@ public class SRSFileDAO {
 
 		// Recover all files in the folder ready for the next release
 		logger.debug("Recovering External Files from {}/{}/{}", this.refsetBucket, releaseCenter,targetReleaseDate);
-		List<String> externalFiles = s3.listFiles(releaseCenter + "/" + targetReleaseDate);
+		String directoryPath = releaseCenter + "/" + targetReleaseDate;
+		List<String> externalFiles = s3.listFiles(directoryPath);
 
 		for (String externalFile : externalFiles) {
 			// The current directory is also listed
 			if (externalFile != null && externalFile.equals("/"))
 				continue;
-			
 			InputStream fileStream = null;
 			try {
 				// Note that filename already contains directory separator, so append directly
-				fileStream = s3.getFileStream(targetReleaseDate + externalFile);
+				fileStream = s3.getFileStream(directoryPath + externalFile);
 				File localExternalFile = new File(extractDir, externalFile);
 				logger.debug("Pulling in external file to {}, replacing any existing", localExternalFile.getAbsolutePath());
 				java.nio.file.Files.copy(fileStream, localExternalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} catch (Exception e) {
-				logger.error("Failed to pull external file from S3: {}{}", targetReleaseDate, externalFile, e);
+				logger.error("Failed to pull external file from S3: {}/{}/{}", releaseCenter, targetReleaseDate, externalFile, e);
 			} finally {
 				IOUtils.closeQuietly(fileStream);
 			}
