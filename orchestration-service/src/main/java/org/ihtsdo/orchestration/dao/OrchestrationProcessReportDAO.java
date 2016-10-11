@@ -3,6 +3,7 @@ package org.ihtsdo.orchestration.dao;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
@@ -84,8 +85,8 @@ public class OrchestrationProcessReportDAO {
 		return branchPath + "/" + process + "/" + dt + "/" + REPORT_FILE_NAME;
 	}
 
-	public void saveReport(String branchPath, String process, JSONObject rvfReport) {
-		InputStream is = new ByteArrayInputStream(rvfReport.toString().getBytes());
+	public void saveReport(String branchPath, String process, JSONObject rvfReport) throws UnsupportedEncodingException {
+		InputStream is = new ByteArrayInputStream(rvfReport.toString().getBytes("UTF-8"));
 		s3Client.putObject(tsReportBucketName, getNewReportFilePath(branchPath, process), is, null);
 	}
 
