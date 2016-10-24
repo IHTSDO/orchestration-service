@@ -52,25 +52,8 @@
 		<constructor-arg value="${ts.reportsBucket}"/>
 	</bean>
 
-	<bean name="snowowlProjectBranch" class="java.lang.String">
-		<constructor-arg value="${snowowl.projectBranch}"/>
-	</bean>
-
-	<bean name="exportDeltaStartEffectiveTime" class="java.lang.String" >
-		<constructor-arg value="${snowowl.export.fromDate}"/>
-	</bean>
-	
-	<bean class="org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration">
-		<property name="failureExportMax" value="${ts.rvf.failureExportMax:100}"/>
-	</bean>
-	
-	<bean class="org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration">
-				<property name="readmeEndDate" value="${ts.srs.readmeEndDate}"/>
-				<property name="previousPublishedPackageName" value="${ts.srs.previousPublishedPackageName}"/>
-				<property name="previousInternationalRelease" value="${ts.rvf.previousInternationalRelease}"/>
-				<property name="assertionGroupNames" value="${ts.rvf.assertionGroupNames}"/>
-				<property name="failureExportMax" value="${ts.rvf.failureExportMax:100}"/>
-				<property name="releaseDate" value="${srs.next.release}"/>
+	<bean name="failureExportMax" class="java.lang.String">
+		<constructor-arg value="${ts.rvf.failureExportMax:100}"/>
 	</bean>
 	
 	<bean class="org.ihtsdo.orchestration.service.ValidationService" init-method="init"/>

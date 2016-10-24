@@ -39,6 +39,9 @@ public class ReleaseService {
 
 	@Autowired
 	protected RVFRestClient rvfClient;
+	
+	@Autowired
+	private String failureExportMax;
 
 
 	public synchronized void release(String productName, String releaseCenter, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
@@ -92,6 +95,7 @@ public class ReleaseService {
 
 				// Create files for SRS / Initiate SRS
 				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
+				config.setFailureExportMax(failureExportMax);
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				boolean includeExternallyMaintainedFiles = true;
 				srsClient.prepareSRSFiles(exportArchive, config, includeExternallyMaintainedFiles);
