@@ -39,7 +39,7 @@ public class ValidationMessageHandler {
 	private MessagingHelper messagingHelper;
 	
 	@Autowired
-	private ValidationConfiguration defaultValidationConfig;
+	private String failureExportMax;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -63,7 +63,8 @@ public class ValidationMessageHandler {
 
 	private ValidationConfiguration constructValidaitonConfig(final TextMessage messageIn)
 			throws JMSException {
-		ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultValidationConfig);
+		ValidationConfiguration validationConfig = new ValidationConfiguration();
+		validationConfig.setFailureExportMax(failureExportMax);
 		String assertionGroups = messageIn.getStringProperty(ASSERTION_GROUP_NAMES);
 		if ( assertionGroups != null) {
 			validationConfig.setAssertionGroupNames(assertionGroups);

@@ -4,32 +4,22 @@ server.port=9001
 snowowl.url = http://localhost:8080/snowowl/
 snowowl.username =
 snowowl.password =
-snowowl.projectBranch = workbench-import
 snowowl.import.timeout = 60
 snowowl.log.path = /opt/termserver/serviceability/logs/log.log
 snowowl.rolloverLog.path = /opt/termserver/serviceability/logs/log_1.log
 snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
 snowowl.classification.timeout = 10
-snowowl.export.fromDate= 20150201
 ts.reportsBucket = 
-
+ts.rvf.failureExportMax = 100
 #SRS Server
 srs.root.url = https://localhost/api/v1/
 srs.username =
-srs.password =
-srs.next.release = 
+srs.password = 
 
 #RVF Server
 rvf.pollPeriod = 60  #Polling interval in seconds
 rvf.timeout = 120 #Timeout in minutes
 rvf.root.url = https://localhost/api/v1/
-
-# Jira
-jira.url = http://localhost:8080/jira
-jira.username =
-jira.password =
-jira.contentProjectKey =
-jira.dailyExportProjectKey =
 
 aws.key =
 aws.secretKey =

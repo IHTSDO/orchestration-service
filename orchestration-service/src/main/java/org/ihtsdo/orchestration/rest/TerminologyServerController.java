@@ -52,8 +52,8 @@ public class TerminologyServerController {
 	private ReleaseService releaseService;
 	
 	@Autowired
-	private ValidationConfiguration defaultConfig;
-
+	private String failureExportMax;
+	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
@@ -73,7 +73,8 @@ public class TerminologyServerController {
 			JsonObject jsonObj = options.getAsJsonObject();
 			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
 			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
-			ValidationConfiguration validationConfig = ValidationConfiguration.copy(defaultConfig);
+			ValidationConfiguration validationConfig = new ValidationConfiguration();
+			validationConfig.setFailureExportMax(failureExportMax);
 			String previousRelease = getRequiredParamString(jsonObj, PREVIOUS_RELEASE);
 			String dependencyRelease = getOptionalParamString(jsonObj, DEPENDENCY_RELEASE);
 			if (dependencyRelease != null) {

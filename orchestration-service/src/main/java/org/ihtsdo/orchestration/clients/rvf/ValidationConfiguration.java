@@ -13,18 +13,6 @@ public class ValidationConfiguration {
 	private String releaseDate;
 	private String releaseCenter;
 	
-	public static ValidationConfiguration copy(ValidationConfiguration defaultConfig)  {
-		ValidationConfiguration config = new ValidationConfiguration();
-		config.setAssertionGroupNames(defaultConfig.getAssertionGroupNames());
-		config.setExtensionDependencyRelease(defaultConfig.getExtensionDependencyRelease());
-		config.setFailureExportMax(defaultConfig.getFailureExportMax());
-		config.setPreviousExtensionRelease(defaultConfig.getPreviousExtensionRelease());
-		config.setProductName(defaultConfig.getProductName());
-		config.setReleaseDate(defaultConfig.getReleaseDate());
-		config.setPreviousInternationalRelease(defaultConfig.getPreviousInternationalRelease());
-		return config;
-	
-	}
 	
 	public String checkMissingParameters() {
 		StringBuilder msgBuilder = new StringBuilder();

@@ -6,7 +6,6 @@ import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -15,29 +14,10 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class ValidationConfigurationTestIntegration {
 	
 	private static final String COMMON_AUTHORING = "common-authoring";
-	@Autowired ValidationConfiguration defaultConfig;
-	
-	@Test
-	public void testValidationConfig() {
-		Assert.assertNotNull(defaultConfig);
-		ValidationConfiguration newConfig = ValidationConfiguration.copy(defaultConfig);
-		Assert.assertEquals(newConfig, defaultConfig);
-		
-		newConfig.setAssertionGroupNames("common-authoring,int-authoring");
-		newConfig.setPreviousInternationalRelease("int_20160131");
-		newConfig.setExtensionDependencyRelease("int_20160731");
-		newConfig.setPreviousExtensionRelease("dk_20160331");
-		newConfig.setReleaseDate("20160930");
-		
-		Assert.assertNotEquals(newConfig, defaultConfig);
-		
-		ValidationConfiguration copyOfNewConfig = ValidationConfiguration.copy(newConfig);
-		Assert.assertEquals(newConfig, copyOfNewConfig);
-	}
 	
 	@Test
 	public void testCheckConfigWithNothingSet() {
-		ValidationConfiguration config = ValidationConfiguration.copy(defaultConfig);
+		ValidationConfiguration config = new ValidationConfiguration();
 		Assert.assertNotNull(config.checkMissingParameters());
 		Assert.assertEquals(config.checkMissingParameters(),"assertionGroupNames can't be null.previousInternationalRelease,extensionDependencyRelease and previousExtensionRelease can't be all null.");
 	}
@@ -45,7 +25,7 @@ public class ValidationConfigurationTestIntegration {
 	
 	@Test
 	public void testWithNoExtensionConfig() {
-		ValidationConfiguration config = ValidationConfiguration.copy(defaultConfig);
+		ValidationConfiguration config = new ValidationConfiguration();
 		Assert.assertNotNull(config.checkMissingParameters());
 		config.setAssertionGroupNames(COMMON_AUTHORING);
 		config.setPreviousExtensionRelease("dk-20160215");
@@ -59,7 +39,7 @@ public class ValidationConfigurationTestIntegration {
 
 	@Test
 	public void testSuccessfulWithExtConfig() {
-		ValidationConfiguration config = ValidationConfiguration.copy(defaultConfig);
+		ValidationConfiguration config = new ValidationConfiguration();
 		Assert.assertNotNull(config.checkMissingParameters());
 		config.setAssertionGroupNames(COMMON_AUTHORING);
 		config.setPreviousExtensionRelease("dk-20160215");
@@ -70,7 +50,7 @@ public class ValidationConfigurationTestIntegration {
 	
 	@Test
 	public void testSuccessfulWithIntConfig() {
-		ValidationConfiguration config = ValidationConfiguration.copy(defaultConfig);
+		ValidationConfiguration config = new ValidationConfiguration();
 		Assert.assertNotNull(config.checkMissingParameters());
 		config.setAssertionGroupNames(COMMON_AUTHORING);
 		config.setPreviousInternationalRelease("int_20160131");
