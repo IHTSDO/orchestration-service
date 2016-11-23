@@ -3,6 +3,7 @@ package org.ihtsdo.orchestration.clients.srs;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -254,6 +255,7 @@ public class SRSRestClient {
 			logger.debug("Uploading file to {} : {} ", url, file.getAbsolutePath());
 			MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
 			multipartEntityBuilder.addBinaryBody("file", file, ContentType.create(CONTENT_TYPE_MULTIPART), file.getName());
+			multipartEntityBuilder.setCharset(Charset.forName("UTF-8"));
 			// multipartEntityBuilder.addPart("file", new FileBody(file));
 			multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 			HttpEntity httpEntity = multipartEntityBuilder.build();
