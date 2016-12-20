@@ -3,16 +3,20 @@ package org.ihtsdo.orchestration.service;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.ihtsdo.orchestration.OrchestrationConstants;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
+import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
@@ -25,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
-public class ValidationService {
+public class ValidationService implements OrchestrationConstants {
 
 	public static final String VALIDATION_PROCESS = "validation";
 
@@ -42,6 +46,12 @@ public class ValidationService {
 
 	@Autowired
 	protected RVFRestClient rvfClient;
+	
+	@Autowired
+	FileManager fileManager;
+	
+	@Autowired
+	DataService dataService;
 
 	private ExecutorService executorService;
 
@@ -151,9 +161,13 @@ public class ValidationService {
 			//change file name exported to RF2 format
 			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 			File zipFile = rvfClient.prepareExportFilesForValidation(exportArchive, config, false);
+			fileManager.addProcess(zipFile);
 			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
+			//Publish this data for any other process which is interested to work with
+			publish(zipFile, branchPath, config);
 			//call validation API
 			String rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(zipFile, config);
+			fileManager.removeProcess(zipFile);
 			//polling results
 			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
 			JSONObject rvfReport = rvfClient.waitForResponse(rvfResultUrl);
@@ -162,5 +176,20 @@ public class ValidationService {
 			status = OrchProcStatus.COMPLETED;
 			return status;
 		}
+
+		private void publish(File archive, String branchPath, ValidationConfiguration config) {
+			//We're only publishing project level validations currently
+			String[] pathParts = branchPath.split("/");
+			if (pathParts.length > 2) {
+				logger.info ("Not publishing non-project export: {}", branchPath);
+			} else {
+				Map<String, String> dataProperties = new HashMap<String,String>();
+				dataProperties.put(INT_DEPENDENCY, config.getPreviousInternationalRelease());
+				dataProperties.put(TS_ROOT, pathParts[0]);
+				dataProperties.put(PROJECT, pathParts[1]);
+				dataService.publish(archive, TS_DELTA_SOURCE, dataProperties);
+			}
+		}
+		
 	}
 }

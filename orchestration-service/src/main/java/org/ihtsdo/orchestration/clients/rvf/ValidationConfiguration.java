@@ -6,7 +6,7 @@ public class ValidationConfiguration {
 
 	private String previousInternationalRelease;
 	private String assertionGroupNames;
-	private String failureExportMax;
+	private String failureExportMax = "10";  //Default value if not otherwise specified.
 	private String previousExtensionRelease;
 	private String extensionDependencyRelease;
 	private String productName;

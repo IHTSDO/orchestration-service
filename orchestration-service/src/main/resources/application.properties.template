@@ -28,4 +28,7 @@ aws.bucket.refsets =
 orchestration.jms.url = tcp://localhost:61616
 orchestration.jms.username =
 orchestration.jms.password =
+#10 minute time out on messages published to topics
+orchestration.jms.timeToLive = 600
 orchestration.name =
+orchestration.platform = 

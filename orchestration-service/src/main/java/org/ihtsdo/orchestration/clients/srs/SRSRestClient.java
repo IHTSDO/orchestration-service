@@ -15,6 +15,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyHelper;
 import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
@@ -64,6 +65,9 @@ public class SRSRestClient {
 
 	@Autowired
 	protected SRSFileDAO srsDAO;
+	
+	@Autowired
+	FileManager fileManager;
 
 	private final String srsRootURL;
 	private final String username;
@@ -101,6 +105,8 @@ public class SRSRestClient {
 		}
 		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
+		//Tell the file manager that we have an interest in that directory so it's not deleted until all interested processes have released
+		fileManager.addProcess(inputFilesDir);
 	}
 
 	private void initiateRestyIfNeeded() throws BusinessServiceException {
@@ -164,8 +170,8 @@ public class SRSRestClient {
 
 		// Now everything in the target directory
 		uploadFiles(config.getInputFilesDir(), srsProductURL + INPUT_FILES_ENDPOINT);
-		// And we can delete that too, now that a copy is safely stored in S3
-		FileUtils.deleteDirectory(config.getInputFilesDir());
+		// And we unregister our interest in that directory
+		fileManager.removeProcess(config.getInputFilesDir());
 
 		// Create a build. Pass blank content to encourage Resty to use POST
 		JSONResource json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
