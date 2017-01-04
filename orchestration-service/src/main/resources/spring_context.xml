@@ -61,7 +61,7 @@
 	<bean class="org.ihtsdo.orchestration.service.ValidationService" init-method="init"/>
 	
 	<bean class="org.ihtsdo.orchestration.service.ReleaseService">
-		<constructor-arg value="${snowowl.flatIndexExportType}"/>
+		<constructor-arg value="${snowowl.flatIndexExportStyle}"/>
 	</bean>
 
 
