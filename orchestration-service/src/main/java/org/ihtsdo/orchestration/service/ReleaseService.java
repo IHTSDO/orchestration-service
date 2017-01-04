@@ -43,9 +43,14 @@ public class ReleaseService {
 	@Autowired
 	private String failureExportMax;
 
+	private final boolean flatIndexExportStyle;
+
+	public ReleaseService(boolean flatIndexExportStyle) {
+		this.flatIndexExportStyle = flatIndexExportStyle;
+	}
 
 	public synchronized void release(String productName, String releaseCenter, String branchPath, String effectiveDate, SnowOwlRestClient.ExportType exportType,
-			OrchestrationCallback callback)
+									 OrchestrationCallback callback)
 			throws IOException, JSONException, BusinessServiceException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
@@ -91,7 +96,8 @@ public class ReleaseService {
 			try {
 				// Export
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
-				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportType, SnowOwlRestClient.ExtractType.DELTA);
+				SnowOwlRestClient.ExtractType extractType = flatIndexExportStyle ? SnowOwlRestClient.ExtractType.SNAPSHOT : SnowOwlRestClient.ExtractType.DELTA;
+				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportType, extractType);
 
 				// Create files for SRS / Initiate SRS
 				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);

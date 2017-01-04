@@ -103,7 +103,8 @@ public class SRSRestClient {
 			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 			config.setReleaseDate(releaseDate);
 		}
-		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternallyMaintainedFiles);
+		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseCenter(), config.getReleaseDate(),
+				includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 		//Tell the file manager that we have an interest in that directory so it's not deleted until all interested processes have released
 		fileManager.addProcess(inputFilesDir);

@@ -9,6 +9,8 @@ snowowl.log.path = /opt/termserver/serviceability/logs/log.log
 snowowl.rolloverLog.path = /opt/termserver/serviceability/logs/log_1.log
 snowowl.reasonerId = au.csiro.snorocket.owlapi3.snorocket.factory
 snowowl.classification.timeout = 10
+snowowl.flatIndexExportStyle = true
+
 ts.reportsBucket = 
 ts.rvf.failureExportMax = 100
 #SRS Server

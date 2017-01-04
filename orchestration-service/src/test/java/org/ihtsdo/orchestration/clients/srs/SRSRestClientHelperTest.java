@@ -34,7 +34,7 @@ public class SRSRestClientHelperTest {
 			throw new Exception("Unable to load test resource: " + TEST_ARCHIVE);
 		}
 
-		srsFileDAO = new SRSFileDAO(null);
+		srsFileDAO = new SRSFileDAO(null, false);
 	}
 
 	@Test

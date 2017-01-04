@@ -19,6 +19,7 @@
 		<property name="rolloverLogPath" value="${snowowl.rolloverLog.path}"/>
 		<property name="importTimeoutMinutes" value="${snowowl.import.timeout}"/>
 		<property name="classificationTimeoutMinutes" value="${snowowl.classification.timeout}"/>
+		<property name="flatIndexExportStyle" value="${snowowl.flatIndexExportStyle:true}"/>
 	</bean>
 	
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSRestClient">
@@ -29,6 +30,7 @@
 	
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSFileDAO">
 		<constructor-arg value="${aws.bucket.refsets}"/>
+		<constructor-arg value="${snowowl.flatIndexExportStyle:true}"/>
 	</bean>
 	
 	<bean class="org.ihtsdo.orchestration.clients.rvf.RVFRestClient" >
@@ -58,7 +60,9 @@
 	
 	<bean class="org.ihtsdo.orchestration.service.ValidationService" init-method="init"/>
 	
-	<bean class="org.ihtsdo.orchestration.service.ReleaseService" />
+	<bean class="org.ihtsdo.orchestration.service.ReleaseService">
+		<constructor-arg value="${snowowl.flatIndexExportType}"/>
+	</bean>
 
 
 </beans>

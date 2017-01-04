@@ -41,6 +41,9 @@ import com.google.common.io.Files;
 
 public class SRSFileDAO {
 
+	private static final String DELTA = "Delta";
+	private static final String SNAPSHOT = "Snapshot";
+
 	private static final String INTERNATIONAL = "international";
 
 	private static final String TXT = ".txt";
@@ -72,6 +75,7 @@ public class SRSFileDAO {
 	S3ClientImpl s3Client;
 
 	private String refsetBucket;
+	private final boolean snowOwlFlatIndexExportStyle;
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
@@ -117,8 +121,9 @@ public class SRSFileDAO {
 		ACCEPTABLE_SIMPLEMAP_VALUES.add(ICDO_REFSET_ID);
 	}
 
-	public SRSFileDAO(String refsetBucket) {
+	public SRSFileDAO(String refsetBucket, boolean snowOwlFlatIndexExportStyle) {
 		this.refsetBucket = refsetBucket;
+		this.snowOwlFlatIndexExportStyle = snowOwlFlatIndexExportStyle;
 	}
 	
 	
@@ -141,10 +146,13 @@ public class SRSFileDAO {
 		if (!INTERNATIONAL.equalsIgnoreCase(releaseCenter)){
 			suppressFilesNotRequired(EXTENSION_EXCLUDED_FILES, extractDir);
 		}
-	
+
+		if (snowOwlFlatIndexExportStyle) {
+			renameFiles(extractDir, SNAPSHOT, DELTA);
+		}
 		// Merge the refsets into the expected files and replace any "unpublished" dates
 		// with today's date
-		mergeRefsets(extractDir, "Delta",countryNamespace, releaseDate);
+		mergeRefsets(extractDir, DELTA,countryNamespace, releaseDate);
 		replaceInFiles(extractDir, UNKNOWN_EFFECTIVE_DATE, releaseDate, EFFECTIVE_DATE_COLUMN);
 	
 
