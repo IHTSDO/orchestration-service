@@ -51,7 +51,7 @@ public class ValidationService implements OrchestrationConstants {
 	FileManager fileManager;
 	
 	@Autowired
-	DataService dataService;
+	ArtifactPublishService artifactPublishService;
 
 	private ExecutorService executorService;
 
@@ -187,7 +187,7 @@ public class ValidationService implements OrchestrationConstants {
 				dataProperties.put(INT_DEPENDENCY, config.getPreviousInternationalRelease());
 				dataProperties.put(TS_ROOT, pathParts[0]);
 				dataProperties.put(PROJECT, pathParts[1]);
-				dataService.publish(archive, TS_DELTA_SOURCE, dataProperties);
+				artifactPublishService.publish(archive, TS_DELTA_SOURCE, dataProperties);
 			}
 		}
 		

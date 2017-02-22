@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
  * eg dev-int.orchestration.termserver-exported-delta
  */
 @Service
-public class DataService {
+public class ArtifactPublishService {
 	
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	
