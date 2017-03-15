@@ -33,4 +33,3 @@ orchestration.jms.password =
 #10 minute time out on messages published to topics
 orchestration.jms.timeToLive = 600
 orchestration.name =
-orchestration.platform = 

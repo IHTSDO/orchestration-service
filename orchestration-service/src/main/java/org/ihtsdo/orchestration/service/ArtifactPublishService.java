@@ -30,8 +30,8 @@ public class ArtifactPublishService {
 	@Autowired
 	FileManager fileManager;
 	
-	@Value("${orchestration.platform}")
-	String platform;
+	@Value("${orchestration.name}")
+	String platform; //Combination of environment plus audience eg dev-int
 	
 	@Value("${orchestration.jms.timeToLive}")
 	int timeToLive; //seconds
