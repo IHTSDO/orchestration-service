@@ -8,7 +8,7 @@ import java.util.List;
 import org.ihtsdo.orchestration.Config;
 import org.ihtsdo.orchestration.TestProperties;
 import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,7 +65,7 @@ public class SnowOwlRestClientTestIntegration {
 		
 		String branchPath="MAIN/2016-01-31/SNOMEDCT-DK/DKA/DKA-56";
 		String effectiveDate="20170131";
-		File exportArchive = client.export(branchPath, effectiveDate, SnowOwlRestClient.ExportType.UNPUBLISHED,
-				SnowOwlRestClient.ExtractType.DELTA);
+		File exportArchive = client.export(branchPath, effectiveDate, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
+				SnowOwlRestClient.ExportType.DELTA);
 	}
 }

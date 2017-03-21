@@ -15,7 +15,7 @@ import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
 import org.ihtsdo.orchestration.service.ValidationService;
-import org.ihtsdo.otf.rest.client.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -116,9 +116,9 @@ public class TerminologyServerController {
 				//default to international
 				releaseCenter = INTERNATIONAL;
 			}
-			SnowOwlRestClient.ExportType exportType = SnowOwlRestClient.ExportType.valueOf(exportTypeStr);
+			SnowOwlRestClient.ExportCategory exportCategory = SnowOwlRestClient.ExportCategory.valueOf(exportTypeStr);
 			// Passing null callback as this request has not come from a termserver user
-			releaseService.release(productName, releaseCenter, branchPath, effectiveDate, exportType, null);
+			releaseService.release(productName, releaseCenter, branchPath, effectiveDate, exportCategory, null);
 		}
 	}
 
