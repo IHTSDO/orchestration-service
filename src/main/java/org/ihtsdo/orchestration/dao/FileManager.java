@@ -1,14 +1,14 @@
 package org.ihtsdo.orchestration.dao;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import com.b2international.commons.FileUtils;
 
 /*
  * File manager keeps track of the number of processes which are interested in a particular
@@ -30,17 +30,21 @@ public class FileManager {
 		}
 	}
 	
-	public void removeProcess (File file) {
+	public void removeProcess(File file) {
 		if (fileMap.containsKey(file)) {
-			int currentValue = fileMap.get(file).intValue();
+			int currentValue = fileMap.get(file);
 			if (currentValue > 1) {
-				fileMap.put(file, new Integer(currentValue - 1));
+				fileMap.put(file, currentValue - 1);
 			} else {
 				logger.debug("Removing " + file.getAbsolutePath());
 				fileMap.remove(file);
 				if (file.exists()) {
 					if (file.isDirectory()) {
-						FileUtils.deleteDirectory(file);
+						try {
+							FileUtils.deleteDirectory(file);
+						} catch (IOException e) {
+							logger.error("Failed to delete directory {}", file.getAbsolutePath(), e);
+						}
 					} else {
 						file.delete();
 					}
