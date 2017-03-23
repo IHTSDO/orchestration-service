@@ -5,11 +5,12 @@ import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.DEPENDE
 import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_RELEASE;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.google.common.collect.Sets;
+import com.google.gson.JsonArray;
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
@@ -58,6 +59,7 @@ public class TerminologyServerController {
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
+	public static final String EXCLUDED_MODULE_IDS = "excludedModuleIds";
 	public static final String PRODUCT_NAME = "productName";
 	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
 	public static final String SHORT_NAME ="shortname";
@@ -112,13 +114,16 @@ public class TerminologyServerController {
 			String productName = getRequiredParamString(jsonObj, PRODUCT_NAME);
 			String exportTypeStr = getRequiredParamString(jsonObj, EXPORT_TYPE);
 			String releaseCenter = getOptionalParamString(jsonObj, RELEASE_CENTER);
+			String excludedModuleIdsString = getOptionalParamString(jsonObj, EXCLUDED_MODULE_IDS);
+			Set<String> excludedModuleIds = excludedModuleIdsString != null ? Sets.newHashSet(excludedModuleIdsString.split(",")) : Collections.<String>emptySet();
+
 			if (releaseCenter == null) {
 				//default to international
 				releaseCenter = INTERNATIONAL;
 			}
 			SnowOwlRestClient.ExportCategory exportCategory = SnowOwlRestClient.ExportCategory.valueOf(exportTypeStr);
 			// Passing null callback as this request has not come from a termserver user
-			releaseService.release(productName, releaseCenter, branchPath, effectiveDate, exportCategory, null);
+			releaseService.release(productName, releaseCenter, branchPath, effectiveDate, excludedModuleIds, exportCategory, null);
 		}
 	}
 
@@ -132,10 +137,10 @@ public class TerminologyServerController {
 		final ValidationReportDTO latestValidation = validationService.getLatestValidation(path);
 		if (latestValidation != null) {
 			logger.debug("Got latest validation for '{}' - {} ", path, latestValidation.getExecutionStatus() );
-			return new ResponseEntity<ValidationReportDTO>(latestValidation,HttpStatus.OK);
+			return new ResponseEntity<>(latestValidation,HttpStatus.OK);
 		} else {
 			logger.info("Validation for path '" + path + "' not found.");
-			return new ResponseEntity<ValidationReportDTO>(HttpStatus.NOT_FOUND);
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
 

@@ -10,7 +10,7 @@
 
 	<import resource="jms-api-context.xml"/>
 
-	<bean class="org.ihtsdo.otf.rest.client.SnowOwlRestClient">
+	<bean class="org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient">
 		<constructor-arg value="${snowowl.url}"/>
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>

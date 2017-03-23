@@ -143,7 +143,7 @@ public class ValidationService implements OrchestrationConstants {
 				}
 				// Export
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
-				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
+				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
 						SnowOwlRestClient.ExportType.DELTA);
 				//send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);

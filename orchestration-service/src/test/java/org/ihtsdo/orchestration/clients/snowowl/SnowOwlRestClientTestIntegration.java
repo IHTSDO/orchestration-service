@@ -65,7 +65,7 @@ public class SnowOwlRestClientTestIntegration {
 		
 		String branchPath="MAIN/2016-01-31/SNOMEDCT-DK/DKA/DKA-56";
 		String effectiveDate="20170131";
-		File exportArchive = client.export(branchPath, effectiveDate, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
+		File exportArchive = client.export(branchPath, effectiveDate, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
 				SnowOwlRestClient.ExportType.DELTA);
 	}
 }
