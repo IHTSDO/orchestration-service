@@ -3,5 +3,5 @@ target
 ts-delta-import.properties
 *.iml
 *.sh
-application.properties
+application-*.properties
 go.sh
