@@ -9,8 +9,8 @@ public class RestApplication {
 	
 	private static ConfigurableApplicationContext applicationContext;
 
-	public static void main(String[] args) throws Exception {
-		applicationContext = SpringApplication.run(Config.class, "server.port=9000");
+	public static void main(String[] args) {
+		applicationContext = SpringApplication.run(Config.class, args);
 
 		// Uncomment next line to trigger import on startup (useful for testing)
 //		applicationContext.getBean(ImporterService.class).importCompletedWBContent(null, true);
