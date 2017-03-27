@@ -1,17 +1,10 @@
 package org.ihtsdo.orchestration.rest;
 
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.ASSERTION_GROUP_NAMES;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.DEPENDENCY_RELEASE;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_RELEASE;
-
-import java.io.IOException;
-import java.util.*;
-
-import javax.servlet.http.HttpServletRequest;
-
-import com.google.common.collect.Sets;
-import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
+import org.ihtsdo.orchestration.dao.TermserverReleaseRequestPojo;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
@@ -26,19 +19,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.HandlerMapping;
-
 import us.monoid.json.JSONException;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.*;
 
 @RestController
 @RequestMapping("/REST/termserver")
@@ -59,12 +50,7 @@ public class TerminologyServerController {
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
-	public static final String EXCLUDED_MODULE_IDS = "excludedModuleIds";
-	public static final String PRODUCT_NAME = "productName";
-	public static final String EXPORT_TYPE = "exportType"; // PUBLISHED or UNPUBLISHED
 	public static final String SHORT_NAME ="shortname";
-
-	private static final String RELEASE_CENTER = "releaseCenter";
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -104,27 +90,21 @@ public class TerminologyServerController {
 
 	@RequestMapping(value = "/release", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
-	public void createRelease(@RequestBody(required = false) String json) throws IOException, JSONException, BusinessServiceException {
-		logger.info("Create validation '{}'", json);
-		if (json != null) {
-			JsonElement options = new JsonParser().parse(json);
-			JsonObject jsonObj = options.getAsJsonObject();
-			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
-			String effectiveDate = getRequiredParamString(jsonObj, EFFECTIVE_DATE_KEY);
-			String productName = getRequiredParamString(jsonObj, PRODUCT_NAME);
-			String exportTypeStr = getRequiredParamString(jsonObj, EXPORT_TYPE);
-			String releaseCenter = getOptionalParamString(jsonObj, RELEASE_CENTER);
-			String excludedModuleIdsString = getOptionalParamString(jsonObj, EXCLUDED_MODULE_IDS);
-			Set<String> excludedModuleIds = excludedModuleIdsString != null ? Sets.newHashSet(excludedModuleIdsString.split(",")) : Collections.<String>emptySet();
+	public void createRelease(@RequestBody TermserverReleaseRequestPojo request) throws IOException, JSONException, BusinessServiceException {
+		logger.info("Create release '{}'", request);
+		String branchPath = request.getBranchPath();
+		String effectiveDate = request.getEffectiveDate();
+		String productName = request.getProductName();
+		SnowOwlRestClient.ExportCategory exportCategory = request.getExportCategory();
+		String releaseCenter = request.getReleaseCenter();
+		Set<String> excludedModuleIds = request.getExcludedModuleIds();
 
-			if (releaseCenter == null) {
-				//default to international
-				releaseCenter = INTERNATIONAL;
-			}
-			SnowOwlRestClient.ExportCategory exportCategory = SnowOwlRestClient.ExportCategory.valueOf(exportTypeStr);
-			// Passing null callback as this request has not come from a termserver user
-			releaseService.release(productName, releaseCenter, branchPath, effectiveDate, excludedModuleIds, exportCategory, null);
+		if (releaseCenter == null) {
+			//default to international
+			releaseCenter = INTERNATIONAL;
 		}
+		// Passing null callback as this request has not come from a termserver user
+		releaseService.release(productName, releaseCenter, branchPath, effectiveDate, excludedModuleIds, exportCategory, null);
 	}
 
 	@RequestMapping(value = "/validations/**/latest", method = RequestMethod.GET)
