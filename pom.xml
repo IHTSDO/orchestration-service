@@ -127,7 +127,6 @@
 											<src>${basedir}/src/deb/supervisor.conf</src>
 											<dst>/etc/supervisor/conf.d/${packageName}.conf</dst>
 											<type>file</type>
-											<conffile>true</conffile>
 										</data>
 										<data>
 											<type>template</type>
