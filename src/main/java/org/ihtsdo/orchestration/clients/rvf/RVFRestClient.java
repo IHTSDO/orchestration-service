@@ -58,6 +58,7 @@ public class RVFRestClient {
 	public RVFRestClient(String rvfRootUrl,int pollPeriod, int timeout) {
 		this.resty = new RestyMod();
 		this.rvfRootUrl = rvfRootUrl;
+		logger.info("RVF root url:" + rvfRootUrl);
 		this.pollPeriod = pollPeriod * 1000;
 		maxElapsedTime = timeout * 60 * 1000;
 	}
