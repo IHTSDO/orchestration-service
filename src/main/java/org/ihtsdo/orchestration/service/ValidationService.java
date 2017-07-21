@@ -2,7 +2,11 @@ package org.ihtsdo.orchestration.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,14 +117,11 @@ public class ValidationService implements OrchestrationConstants {
 	private class ValidationRunner implements Runnable {
 
 		private final String branchPath;
-		private final String effectiveDate;
 		private final OrchestrationCallback callback;
 		private ValidationConfiguration config;
 
 		private ValidationRunner(ValidationConfiguration validationConfig, String branchPath, String effectiveDate, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
-			this.effectiveDate = effectiveDate;
-			//Note that the SRS Release date is determined from the date found in the archive file
 			this.callback = callback;
 			config = validationConfig;
 			config.setProductName(branchPath.replace("/", "_"));
@@ -143,7 +144,9 @@ public class ValidationService implements OrchestrationConstants {
 				}
 				// Export
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
-				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
+				//check and update export effective time
+				String exportEffectiveTime = resolveExportEffectiveTime(config);
+				File exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
 						SnowOwlRestClient.ExportType.DELTA);
 				//send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);
@@ -154,6 +157,28 @@ public class ValidationService implements OrchestrationConstants {
 			if ( callback != null) {
 				callback.complete(finalOrchProcStatus);
 			}
+		}
+
+		private String resolveExportEffectiveTime(ValidationConfiguration config) throws ParseException {
+			Calendar calendar = new GregorianCalendar();
+			SimpleDateFormat formatter = new SimpleDateFormat(DateUtils.YYYYMMDD);
+			String exportEffectiveDate = config.getReleaseDate();
+			if (config.getExtensionDependencyRelease() != null) {
+				if (formatter.parse(config.getReleaseDate()).before(formatter.parse(config.getExtensionDependencyRelease()))) {
+					calendar.setTime(formatter.parse(config.getExtensionDependencyRelease()));
+					calendar.add(Calendar.DAY_OF_YEAR, 1);
+					exportEffectiveDate = formatter.format(calendar.getTime());
+					logger.info("Export effective date is set to one day after the extension dependency release:" + config.getExtensionDependencyRelease());
+				}
+			} else if (config.getPreviousInternationalRelease() != null) {
+				if (formatter.parse(config.getReleaseDate()).before(formatter.parse(config.getPreviousInternationalRelease()))) {
+					calendar.setTime(formatter.parse(config.getPreviousInternationalRelease()));
+					calendar.add(Calendar.DAY_OF_YEAR, 1);
+					exportEffectiveDate = formatter.format(calendar.getTime());
+					logger.info("Export effective date is set to one day after the previous release:" + config.getPreviousInternationalRelease());
+				}
+			}
+			return exportEffectiveDate;
 		}
 
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
