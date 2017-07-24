@@ -23,6 +23,7 @@ import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
+import org.ihtsdo.orchestration.rest.ValidationParameterConstants;
 import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -160,22 +161,23 @@ public class ValidationService implements OrchestrationConstants {
 		}
 
 		private String resolveExportEffectiveTime(ValidationConfiguration config) throws ParseException {
-			Calendar calendar = new GregorianCalendar();
-			SimpleDateFormat formatter = new SimpleDateFormat(DateUtils.YYYYMMDD);
 			String exportEffectiveDate = config.getReleaseDate();
+			String mostRecentRelease = null;
 			if (config.getExtensionDependencyRelease() != null) {
-				if (formatter.parse(config.getReleaseDate()).before(formatter.parse(config.getExtensionDependencyRelease()))) {
-					calendar.setTime(formatter.parse(config.getExtensionDependencyRelease()));
-					calendar.add(Calendar.DAY_OF_YEAR, 1);
-					exportEffectiveDate = formatter.format(calendar.getTime());
-					logger.info("Export effective date is set to one day after the extension dependency release:" + config.getExtensionDependencyRelease());
-				}
+				mostRecentRelease = config.getExtensionDependencyRelease();
 			} else if (config.getPreviousInternationalRelease() != null) {
-				if (formatter.parse(config.getReleaseDate()).before(formatter.parse(config.getPreviousInternationalRelease()))) {
-					calendar.setTime(formatter.parse(config.getPreviousInternationalRelease()));
+				mostRecentRelease = config.getPreviousInternationalRelease();
+			}
+			if (mostRecentRelease != null) {
+				String[] splits = mostRecentRelease.split(ValidationParameterConstants.UNDER_SCORE);
+				String dateStr = (splits.length == 2) ? splits[1] : splits[0];
+				Calendar calendar = new GregorianCalendar();
+				SimpleDateFormat formatter = new SimpleDateFormat(DateUtils.YYYYMMDD);
+				if (formatter.parse(config.getReleaseDate()).before(formatter.parse(dateStr))) {
+					calendar.setTime(formatter.parse(dateStr));
 					calendar.add(Calendar.DAY_OF_YEAR, 1);
 					exportEffectiveDate = formatter.format(calendar.getTime());
-					logger.info("Export effective date is set to one day after the previous release:" + config.getPreviousInternationalRelease());
+					logger.info("The effective date for termServer exporting is set to {} one day after the most recent release {}", exportEffectiveDate, mostRecentRelease);
 				}
 			}
 			return exportEffectiveDate;
