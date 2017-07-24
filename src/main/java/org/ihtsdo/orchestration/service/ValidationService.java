@@ -2,7 +2,11 @@ package org.ihtsdo.orchestration.service;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +23,7 @@ import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
+import org.ihtsdo.orchestration.rest.ValidationParameterConstants;
 import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -113,14 +118,11 @@ public class ValidationService implements OrchestrationConstants {
 	private class ValidationRunner implements Runnable {
 
 		private final String branchPath;
-		private final String effectiveDate;
 		private final OrchestrationCallback callback;
 		private ValidationConfiguration config;
 
 		private ValidationRunner(ValidationConfiguration validationConfig, String branchPath, String effectiveDate, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
-			this.effectiveDate = effectiveDate;
-			//Note that the SRS Release date is determined from the date found in the archive file
 			this.callback = callback;
 			config = validationConfig;
 			config.setProductName(branchPath.replace("/", "_"));
@@ -143,7 +145,9 @@ public class ValidationService implements OrchestrationConstants {
 				}
 				// Export
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
-				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
+				//check and update export effective time
+				String exportEffectiveTime = resolveExportEffectiveTime(config);
+				File exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
 						SnowOwlRestClient.ExportType.DELTA);
 				//send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);
@@ -154,6 +158,29 @@ public class ValidationService implements OrchestrationConstants {
 			if ( callback != null) {
 				callback.complete(finalOrchProcStatus);
 			}
+		}
+
+		private String resolveExportEffectiveTime(ValidationConfiguration config) throws ParseException {
+			String exportEffectiveDate = config.getReleaseDate();
+			String mostRecentRelease = null;
+			if (config.getExtensionDependencyRelease() != null) {
+				mostRecentRelease = config.getExtensionDependencyRelease();
+			} else if (config.getPreviousInternationalRelease() != null) {
+				mostRecentRelease = config.getPreviousInternationalRelease();
+			}
+			if (mostRecentRelease != null) {
+				String[] splits = mostRecentRelease.split(ValidationParameterConstants.UNDER_SCORE);
+				String dateStr = (splits.length == 2) ? splits[1] : splits[0];
+				Calendar calendar = new GregorianCalendar();
+				SimpleDateFormat formatter = new SimpleDateFormat(DateUtils.YYYYMMDD);
+				if (formatter.parse(config.getReleaseDate()).before(formatter.parse(dateStr))) {
+					calendar.setTime(formatter.parse(dateStr));
+					calendar.add(Calendar.DAY_OF_YEAR, 1);
+					exportEffectiveDate = formatter.format(calendar.getTime());
+					logger.info("The effective date for termServer exporting is set to {} one day after the most recent release {}", exportEffectiveDate, mostRecentRelease);
+				}
+			}
+			return exportEffectiveDate;
 		}
 
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {

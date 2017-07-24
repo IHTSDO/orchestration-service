@@ -58,6 +58,7 @@ public class RVFRestClient {
 	public RVFRestClient(String rvfRootUrl,int pollPeriod, int timeout) {
 		this.resty = new RestyMod();
 		this.rvfRootUrl = rvfRootUrl;
+		logger.info("RVF root url:" + rvfRootUrl);
 		this.pollPeriod = pollPeriod * 1000;
 		maxElapsedTime = timeout * 60 * 1000;
 	}
@@ -166,7 +167,7 @@ public class RVFRestClient {
 			response = resty.json(rvfRootUrl + "/run-post", new HttpEntityContent(httpEntity));
 			RestyServiceHelper.ensureSuccessfull(response);
 			rvfResultUrl = response.get("resultURL").toString();
-			logger.debug("RVFResult URL:" + rvfResultUrl);
+			logger.info("RVFResult URL:" + rvfResultUrl);
 		} catch ( Exception e) {
 			throw new ProcessingException("Failed to upload " + zipFile.getName() + " to RVF for validation", e);
 		}
