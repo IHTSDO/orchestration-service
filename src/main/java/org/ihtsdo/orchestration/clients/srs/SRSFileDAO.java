@@ -166,12 +166,14 @@ public class SRSFileDAO {
 			logger.warn("Was not able to find {} to correct the name", descriptionFileWrongName);
 		}
 
-		// We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
+		// Check if there is text definition exported or not. If We don't have a Text Definition file, so create that by extracting rows with TypeId 900000000000550004
 		// from sct2_Description_Delta-en_INT_<date>.txt to form sct2_TextDefinition_Delta-en_INT_<date>.txt
 		File description = new File(extractDir, "sct2_Description_Delta-en_INT_" + releaseDate + TXT);
 		File definition = new File(extractDir, "sct2_TextDefinition_Delta-en_INT_" + releaseDate + TXT);
-		createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, true, false);
-
+		if (!definition.exists()) {
+			logger.info("No text definition file is being exported therefore it will try to extract data from the description file for type id 900000000000550004" );
+			createSubsetFile(description, definition, TYPE_ID_COLUMN, TEXT_DEFINITION_SCTID, true, false);
+		}
 		//Now pull in an externally maintained refsets from S3
 		if (includeExternalFiles) {
 			includeExternallyMaintainedFiles(extractDir, releaseCenter, releaseDate);
