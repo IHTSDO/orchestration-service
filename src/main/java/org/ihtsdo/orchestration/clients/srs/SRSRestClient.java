@@ -36,6 +36,10 @@ import us.monoid.web.mime.MultipartContent;
 
 public class SRSRestClient {
 
+	private static final String EXTERNALly_MAINTAINED = "externally-maintained";
+
+	private static final String TERMINOLOGY_SERVER = "terminology-server";
+
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	protected static final String CONTENT_TYPE_ANY = "*/*";
@@ -167,20 +171,28 @@ public class SRSRestClient {
 		String srsProductURL = getProductUrl(config.getProductName(),config.getReleaseCenter());
 
 		// Delete any previously uploaded input files
-		logger.debug("Deleting previous source files");
-		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
-
-		// Now everything in the target directory
-		uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + "termServerExport");
-		//upload externalMaintained refsets
+		logger.debug("Deleting previous input-files");
+		resty.json(srsProductURL + INPUT_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
 		
+		logger.debug("Deleting previous source files");
+		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER, Resty.delete());
+		
+		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED, Resty.delete());
+
+		// Upload source files
+		
+		logger.debug("Upload source files for " +  TERMINOLOGY_SERVER);
+		uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER);
+		//upload externalMaintained refsets
+		logger.debug("Upload source files for " +  EXTERNALly_MAINTAINED);
 		File externalExtractDir = Files.createTempDirectory("external").toFile();
 		srsDAO.downloadExternallyMaintainedFiles(externalExtractDir, config.getReleaseCenter(), config.getReleaseDate());
-		uploadFiles(externalExtractDir, srsProductURL + SOURCE_FILES_ENDPOINT + "/" + "externalMaintained");
+		uploadFiles(externalExtractDir, srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED);
 		// And we unregister our interest in that directory
 		fileManager.removeProcess(config.getInputFilesDir());
 		fileManager.removeProcess(externalExtractDir);
 		//Call prepare input files step
+		logger.debug("Call prepare input files api");
 		JSONResource prepareInputFileResponse = resty.json(srsProductURL + PREPARE_INPUT_FILES_ENDPOINT, EMPTY_CONTENT);
 		RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
 		
