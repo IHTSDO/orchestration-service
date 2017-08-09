@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -49,6 +48,8 @@ public class SRSRestClient {
 	private static final String DATE_MARKER = "########";
 	private static final String MANIFEST_ENDPOINT = "manifest";
 	private static final String INPUT_FILES_ENDPOINT = "inputfiles";
+	private static final String SOURCE_FILES_ENDPOINT ="sourcefiles";
+	private static final String PREPARE_INPUT_FILES_ENDPOINT = "/inputfiles/prepare";
 	private static final String DELETE_FILTER = "/*.txt";
 	private static final String BUILD_ENDPOINT = "builds";
 	private static final String AUTHENTICATE_ENDPOINT = "login";
@@ -166,14 +167,23 @@ public class SRSRestClient {
 		String srsProductURL = getProductUrl(config.getProductName(),config.getReleaseCenter());
 
 		// Delete any previously uploaded input files
-		logger.debug("Deleting previous input files");
-		resty.json(srsProductURL + INPUT_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
+		logger.debug("Deleting previous source files");
+		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
 
 		// Now everything in the target directory
-		uploadFiles(config.getInputFilesDir(), srsProductURL + INPUT_FILES_ENDPOINT);
+		uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + "termServerExport");
+		//upload externalMaintained refsets
+		
+		File externalExtractDir = Files.createTempDirectory("external").toFile();
+		srsDAO.downloadExternallyMaintainedFiles(externalExtractDir, config.getReleaseCenter(), config.getReleaseDate());
+		uploadFiles(externalExtractDir, srsProductURL + SOURCE_FILES_ENDPOINT + "/" + "externalMaintained");
 		// And we unregister our interest in that directory
 		fileManager.removeProcess(config.getInputFilesDir());
-
+		fileManager.removeProcess(externalExtractDir);
+		//Call prepare input files step
+		JSONResource prepareInputFileResponse = resty.json(srsProductURL + PREPARE_INPUT_FILES_ENDPOINT, EMPTY_CONTENT);
+		RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
+		
 		// Create a build. Pass blank content to encourage Resty to use POST
 		JSONResource json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
 		Object buildId = json.get(ID);
