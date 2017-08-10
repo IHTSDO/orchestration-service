@@ -176,7 +176,7 @@ public class SRSFileDAO {
 		}
 		//Now pull in an externally maintained refsets from S3
 		if (includeExternalFiles) {
-			includeExternallyMaintainedFiles(extractDir, releaseCenter, releaseDate);
+			downloadExternallyMaintainedFiles(extractDir, releaseCenter, releaseDate);
 		}
 		return extractDir;
 	}
@@ -253,12 +253,9 @@ public class SRSFileDAO {
 			IOException {
 
 		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseCenter, releaseDate, includeExternalFiles);
-		// Now rename files to make the import compatible
-		renameFiles(extractDir, "sct2", "rel2");
-		renameFiles(extractDir, "der2", "rel2");
 		// PGW 17/12/15 As a one off we're receiving CTV3 and SNOMED IDs in the SimpleMap file because this
 		// Data was received from Termmed. Strip this file for the moment.
-		File simpleMapFile = new File(extractDir, "rel2_sRefset_SimpleMapDelta_INT_" + releaseDate + TXT);
+		File simpleMapFile = new File(extractDir, "der2_sRefset_SimpleMapDelta_INT_" + releaseDate + TXT);
 		filterUnacceptableValues(simpleMapFile, REFSET_ID_COLUMN, ACCEPTABLE_SIMPLEMAP_VALUES);
 		return extractDir;
 	}
@@ -513,15 +510,13 @@ public class SRSFileDAO {
 			zis.close();
 		}
 	}
-
-	private void includeExternallyMaintainedFiles(File extractDir,String releaseCenter,String targetReleaseDate) throws IOException {
+	
+	public void downloadExternallyMaintainedFiles(File extractDir,String releaseCenter,String targetReleaseDate) throws IOException {
 		FileHelper s3 = new FileHelper(this.refsetBucket, s3Client);
-
 		// Recover all files in the folder ready for the next release
 		logger.debug("Recovering External Files from {}/{}/{}", this.refsetBucket, releaseCenter,targetReleaseDate);
 		String directoryPath = releaseCenter + "/" + targetReleaseDate;
 		List<String> externalFiles = s3.listFiles(directoryPath);
-
 		for (String externalFile : externalFiles) {
 			// The current directory is also listed
 			if (externalFile != null && externalFile.equals("/"))
@@ -539,7 +534,5 @@ public class SRSFileDAO {
 				IOUtils.closeQuietly(fileStream);
 			}
 		}
-
 	}
-
 }
