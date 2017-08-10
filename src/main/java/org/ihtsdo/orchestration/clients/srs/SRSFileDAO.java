@@ -253,12 +253,9 @@ public class SRSFileDAO {
 			IOException {
 
 		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseCenter, releaseDate, includeExternalFiles);
-		// Now rename files to make the import compatible
-		renameFiles(extractDir, "sct2", "rel2");
-		renameFiles(extractDir, "der2", "rel2");
 		// PGW 17/12/15 As a one off we're receiving CTV3 and SNOMED IDs in the SimpleMap file because this
 		// Data was received from Termmed. Strip this file for the moment.
-		File simpleMapFile = new File(extractDir, "rel2_sRefset_SimpleMapDelta_INT_" + releaseDate + TXT);
+		File simpleMapFile = new File(extractDir, "der2_sRefset_SimpleMapDelta_INT_" + releaseDate + TXT);
 		filterUnacceptableValues(simpleMapFile, REFSET_ID_COLUMN, ACCEPTABLE_SIMPLEMAP_VALUES);
 		return extractDir;
 	}
@@ -537,8 +534,5 @@ public class SRSFileDAO {
 				IOUtils.closeQuietly(fileStream);
 			}
 		}
-		renameFiles(extractDir, "sct2", "rel2");
-		renameFiles(extractDir, "der2", "rel2");
 	}
-	
 }
