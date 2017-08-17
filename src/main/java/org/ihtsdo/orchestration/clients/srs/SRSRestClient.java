@@ -201,7 +201,7 @@ public class SRSRestClient {
 		fileManager.removeProcess(config.getInputFilesDir());
 		fileManager.removeProcess(externalExtractDir);
 		//Call prepare input files step
-		logger.info("Call prepare input files api");
+		logger.info("Calling SRS to prepare input files");
 		JSONResource prepareInputFileResponse = resty.json(srsProductURL + PREPARE_INPUT_FILES_ENDPOINT, EMPTY_CONTENT);
 		RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
 		
@@ -218,7 +218,7 @@ public class SRSRestClient {
 
 		// Trigger Build
 		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
-		logger.debug("Triggering Build: {}", buildTriggerURL);
+		logger.info("Triggering Build: {}", buildTriggerURL);
 		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
 		try {
 			logger.debug("Build trigger returned: {}", json.object().toString(2));
