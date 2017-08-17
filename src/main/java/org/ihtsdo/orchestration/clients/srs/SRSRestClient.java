@@ -100,8 +100,19 @@ public class SRSRestClient {
 		password = null;
 		resty = null;
 	}
+	
+	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config)
+			throws Exception {
+		if (config.getReleaseDate() == null) {
+			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
+			config.setReleaseDate(releaseDate);
+		}
+		File inputFilesDir = srsDAO.extractRF2FilesFromExport(exportArchive, config.getReleaseDate());
+		config.setInputFilesDir(inputFilesDir);
+		//Tell the file manager that we have an interest in that directory so it's not deleted until all interested processes have released
+		fileManager.addProcess(inputFilesDir);
+	}
 
-	// Pulled out this section so it can be tested in isolation from Jira Issue
 	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config, boolean includeExternallyMaintainedFiles)
 			throws Exception {
 		if (config.getReleaseDate() == null) {
@@ -171,28 +182,26 @@ public class SRSRestClient {
 		String srsProductURL = getProductUrl(config.getProductName(),config.getReleaseCenter());
 
 		// Delete any previously uploaded input files
-		logger.debug("Deleting previous input-files");
+		logger.info("Deleting previous input-files");
 		resty.json(srsProductURL + INPUT_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
-		
-		logger.debug("Deleting previous source files");
+		logger.info("Deleting previous source files in folder:" + TERMINOLOGY_SERVER);
 		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER, Resty.delete());
-		
+		logger.info("Deleting previous source files in folder:" + EXTERNALly_MAINTAINED);
 		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED, Resty.delete());
-
-		// Upload source files
 		
-		logger.debug("Upload source files for " +  TERMINOLOGY_SERVER);
+		// Upload source files
+		logger.info("Upload source files for " +  TERMINOLOGY_SERVER);
 		uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER);
 		//upload externalMaintained refsets
-		logger.debug("Upload source files for " +  EXTERNALly_MAINTAINED);
 		File externalExtractDir = Files.createTempDirectory("external").toFile();
 		srsDAO.downloadExternallyMaintainedFiles(externalExtractDir, config.getReleaseCenter(), config.getReleaseDate());
+		logger.info("Upload source files for " +  EXTERNALly_MAINTAINED);
 		uploadFiles(externalExtractDir, srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED);
 		// And we unregister our interest in that directory
 		fileManager.removeProcess(config.getInputFilesDir());
 		fileManager.removeProcess(externalExtractDir);
 		//Call prepare input files step
-		logger.debug("Call prepare input files api");
+		logger.info("Call prepare input files api");
 		JSONResource prepareInputFileResponse = resty.json(srsProductURL + PREPARE_INPUT_FILES_ENDPOINT, EMPTY_CONTENT);
 		RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
 		

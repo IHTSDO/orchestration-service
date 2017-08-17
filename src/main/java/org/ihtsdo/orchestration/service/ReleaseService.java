@@ -127,7 +127,8 @@ public class ReleaseService {
 				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
 				config.setFailureExportMax(failureExportMax);
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
-				srsClient.prepareSRSFiles(exportArchive, config, false);
+				srsClient.prepareSRSFiles(exportArchive, config);
+				logger.info("RF2 delta files are extracted from the termServer export archive");
 
 				// Note that unlike validation, we will not configure the build here.
 				// That will be done externally eg srs-script-client calls.
