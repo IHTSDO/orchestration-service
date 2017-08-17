@@ -126,6 +126,15 @@ public class SRSFileDAO {
 		this.snowOwlFlatIndexExportStyle = snowOwlFlatIndexExportStyle;
 	}
 	
+	public File extractRF2FilesFromExport(File archive,String releaseDate) throws ProcessWorkflowException, IOException {
+		File extractDir = Files.createTempDir();
+		unzipFlat(archive, extractDir);
+		logger.debug("Unzipped files to {}", extractDir.getAbsolutePath());
+		// Ensure all files have the correct release date
+		enforceReleaseDate(extractDir, releaseDate);
+		renameFiles(extractDir, SNAPSHOT, DELTA);
+		return extractDir;
+	}
 	
 	public File extractAndConvertExportWithRF2FileNameFormat(File archive, String releaseCenter, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
 		// We're going to create release files in a temp directory
