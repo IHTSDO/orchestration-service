@@ -63,6 +63,8 @@
 	<bean class="org.ihtsdo.orchestration.service.ReleaseService">
 		<constructor-arg value="${snowowl.flatIndexExportStyle}"/>
 	</bean>
-
-
+	
+	<bean name="productName" class="java.lang.String">
+		<constructor-arg value="${ts.rvf.product.name}"/>
+	</bean>
 </beans>
