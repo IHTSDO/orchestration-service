@@ -40,6 +40,9 @@ public class ValidationMessageHandler {
 	
 	@Autowired
 	private String failureExportMax;
+	
+	@Autowired
+	private String productName;
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -78,7 +81,7 @@ public class ValidationMessageHandler {
 			validationConfig.setReleaseCenter(productShortName);
 		} else {
 			if (previousRelease != null) {
-				validationConfig.setPreviousInternationalRelease(INT + UNDER_SCORE + previousRelease);
+				validationConfig.setPreviousInternationalRelease(productName + UNDER_SCORE + previousRelease);
 			}
 			validationConfig.setReleaseCenter(INTERNATIONAL);
 		}
