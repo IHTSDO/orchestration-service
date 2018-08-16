@@ -144,7 +144,10 @@ public class SRSFileDAO {
 		
 		String countryNamespace = getCountryOrNamespace(extractDir);
 		logger.debug("Country or namespace found from file name:" + countryNamespace);
-		
+		if (countryNamespace == null) {
+			countryNamespace = "INT";
+		}
+
 		renameDKTranslatedConceptsRefsetFile(extractDir, releaseDate);
 
 		// Ensure all files have the correct release date
