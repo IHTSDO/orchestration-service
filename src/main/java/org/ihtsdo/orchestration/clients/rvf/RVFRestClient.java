@@ -154,6 +154,7 @@ public class RVFRestClient {
 			multipartEntityBuilder.addTextBody("extensionDependencyReleaseVersion", config.getExtensionDependencyRelease());
 		}
 		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
+		multipartEntityBuilder.addTextBody("droolsRulesGroups", config.getAssertionGroupNames());
 		String runId = Long.toString(System.currentTimeMillis());
 		multipartEntityBuilder.addTextBody("runId", runId);
 		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());

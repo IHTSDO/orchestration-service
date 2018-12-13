@@ -6,14 +6,15 @@ public class ValidationConfiguration {
 
 	private String previousInternationalRelease;
 	private String assertionGroupNames;
+	private String rvfDroolsAssertionGroupNames;
 	private String failureExportMax = "10";  //Default value if not otherwise specified.
 	private String previousExtensionRelease;
 	private String extensionDependencyRelease;
 	private String productName;
 	private String releaseDate;
 	private String releaseCenter;
-	
-	
+
+
 	public String checkMissingParameters() {
 		StringBuilder msgBuilder = new StringBuilder();
 		if (this.assertionGroupNames == null) {
@@ -50,7 +51,7 @@ public class ValidationConfiguration {
 	public void setReleaseDate(String releaseDate) {
 		this.releaseDate = releaseDate;
 	}
-	
+
 	public String getPreviousInternationalRelease() {
 		return previousInternationalRelease;
 	}
@@ -67,6 +68,14 @@ public class ValidationConfiguration {
 		this.assertionGroupNames = assertionGroupNames;
 	}
 
+	public String getRvfDroolsAssertionGroupNames() {
+		return rvfDroolsAssertionGroupNames;
+	}
+
+	public void setRvfDroolsAssertionGroupNames(String rvfDroolsAssertionGroupNames) {
+		this.rvfDroolsAssertionGroupNames = rvfDroolsAssertionGroupNames;
+	}
+
 	public String getFailureExportMax() {
 		return failureExportMax;
 	}
@@ -77,7 +86,7 @@ public class ValidationConfiguration {
 
 	public void setPreviousExtensionRelease(String previousExtension) {
 		this.previousExtensionRelease = previousExtension;
-		
+
 	}
 
 	public void setExtensionDependencyRelease(String extensionDependencyRelease) {
@@ -95,14 +104,16 @@ public class ValidationConfiguration {
 	@Override
 	public String toString() {
 		return "ValidationConfiguration [productName=" + productName
-				+ ", releaseDate=" + releaseDate + ", assertionGroupNames="
-				+ assertionGroupNames + ", failureExportMax="
-				+ failureExportMax + ", previousInternationalRelease="
+				+ ", releaseDate=" + releaseDate +
+				", assertionGroupNames=" + assertionGroupNames +
+				", rvfDroolsAssertionGroupNames=" + rvfDroolsAssertionGroupNames +
+				", failureExportMax=" + failureExportMax +
+				", previousInternationalRelease="
 				+ previousInternationalRelease + ", previousExtensionRelease="
 				+ previousExtensionRelease + ", exentsionDependencyRelease="
 				+ extensionDependencyRelease + ",releaseCenter="
 				+ releaseCenter + "]";
-	}	
+	}
 
 	public void setReleaseCenter(String releaseCenter) {
 		this.releaseCenter = releaseCenter;
@@ -119,22 +130,22 @@ public class ValidationConfiguration {
 		result = prime
 				* result
 				+ ((assertionGroupNames == null) ? 0 : assertionGroupNames
-						.hashCode());
+				.hashCode());
 		result = prime
 				* result
 				+ ((extensionDependencyRelease == null) ? 0
-						: extensionDependencyRelease.hashCode());
+				: extensionDependencyRelease.hashCode());
 		result = prime
 				* result
 				+ ((failureExportMax == null) ? 0 : failureExportMax.hashCode());
 		result = prime
 				* result
 				+ ((previousExtensionRelease == null) ? 0
-						: previousExtensionRelease.hashCode());
+				: previousExtensionRelease.hashCode());
 		result = prime
 				* result
 				+ ((previousInternationalRelease == null) ? 0
-						: previousInternationalRelease.hashCode());
+				: previousInternationalRelease.hashCode());
 		result = prime * result
 				+ ((productName == null) ? 0 : productName.hashCode());
 		result = prime * result
@@ -197,5 +208,5 @@ public class ValidationConfiguration {
 		} else if (!releaseDate.equals(other.releaseDate))
 			return false;
 		return true;
-	}	
+	}
 }

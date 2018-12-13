@@ -83,6 +83,10 @@ public class TerminologyServerController {
 			if (assertionGroups != null && !assertionGroups.trim().isEmpty()) {
 				validationConfig.setAssertionGroupNames(assertionGroups);
 			}
+			String rvfDroolsAssertionGroups = getRequiredParamString(jsonObj, RVF_DROOLS_ASSERTION_GROUP_NAMES);
+			if (rvfDroolsAssertionGroups != null && !rvfDroolsAssertionGroups.trim().isEmpty()) {
+				validationConfig.setRvfDroolsAssertionGroupNames(rvfDroolsAssertionGroups);
+			}
 			validationConfig.setReleaseDate(effectiveDate);
 			validationService.validate(validationConfig, branchPath, effectiveDate, null);
 		}
