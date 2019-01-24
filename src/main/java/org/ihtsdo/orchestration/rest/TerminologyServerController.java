@@ -54,6 +54,8 @@ public class TerminologyServerController {
 
 	@RequestMapping(value = "/validations", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
+	@Deprecated
+	/** Replaced by ValidationMessageHandler*/
 	public void createValidation(@RequestBody(required = false) String json) throws BadRequestException, EntityAlreadyExistsException {
 		logger.info("Create validation '{}'", json);
 		if (json != null) {
@@ -66,10 +68,10 @@ public class TerminologyServerController {
 			String previousRelease = getRequiredParamString(jsonObj, PREVIOUS_RELEASE);
 			String dependencyRelease = getOptionalParamString(jsonObj, DEPENDENCY_RELEASE);
 			if (dependencyRelease != null) {
-				validationConfig.setExtensionDependencyRelease(dependencyRelease);
-				validationConfig.setPreviousExtensionRelease(previousRelease);
+				validationConfig.setDependencyRelease(dependencyRelease);
+				validationConfig.setPreviousRelease(previousRelease);
 			} else {
-				validationConfig.setPreviousInternationalRelease(previousRelease);
+				validationConfig.setPreviousRelease(previousRelease);
 			}
 			
 			String releaseCenter = getOptionalParamString(jsonObj, SHORT_NAME);

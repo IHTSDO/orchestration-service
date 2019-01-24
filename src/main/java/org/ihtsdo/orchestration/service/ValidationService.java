@@ -163,10 +163,10 @@ public class ValidationService implements OrchestrationConstants {
 		private String resolveExportEffectiveTime(ValidationConfiguration config) throws ParseException {
 			String exportEffectiveDate = config.getReleaseDate();
 			String mostRecentRelease = null;
-			if (config.getExtensionDependencyRelease() != null) {
-				mostRecentRelease = config.getExtensionDependencyRelease();
-			} else if (config.getPreviousInternationalRelease() != null) {
-				mostRecentRelease = config.getPreviousInternationalRelease();
+			if (config.getDependencyRelease() != null) {
+				mostRecentRelease = config.getDependencyRelease();
+			} else if (config.getPreviousRelease() != null) {
+				mostRecentRelease = config.getPreviousRelease();
 			}
 			if (mostRecentRelease != null) {
 				String[] splits = mostRecentRelease.split(ValidationParameterConstants.UNDER_SCORE);
@@ -190,8 +190,6 @@ public class ValidationService implements OrchestrationConstants {
 			File zipFile = rvfClient.prepareExportFilesForValidation(exportArchive, config, false);
 			fileManager.addProcess(zipFile);
 			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
-			//Publish this data for any other process which is interested to work with
-			publish(zipFile, branchPath, config);
 			//call validation API
 			String rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(zipFile, config);
 			fileManager.removeProcess(zipFile);
@@ -211,7 +209,7 @@ public class ValidationService implements OrchestrationConstants {
 				logger.info ("Not publishing non-project export: {}", branchPath);
 			} else {
 				Map<String, String> dataProperties = new HashMap<String,String>();
-				dataProperties.put(INT_DEPENDENCY, config.getPreviousInternationalRelease());
+				dataProperties.put(INT_DEPENDENCY, config.getPreviousRelease());
 				dataProperties.put(TS_ROOT, pathParts[0]);
 				dataProperties.put(PROJECT, pathParts[1]);
 				artifactPublishService.publish(archive, TS_DELTA_SOURCE, dataProperties);

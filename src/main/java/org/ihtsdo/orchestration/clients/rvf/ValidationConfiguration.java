@@ -1,14 +1,11 @@
 package org.ihtsdo.orchestration.clients.rvf;
 
-
-
 public class ValidationConfiguration {
 
-	private String previousInternationalRelease;
+	private String previousRelease;
 	private String assertionGroupNames;
 	private String failureExportMax = "10";  //Default value if not otherwise specified.
-	private String previousExtensionRelease;
-	private String extensionDependencyRelease;
+	private String dependencyRelease;
 	private String productName;
 	private String releaseDate;
 	private String releaseCenter;
@@ -19,15 +16,12 @@ public class ValidationConfiguration {
 		if (this.assertionGroupNames == null) {
 			msgBuilder.append("assertionGroupNames can't be null.");
 		}
-		if (extensionDependencyRelease == null && previousInternationalRelease == null && previousExtensionRelease == null) {
-			msgBuilder.append("previousInternationalRelease,extensionDependencyRelease and previousExtensionRelease can't be all null.");
-		} else {
-			if (previousInternationalRelease == null) {
-				if (extensionDependencyRelease ==null || previousExtensionRelease == null) {
-					msgBuilder.append("previousExtensionRelease and extensionDependencyRelease can't be null for extension validation.");
-				}
+		if (dependencyRelease == null && previousRelease == null) {
+			if (msgBuilder.length() > 0) {
+				msgBuilder.append(" ");
 			}
-		}
+			msgBuilder.append("previousRelease and dependencyRelease can't be both null.");
+		} 
 		if (!msgBuilder.toString().isEmpty()) {
 			return msgBuilder.toString();
 		}
@@ -35,14 +29,10 @@ public class ValidationConfiguration {
 	}
 	
 	
-	public String getExtensionDependencyRelease() {
-		return extensionDependencyRelease;
+	public String getDependencyRelease() {
+		return dependencyRelease;
 	}
 
-	public String getPreviousExtensionRelease() {
-		return previousExtensionRelease;
-	}
-	
 	public void setProductName(String productName) {
 		this.productName = productName;
 	}
@@ -51,12 +41,12 @@ public class ValidationConfiguration {
 		this.releaseDate = releaseDate;
 	}
 	
-	public String getPreviousInternationalRelease() {
-		return previousInternationalRelease;
+	public String getPreviousRelease() {
+		return previousRelease;
 	}
 
-	public void setPreviousInternationalRelease(String previousInternationalRelease) {
-		this.previousInternationalRelease = previousInternationalRelease;
+	public void setPreviousRelease(String previousRelease) {
+		this.previousRelease = previousRelease;
 	}
 
 	public String getAssertionGroupNames() {
@@ -75,13 +65,8 @@ public class ValidationConfiguration {
 		this.failureExportMax = failureExportMax;
 	}
 
-	public void setPreviousExtensionRelease(String previousExtension) {
-		this.previousExtensionRelease = previousExtension;
-		
-	}
-
-	public void setExtensionDependencyRelease(String extensionDependencyRelease) {
-		this.extensionDependencyRelease = extensionDependencyRelease;
+	public void setDependencyRelease(String extensionDependencyRelease) {
+		this.dependencyRelease = extensionDependencyRelease;
 	}
 
 	public String getProductName() {
@@ -97,10 +82,9 @@ public class ValidationConfiguration {
 		return "ValidationConfiguration [productName=" + productName
 				+ ", releaseDate=" + releaseDate + ", assertionGroupNames="
 				+ assertionGroupNames + ", failureExportMax="
-				+ failureExportMax + ", previousInternationalRelease="
-				+ previousInternationalRelease + ", previousExtensionRelease="
-				+ previousExtensionRelease + ", exentsionDependencyRelease="
-				+ extensionDependencyRelease + ",releaseCenter="
+				+ failureExportMax + ", previousRelease="
+				+ previousRelease + ", dependencyRelease="
+				+ dependencyRelease + ",releaseCenter="
 				+ releaseCenter + "]";
 	}	
 
@@ -122,19 +106,15 @@ public class ValidationConfiguration {
 						.hashCode());
 		result = prime
 				* result
-				+ ((extensionDependencyRelease == null) ? 0
-						: extensionDependencyRelease.hashCode());
+				+ ((dependencyRelease == null) ? 0
+						: dependencyRelease.hashCode());
 		result = prime
 				* result
 				+ ((failureExportMax == null) ? 0 : failureExportMax.hashCode());
 		result = prime
 				* result
-				+ ((previousExtensionRelease == null) ? 0
-						: previousExtensionRelease.hashCode());
-		result = prime
-				* result
-				+ ((previousInternationalRelease == null) ? 0
-						: previousInternationalRelease.hashCode());
+				+ ((previousRelease == null) ? 0
+						: previousRelease.hashCode());
 		result = prime * result
 				+ ((productName == null) ? 0 : productName.hashCode());
 		result = prime * result
@@ -158,28 +138,22 @@ public class ValidationConfiguration {
 				return false;
 		} else if (!assertionGroupNames.equals(other.assertionGroupNames))
 			return false;
-		if (extensionDependencyRelease == null) {
-			if (other.extensionDependencyRelease != null)
+		if (dependencyRelease == null) {
+			if (other.dependencyRelease != null)
 				return false;
-		} else if (!extensionDependencyRelease
-				.equals(other.extensionDependencyRelease))
+		} else if (!dependencyRelease
+				.equals(other.dependencyRelease))
 			return false;
 		if (failureExportMax == null) {
 			if (other.failureExportMax != null)
 				return false;
 		} else if (!failureExportMax.equals(other.failureExportMax))
 			return false;
-		if (previousExtensionRelease == null) {
-			if (other.previousExtensionRelease != null)
+		if (previousRelease == null) {
+			if (other.previousRelease != null)
 				return false;
-		} else if (!previousExtensionRelease
-				.equals(other.previousExtensionRelease))
-			return false;
-		if (previousInternationalRelease == null) {
-			if (other.previousInternationalRelease != null)
-				return false;
-		} else if (!previousInternationalRelease
-				.equals(other.previousInternationalRelease))
+		} else if (!previousRelease
+				.equals(other.previousRelease))
 			return false;
 		if (productName == null) {
 			if (other.productName != null)

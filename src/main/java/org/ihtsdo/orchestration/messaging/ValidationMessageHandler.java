@@ -1,12 +1,6 @@
 package org.ihtsdo.orchestration.messaging;
 
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.ASSERTION_GROUP_NAMES;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.DEPENDENCY_RELEASE;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.INT;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.INTERNATIONAL;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.PREVIOUS_RELEASE;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.SHORT_NAME;
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.UNDER_SCORE;
+import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -41,9 +35,6 @@ public class ValidationMessageHandler {
 	@Autowired
 	private String failureExportMax;
 	
-	@Autowired
-	private String productName;
-
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@JmsListener(destination = "${orchestration.name}.orchestration.termserver-release-validation")
@@ -72,16 +63,37 @@ public class ValidationMessageHandler {
 		if ( assertionGroups != null) {
 			validationConfig.setAssertionGroupNames(assertionGroups);
 		}
+	
+		String codeSystemName = messageIn.getStringProperty(CODE_SYSTEM_SHORT_NAME);
+		String previousPackages = messageIn.getStringProperty(PREVIOUS_PACKAGES);
+		if (previousPackages != null) {
+			String [] releases = previousPackages.split(",", -1);
+			if (releases.length > 1) {
+				//extension
+				for (String release : releases) {
+					if (release.toLowerCase().contains(codeSystemName.toLowerCase())) {
+						validationConfig.setPreviousRelease(release);
+					} else {
+						validationConfig.setDependencyRelease(release);
+					}
+				}
+			} else {
+				validationConfig.setPreviousRelease(previousPackages);
+			}
+		}
+		
 		String previousRelease = messageIn.getStringProperty(PREVIOUS_RELEASE);
 		String extensionDependencyRelease = messageIn.getStringProperty(DEPENDENCY_RELEASE);
+		
 		String productShortName = messageIn.getStringProperty(SHORT_NAME);
+	
 		if (extensionDependencyRelease != null) {
-			validationConfig.setExtensionDependencyRelease(INT + UNDER_SCORE + extensionDependencyRelease);
-			validationConfig.setPreviousExtensionRelease(productShortName + UNDER_SCORE + previousRelease);
+			validationConfig.setDependencyRelease(extensionDependencyRelease);
+			validationConfig.setPreviousRelease(previousRelease);
 			validationConfig.setReleaseCenter(productShortName);
 		} else {
 			if (previousRelease != null) {
-				validationConfig.setPreviousInternationalRelease(productName + UNDER_SCORE + previousRelease);
+				validationConfig.setPreviousRelease(previousRelease);
 			}
 			validationConfig.setReleaseCenter(INTERNATIONAL);
 		}
