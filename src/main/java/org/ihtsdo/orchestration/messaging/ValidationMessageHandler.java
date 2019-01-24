@@ -81,22 +81,15 @@ public class ValidationMessageHandler {
 				validationConfig.setPreviousRelease(previousPackages);
 			}
 		}
-		
-		String previousRelease = messageIn.getStringProperty(PREVIOUS_RELEASE);
 		String extensionDependencyRelease = messageIn.getStringProperty(DEPENDENCY_RELEASE);
-		
 		String productShortName = messageIn.getStringProperty(SHORT_NAME);
 	
 		if (extensionDependencyRelease != null) {
-			validationConfig.setDependencyRelease(extensionDependencyRelease);
-			validationConfig.setPreviousRelease(previousRelease);
 			validationConfig.setReleaseCenter(productShortName);
 		} else {
-			if (previousRelease != null) {
-				validationConfig.setPreviousRelease(previousRelease);
-			}
 			validationConfig.setReleaseCenter(INTERNATIONAL);
 		}
+		logger.info("Validation conifg created:" + validationConfig);
 		return validationConfig;
 	}
 
