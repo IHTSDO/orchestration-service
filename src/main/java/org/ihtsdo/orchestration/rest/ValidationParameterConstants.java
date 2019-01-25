@@ -8,6 +8,6 @@ public class ValidationParameterConstants {
 	public static final String UNDER_SCORE = "_";
 	public static final String INT ="int";
 	public static final String INTERNATIONAL ="international";
-	public static final String PREVIOUS_PACKAGES = "classification.previousPackage";
-	public static final String CODE_SYSTEM_SHORT_NAME = "codeSystemShortName";
+	public static final String PREVIOUS_PACKAGE = "previousPackage";
+	public static final String DEPENDENCY_PACKAGE = "dependencyPackage";
 }

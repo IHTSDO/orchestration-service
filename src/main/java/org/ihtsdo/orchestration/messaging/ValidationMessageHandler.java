@@ -41,7 +41,7 @@ public class ValidationMessageHandler {
 	public void receiveValidationRequest(final TextMessage messageIn) {
 		try {
 			ValidationConfiguration validationConfig = constructValidaitonConfig(messageIn);
-			validationService.validate(validationConfig,messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new OrchestrationCallback() {
+			validationService.validate(validationConfig, messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new OrchestrationCallback() {
 				@Override
 						public void complete(OrchProcStatus finalValidationStatus) {
 					Map<String, String> properties = new HashMap<>();
@@ -59,39 +59,18 @@ public class ValidationMessageHandler {
 			throws JMSException {
 		ValidationConfiguration validationConfig = new ValidationConfiguration();
 		validationConfig.setFailureExportMax(failureExportMax);
-		String assertionGroups = messageIn.getStringProperty(ASSERTION_GROUP_NAMES);
-		if ( assertionGroups != null) {
-			validationConfig.setAssertionGroupNames(assertionGroups);
-		}
-	
-		String codeSystemName = messageIn.getStringProperty(CODE_SYSTEM_SHORT_NAME);
-		String previousPackages = messageIn.getStringProperty(PREVIOUS_PACKAGES);
-		if (previousPackages != null) {
-			String [] releases = previousPackages.split(",", -1);
-			if (releases.length > 1) {
-				//extension
-				for (String release : releases) {
-					if (release.toLowerCase().contains(codeSystemName.toLowerCase())) {
-						validationConfig.setPreviousRelease(release);
-					} else {
-						validationConfig.setDependencyRelease(release);
-					}
-				}
-			} else {
-				validationConfig.setPreviousRelease(previousPackages);
-			}
-		}
-		String extensionDependencyRelease = messageIn.getStringProperty(DEPENDENCY_RELEASE);
-		String productShortName = messageIn.getStringProperty(SHORT_NAME);
-	
-		if (extensionDependencyRelease != null) {
-			validationConfig.setReleaseCenter(productShortName);
+		validationConfig.setAssertionGroupNames(messageIn.getStringProperty(ASSERTION_GROUP_NAMES));
+		validationConfig.setPreviousPackage(messageIn.getStringProperty(PREVIOUS_PACKAGE));
+		validationConfig.setDependencyPackage(messageIn.getStringProperty(DEPENDENCY_PACKAGE));
+		validationConfig.setPreviousRelease(messageIn.getStringProperty(PREVIOUS_RELEASE));
+		String dependencyRelease = messageIn.getStringProperty(DEPENDENCY_RELEASE);
+		if (dependencyRelease != null) {
+			validationConfig.setReleaseCenter(messageIn.getStringProperty(SHORT_NAME));
+			validationConfig.setDependencyRelease(dependencyRelease);
 		} else {
 			validationConfig.setReleaseCenter(INTERNATIONAL);
 		}
 		logger.info("Validation conifg created:" + validationConfig);
 		return validationConfig;
 	}
-
-
 }

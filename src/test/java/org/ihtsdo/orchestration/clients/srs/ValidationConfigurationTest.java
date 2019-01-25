@@ -20,7 +20,7 @@ public class ValidationConfigurationTest {
 	public void testCheckConfigWithNothingSet() {
 		ValidationConfiguration config = new ValidationConfiguration();
 		assertNotNull(config.checkMissingParameters());
-		assertEquals("assertionGroupNames can't be null. previousRelease and dependencyRelease can't be both null.",
+		assertEquals("assertionGroupNames can't be null. previousRelease and dependencyRelease can't be both null. previousPackage and dependencyPackage can't be both null.",
 				config.checkMissingParameters());
 	}
 	
@@ -30,10 +30,12 @@ public class ValidationConfigurationTest {
 		ValidationConfiguration config = new ValidationConfiguration();
 		Assert.assertNotNull(config.checkMissingParameters());
 		config.setAssertionGroupNames(COMMON_AUTHORING);
-		String errorMsg = "previousRelease and dependencyRelease can't be both null.";
+		String errorMsg = "previousRelease and dependencyRelease can't be both null. previousPackage and dependencyPackage can't be both null.";
 		assertEquals(errorMsg, config.checkMissingParameters());
-		config.setDependencyRelease("int_20160131");
-		config.setPreviousRelease("dk-20160215");
+		config.setDependencyRelease("20160131");
+		config.setPreviousRelease("20160215");
+		config.setDependencyPackage("SnomedCT_INT_20160131.zip");
+		config.setDependencyPackage("SnomedCT_DK_201602151.zip");
 		assertNull(config.checkMissingParameters());
 	}
 
@@ -44,7 +46,7 @@ public class ValidationConfigurationTest {
 		config.setAssertionGroupNames(COMMON_AUTHORING);
 		config.setPreviousRelease("dk-20160215");
 		config.setDependencyRelease("int_20160131");
-		assertEquals(null, config.checkMissingParameters());
+		assertEquals("previousPackage and dependencyPackage can't be both null.", config.checkMissingParameters());
 	}
 	
 	@Test
@@ -52,7 +54,8 @@ public class ValidationConfigurationTest {
 		ValidationConfiguration config = new ValidationConfiguration();
 		assertNotNull(config.checkMissingParameters());
 		config.setAssertionGroupNames(COMMON_AUTHORING);
-		config.setPreviousRelease("int_20160131");
+		config.setPreviousRelease("20160131");
+		config.setPreviousPackage("SnomedCT_INT_20160131.zip");
 		assertEquals(null, config.checkMissingParameters());
 	}
 }
