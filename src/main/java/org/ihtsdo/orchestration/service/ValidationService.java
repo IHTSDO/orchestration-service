@@ -7,9 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -201,20 +199,5 @@ public class ValidationService implements OrchestrationConstants {
 			status = OrchProcStatus.COMPLETED;
 			return status;
 		}
-
-		private void publish(File archive, String branchPath, ValidationConfiguration config) {
-			//We're only publishing project level validations currently
-			String[] pathParts = branchPath.split("/");
-			if (pathParts.length > 2) {
-				logger.info ("Not publishing non-project export: {}", branchPath);
-			} else {
-				Map<String, String> dataProperties = new HashMap<String,String>();
-				dataProperties.put(INT_DEPENDENCY, config.getPreviousRelease());
-				dataProperties.put(TS_ROOT, pathParts[0]);
-				dataProperties.put(PROJECT, pathParts[1]);
-				artifactPublishService.publish(archive, TS_DELTA_SOURCE, dataProperties);
-			}
-		}
-		
 	}
 }

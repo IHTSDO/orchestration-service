@@ -2,13 +2,10 @@ package org.ihtsdo.orchestration.clients.srs;
 
 import static org.junit.Assert.*;
 
-import org.ihtsdo.orchestration.Config;
-import org.ihtsdo.orchestration.TestProperties;
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)

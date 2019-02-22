@@ -9,13 +9,14 @@ import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import us.monoid.web.JSONResource;
 import us.monoid.web.Resty;
 import us.monoid.web.RestyMod;
 
-//@RunWith(SpringJUnit4ClassRunner.class)
-//@ContextConfiguration({ "file:src/main/resources/ApplicationContext.xml" })
+@RunWith(SpringJUnit4ClassRunner.class)
 public class SRSRestClientTest {
 
 	private SRSRestClient srs;

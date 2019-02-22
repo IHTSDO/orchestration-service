@@ -163,7 +163,7 @@ public class RVFRestClient {
 		try {
 			response = resty.json(rvfRootUrl + "/run-post", new HttpEntityContent(httpEntity));
 			RestyServiceHelper.ensureSuccessfull(response);
-			rvfResultUrl = response.get("resultURL").toString();
+			rvfResultUrl = response.http().getHeaderField("location");
 			logger.info("RVFResult URL:" + rvfResultUrl);
 		} catch ( Exception e) {
 			throw new ProcessingException("Failed to upload " + zipFile.getName() + " to RVF for validation", e);
