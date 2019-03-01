@@ -13,6 +13,7 @@ public class ValidationConfiguration {
 	private String productName;
 	private String releaseDate;
 	private String releaseCenter;
+	private String includedModuleIds;
 
 
 	public String checkMissingParameters() {
@@ -112,7 +113,7 @@ public class ValidationConfiguration {
 				+ previousInternationalRelease + ", previousExtensionRelease="
 				+ previousExtensionRelease + ", exentsionDependencyRelease="
 				+ extensionDependencyRelease + ",releaseCenter="
-				+ releaseCenter + "]";
+				+ releaseCenter + ", includedModuleIds=" + includedModuleIds + "]";
 	}
 
 	public void setReleaseCenter(String releaseCenter) {
@@ -121,6 +122,14 @@ public class ValidationConfiguration {
 
 	public String getReleaseCenter() {
 		return this.releaseCenter;
+	}
+
+	public String getIncludedModuleIds() {
+		return includedModuleIds;
+	}
+
+	public void setIncludedModuleIds(String includedModuleIds) {
+		this.includedModuleIds = includedModuleIds;
 	}
 
 	@Override
