@@ -4,6 +4,7 @@ package org.ihtsdo.orchestration.clients.rvf;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
@@ -151,6 +152,17 @@ public class RVFRestClient {
 			multipartEntityBuilder.addTextBody("dependencyRelease", config.getDependencyPackage());
 		}
 		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
+		// If RvfDroolsAssertionGroupNames is not empty, enable Drools validation on RVF
+		if (StringUtils.isNotBlank(config.getRvfDroolsAssertionGroupNames())) {
+			multipartEntityBuilder.addTextBody("enableDrools", Boolean.TRUE.toString());
+			multipartEntityBuilder.addTextBody("droolsRulesGroups", config.getRvfDroolsAssertionGroupNames());
+			if (StringUtils.isNotBlank(config.getReleaseDate())) {
+				multipartEntityBuilder.addTextBody("effectiveTime", config.getReleaseDate());
+			}
+			if (StringUtils.isNotBlank(config.getIncludedModuleIds())) {
+				multipartEntityBuilder.addTextBody("includedModules", config.getIncludedModuleIds());
+			}
+		}
 		String runId = Long.toString(System.currentTimeMillis());
 		multipartEntityBuilder.addTextBody("runId", runId);
 		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());

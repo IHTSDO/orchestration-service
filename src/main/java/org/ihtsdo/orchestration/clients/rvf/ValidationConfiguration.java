@@ -4,6 +4,7 @@ public class ValidationConfiguration {
 
 	private String previousRelease;
 	private String assertionGroupNames;
+	private String rvfDroolsAssertionGroupNames;
 	private String failureExportMax = "10";  
 	private String dependencyRelease;
 	private String productName;
@@ -11,6 +12,7 @@ public class ValidationConfiguration {
 	private String releaseCenter;
 	private String previousPackage;
 	private String dependencyPackage;
+	private String includedModuleIds;
 	
 	
 	public String checkMissingParameters() {
@@ -105,11 +107,13 @@ public class ValidationConfiguration {
 	public String toString() {
 		return "ValidationConfiguration [productName=" + productName
 				+ ", releaseDate=" + releaseDate + ", assertionGroupNames="
-				+ assertionGroupNames + ", failureExportMax="
+				+ assertionGroupNames + ", rvfDroolsAssertionGroupNames="
+				+ rvfDroolsAssertionGroupNames + ", failureExportMax="
 				+ failureExportMax + ", previousRelease="
 				+ previousRelease + ", dependencyRelease="
 				+ dependencyRelease + ",releaseCenter="
-				+ releaseCenter + "]";
+				+ releaseCenter + ",includedModuleIds="
+				+ includedModuleIds + "]";
 	}	
 
 	public void setReleaseCenter(String releaseCenter) {
@@ -118,5 +122,21 @@ public class ValidationConfiguration {
 
 	public String getReleaseCenter() {
 		return this.releaseCenter;
+	}
+
+	public String getRvfDroolsAssertionGroupNames() {
+		return rvfDroolsAssertionGroupNames;
+	}
+
+	public void setRvfDroolsAssertionGroupNames(String rvfDroolsAssertionGroupNames) {
+		this.rvfDroolsAssertionGroupNames = rvfDroolsAssertionGroupNames;
+	}
+
+	public String getIncludedModuleIds() {
+		return includedModuleIds;
+	}
+
+	public void setIncludedModuleIds(String includedModuleIds) {
+		this.includedModuleIds = includedModuleIds;
 	}
 }

@@ -3,6 +3,7 @@ package org.ihtsdo.orchestration.rest;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.commons.lang.StringUtils;
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.dao.TermserverReleaseRequestPojo;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
@@ -84,6 +85,14 @@ public class TerminologyServerController {
 			String assertionGroups = getRequiredParamString(jsonObj, ASSERTION_GROUP_NAMES);
 			if (assertionGroups != null && !assertionGroups.trim().isEmpty()) {
 				validationConfig.setAssertionGroupNames(assertionGroups);
+			}
+			String rvfDroolsAssertionGroups = getRequiredParamString(jsonObj, RVF_DROOLS_ASSERTION_GROUP_NAMES);
+			if (rvfDroolsAssertionGroups != null && !rvfDroolsAssertionGroups.trim().isEmpty()) {
+				validationConfig.setRvfDroolsAssertionGroupNames(rvfDroolsAssertionGroups);
+			}
+			String defaultModuleId = getRequiredParamString(jsonObj, DEFAULT_MODULE_ID);
+			if (StringUtils.isNotBlank(defaultModuleId)) {
+				validationConfig.setIncludedModuleIds(defaultModuleId);
 			}
 			validationConfig.setReleaseDate(effectiveDate);
 			validationService.validate(validationConfig, branchPath, effectiveDate, null);
