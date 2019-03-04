@@ -63,6 +63,7 @@ public class ValidationMessageHandler {
 		validationConfig.setPreviousPackage(messageIn.getStringProperty(PREVIOUS_PACKAGE));
 		validationConfig.setDependencyPackage(messageIn.getStringProperty(DEPENDENCY_PACKAGE));
 		validationConfig.setPreviousRelease(messageIn.getStringProperty(PREVIOUS_RELEASE));
+		validationConfig.setRvfDroolsAssertionGroupNames(messageIn.getStringProperty(RVF_DROOLS_ASSERTION_GROUP_NAMES));
 		String dependencyRelease = messageIn.getStringProperty(DEPENDENCY_RELEASE);
 		if (dependencyRelease != null) {
 			validationConfig.setReleaseCenter(messageIn.getStringProperty(SHORT_NAME));
