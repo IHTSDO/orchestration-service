@@ -145,10 +145,11 @@ public class RVFRestClient {
 		MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
 		multipartEntityBuilder.addBinaryBody("file", zipFile, ContentType.create("multipart/form-data"), zipFile.getName());
 		multipartEntityBuilder.addTextBody("rf2DeltaOnly", Boolean.TRUE.toString());
-		if (config.getPreviousRelease() != null) {
+		if (config.getPreviousPackage() != null) {
+			//use release package for PIP-12
 			multipartEntityBuilder.addTextBody("previousRelease", config.getPreviousPackage());
 		}
-		if (config.getDependencyRelease() != null) {
+		if (config.getDependencyPackage() != null) {
 			multipartEntityBuilder.addTextBody("dependencyRelease", config.getDependencyPackage());
 		}
 		multipartEntityBuilder.addTextBody("groups", config.getAssertionGroupNames());
