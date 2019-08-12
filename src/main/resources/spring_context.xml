@@ -15,13 +15,11 @@
 		<constructor-arg value="${snowowl.username}"/>
 		<constructor-arg value="${snowowl.password}"/>
 		<property name="reasonerId" value="${snowowl.reasonerId}"/>
-		<property name="logPath" value="${snowowl.log.path}"/>
-		<property name="rolloverLogPath" value="${snowowl.rolloverLog.path}"/>
 		<property name="importTimeoutMinutes" value="${snowowl.import.timeout}"/>
 		<property name="classificationTimeoutMinutes" value="${snowowl.classification.timeout}"/>
 		<property name="flatIndexExportStyle" value="${snowowl.flatIndexExportStyle:true}"/>
 	</bean>
-	
+
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSRestClient">
 		<constructor-arg value="${srs.root.url}"/>
 		<constructor-arg value="${srs.username}"/>
