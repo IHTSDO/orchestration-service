@@ -17,6 +17,7 @@ import java.util.concurrent.Future;
 import org.ihtsdo.orchestration.OrchestrationConstants;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
+import org.ihtsdo.orchestration.clients.snowowl.TerminologyServerRestClientFactory;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
@@ -42,8 +43,7 @@ public class ValidationService implements OrchestrationConstants {
 	@Autowired
 	protected OrchestrationProcessReportDAO processReportDAO;
 
-	@Value("${snowowl.url}")
-	private String termserverUrl;
+	private TerminologyServerRestClientFactory terminologyServerRestClientFactory;
 
 	@Autowired
 	protected SRSRestClient srsClient;
@@ -150,7 +150,7 @@ public class ValidationService implements OrchestrationConstants {
 				String exportEffectiveTime = resolveExportEffectiveTime(config);
 
 				// Create terminology server client using SSO security token
-				SnowOwlRestClient snowOwlRestClient = new SnowOwlRestClient(termserverUrl, authToken);
+				SnowOwlRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
 
 				// Export RF2 delta
 				File exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
