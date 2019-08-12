@@ -10,16 +10,6 @@
 
 	<import resource="jms-api-context.xml"/>
 
-	<bean class="org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient">
-		<constructor-arg value="${snowowl.url}"/>
-		<constructor-arg value="${snowowl.username}"/>
-		<constructor-arg value="${snowowl.password}"/>
-		<property name="reasonerId" value="${snowowl.reasonerId}"/>
-		<property name="importTimeoutMinutes" value="${snowowl.import.timeout}"/>
-		<property name="classificationTimeoutMinutes" value="${snowowl.classification.timeout}"/>
-		<property name="flatIndexExportStyle" value="${snowowl.flatIndexExportStyle:true}"/>
-	</bean>
-
 	<bean class="org.ihtsdo.orchestration.clients.srs.SRSRestClient">
 		<constructor-arg value="${srs.root.url}"/>
 		<constructor-arg value="${srs.username}"/>

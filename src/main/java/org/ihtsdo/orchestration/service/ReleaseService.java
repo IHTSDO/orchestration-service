@@ -1,6 +1,7 @@
 package org.ihtsdo.orchestration.service;
 
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
+import org.ihtsdo.orchestration.clients.snowowl.TerminologyServerRestClientFactory;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
@@ -33,9 +34,8 @@ public class ReleaseService {
 
 	@Autowired
 	protected OrchestrationProcessReportDAO processReportDAO;
-
-	@Autowired
-	protected SnowOwlRestClient snowOwlRestClient;
+	
+	private TerminologyServerRestClientFactory terminologyServerRestClientFactory;
 
 	@Autowired
 	protected SRSRestClient srsClient;
@@ -52,8 +52,10 @@ public class ReleaseService {
 		this.flatIndexExportStyle = flatIndexExportStyle;
 	}
 
-	public synchronized void release(String productName, String releaseCenter, String branchPath, String effectiveDate, Set<String> excludedModuleIds, SnowOwlRestClient.ExportCategory exportCategory,
-									 OrchestrationCallback callback)
+	public synchronized void release(String productName, String releaseCenter, String branchPath,
+			String effectiveDate, Set<String> excludedModuleIds,
+			SnowOwlRestClient.ExportCategory exportCategory, String authToken,
+			OrchestrationCallback callback)
 			throws IOException, JSONException, BusinessServiceException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
@@ -64,17 +66,20 @@ public class ReleaseService {
 
 		// Check to make sure this product exists in SRS because we won't configure a new one!
 		srsClient.checkProductExists(productName, releaseCenter,false);
+		
+		// Create terminology server client using SSO security token
+		SnowOwlRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
 
-		Set<String> exportModuleIds = buildModulesList(branchPath, excludedModuleIds);
+		Set<String> exportModuleIds = buildModulesList(branchPath, excludedModuleIds, snowOwlRestClient);
 
 		// Update S3 location
 		processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportModuleIds, exportCategory, callback))).start();
+		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportModuleIds, exportCategory, snowOwlRestClient, callback))).start();
 	}
 
-	private Set<String> buildModulesList(String branchPath, Set<String> excludedModuleIds) throws BusinessServiceException {
+	private Set<String> buildModulesList(String branchPath, Set<String> excludedModuleIds, SnowOwlRestClient snowOwlRestClient) throws BusinessServiceException {
 		// If any modules are excluded build a list of modules to include
 		Set<String> exportModuleIds = null;
 		if (excludedModuleIds != null && !excludedModuleIds.isEmpty()) {
@@ -101,9 +106,10 @@ public class ReleaseService {
 		private final OrchestrationCallback callback;
 		private final Set<String> exportModuleIds;
 		private String releaseCenter;
+		private SnowOwlRestClient snowOwlRestClient;
 
-		private ReleaseRunner(String productName, String releaseCenter, String branchPath, String effectiveDate, Set<String> exportModuleIds, SnowOwlRestClient.ExportCategory exportCategory,
-							  OrchestrationCallback callback) {
+		private ReleaseRunner(String productName, String releaseCenter, String branchPath, String effectiveDate, Set<String> exportModuleIds, 
+				SnowOwlRestClient.ExportCategory exportCategory, SnowOwlRestClient snowOwlRestClient, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
 			this.exportModuleIds = exportModuleIds;
@@ -111,6 +117,7 @@ public class ReleaseService {
 			this.productName = productName;
 			this.exportCategory = exportCategory;
 			this.releaseCenter = releaseCenter;
+			this.snowOwlRestClient = snowOwlRestClient;
 		}
 
 		@Override
@@ -121,8 +128,8 @@ public class ReleaseService {
 				// Export
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				SnowOwlRestClient.ExportType exportType = flatIndexExportStyle ? SnowOwlRestClient.ExportType.SNAPSHOT : SnowOwlRestClient.ExportType.DELTA;
+				
 				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportModuleIds, exportCategory, exportType);
-
 				// Create files for SRS / Initiate SRS
 				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
 				config.setFailureExportMax(failureExportMax);

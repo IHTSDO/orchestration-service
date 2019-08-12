@@ -1,19 +1,12 @@
 package org.ihtsdo.orchestration.rest;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.apache.commons.lang.StringUtils;
-import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.dao.TermserverReleaseRequestPojo;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
 import org.ihtsdo.orchestration.service.ValidationService;
 import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
-import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
-import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,8 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static org.ihtsdo.orchestration.rest.ValidationParameterConstants.*;
-
 @RestController
 @RequestMapping("/REST/termserver")
 public class TerminologyServerController {
@@ -44,64 +35,11 @@ public class TerminologyServerController {
 	@Autowired
 	private ReleaseService releaseService;
 	
-	@Autowired
-	private String failureExportMax;
-	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	public static final String BRANCH_PATH_KEY = "branchPath";
 	public static final String EFFECTIVE_DATE_KEY = "effective-date";
 	public static final String SHORT_NAME ="shortname";
-
-	@RequestMapping(value = "/validations", method = RequestMethod.POST)
-	@ResponseStatus(HttpStatus.OK)
-	@Deprecated
-	/** Replaced by ValidationMessageHandler*/
-	public void createValidation(@RequestBody(required = false) String json) throws BadRequestException, EntityAlreadyExistsException {
-
-		// TODO Either delete this method if it's no longer needed or require an authentication token in the request.
-		String authToken = null;
-
-		logger.info("Create validation '{}'", json);
-		if (json != null) {
-			JsonElement options = new JsonParser().parse(json);
-			JsonObject jsonObj = options.getAsJsonObject();
-			String branchPath = getRequiredParamString(jsonObj, BRANCH_PATH_KEY);
-			String effectiveDate = getOptionalParamString(jsonObj, EFFECTIVE_DATE_KEY);
-			ValidationConfiguration validationConfig = new ValidationConfiguration();
-			validationConfig.setFailureExportMax(failureExportMax);
-			String previousRelease = getRequiredParamString(jsonObj, PREVIOUS_RELEASE);
-			String dependencyRelease = getOptionalParamString(jsonObj, DEPENDENCY_RELEASE);
-			if (dependencyRelease != null) {
-				validationConfig.setDependencyRelease(dependencyRelease);
-				validationConfig.setPreviousRelease(previousRelease);
-			} else {
-				validationConfig.setPreviousRelease(previousRelease);
-			}
-			
-			String releaseCenter = getOptionalParamString(jsonObj, SHORT_NAME);
-			if (releaseCenter != null) {
-				validationConfig.setReleaseCenter(releaseCenter);
-			} else {
-				validationConfig.setReleaseCenter(INTERNATIONAL);
-			}
-			
-			String assertionGroups = getRequiredParamString(jsonObj, ASSERTION_GROUP_NAMES);
-			if (assertionGroups != null && !assertionGroups.trim().isEmpty()) {
-				validationConfig.setAssertionGroupNames(assertionGroups);
-			}
-			String rvfDroolsAssertionGroups = getRequiredParamString(jsonObj, RVF_DROOLS_ASSERTION_GROUP_NAMES);
-			if (rvfDroolsAssertionGroups != null && !rvfDroolsAssertionGroups.trim().isEmpty()) {
-				validationConfig.setRvfDroolsAssertionGroupNames(rvfDroolsAssertionGroups);
-			}
-			String defaultModuleId = getRequiredParamString(jsonObj, DEFAULT_MODULE_ID);
-			if (StringUtils.isNotBlank(defaultModuleId)) {
-				validationConfig.setIncludedModuleIds(defaultModuleId);
-			}
-			validationConfig.setReleaseDate(effectiveDate);
-			validationService.validate(validationConfig, branchPath, effectiveDate, authToken, null);
-		}
-	}
 
 	@RequestMapping(value = "/release", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.OK)
@@ -113,13 +51,15 @@ public class TerminologyServerController {
 		SnowOwlRestClient.ExportCategory exportCategory = request.getExportCategory();
 		String releaseCenter = request.getReleaseCenter();
 		Set<String> excludedModuleIds = request.getExcludedModuleIds();
-
+		if (request.getAuthToken() == null || request.getAuthToken().trim().isEmpty()) {
+			throw new IllegalArgumentException("X-AUTH-token must be specified but was " + request.getAuthToken());
+		}
 		if (releaseCenter == null) {
 			//default to international
 			releaseCenter = INTERNATIONAL;
 		}
 		// Passing null callback as this request has not come from a termserver user
-		releaseService.release(productName, releaseCenter, branchPath, effectiveDate, excludedModuleIds, exportCategory, null);
+		releaseService.release(productName, releaseCenter, branchPath, effectiveDate, excludedModuleIds, exportCategory, request.getAuthToken(), null);
 	}
 
 	@RequestMapping(value = "/validations/**/latest", method = RequestMethod.GET)
@@ -145,23 +85,4 @@ public class TerminologyServerController {
 		logger.debug("Getting latest validation statuses for paths '{}'", (Object[]) paths);
 		return validationService.getLatestValidationStatuses(Arrays.asList(paths));
 	}
-
-	private String getRequiredParamString(JsonObject jsonObj, String key) throws BadRequestException {
-		if (jsonObj.has(key)) {
-			return jsonObj.getAsJsonPrimitive(key).getAsString();
-		} else {
-			throw new BadRequestException(key + " param is required");
-		}
-	}
-	
-
-	private String getOptionalParamString(JsonObject jsonObj,
-			String key) {
-		if (jsonObj.has(key)) {
-			return jsonObj.getAsJsonPrimitive(key).getAsString();
-		} else {
-			return null;
-		}
-	}
-
 }

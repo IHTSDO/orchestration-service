@@ -2,7 +2,6 @@ package org.ihtsdo.orchestration.dao;
 
 import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
 
-import java.util.Arrays;
 import java.util.Set;
 
 public class TermserverReleaseRequestPojo {
@@ -13,6 +12,7 @@ public class TermserverReleaseRequestPojo {
 	private String branchPath;
 	private String releaseCenter;
 	private Set<String> excludedModuleIds;
+	private String authToken;
 
 	public TermserverReleaseRequestPojo() {
 	}
@@ -63,6 +63,14 @@ public class TermserverReleaseRequestPojo {
 
 	public void setExcludedModuleIds(Set<String> excludedModuleIds) {
 		this.excludedModuleIds = excludedModuleIds;
+	}
+	
+	public String getAuthToken() {
+		return authToken;
+	}
+
+	public void setAuthToken(String authToken) {
+		this.authToken = authToken;
 	}
 
 	@Override
