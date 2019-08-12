@@ -58,6 +58,10 @@ public class TerminologyServerController {
 	@Deprecated
 	/** Replaced by ValidationMessageHandler*/
 	public void createValidation(@RequestBody(required = false) String json) throws BadRequestException, EntityAlreadyExistsException {
+
+		// TODO Either delete this method if it's no longer needed or require an authentication token in the request.
+		String authToken = null;
+
 		logger.info("Create validation '{}'", json);
 		if (json != null) {
 			JsonElement options = new JsonParser().parse(json);
@@ -95,7 +99,7 @@ public class TerminologyServerController {
 				validationConfig.setIncludedModuleIds(defaultModuleId);
 			}
 			validationConfig.setReleaseDate(effectiveDate);
-			validationService.validate(validationConfig, branchPath, effectiveDate, null);
+			validationService.validate(validationConfig, branchPath, effectiveDate, authToken, null);
 		}
 	}
 

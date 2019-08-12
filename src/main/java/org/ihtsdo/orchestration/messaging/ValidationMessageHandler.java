@@ -9,8 +9,6 @@ import javax.jms.JMSException;
 import javax.jms.TextMessage;
 
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
-import org.ihtsdo.orchestration.service.OrchProcStatus;
-import org.ihtsdo.orchestration.service.OrchestrationCallback;
 import org.ihtsdo.orchestration.service.ValidationService;
 import org.ihtsdo.otf.jms.MessagingHelper;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
@@ -25,6 +23,7 @@ public class ValidationMessageHandler {
 
 	public static final String PATH = "path";
 	public static final String EFFECTIVE_TIME = "effective-time";
+	private static final String X_AUTH_TOKEN = "X-AUTH-token";
 
 	@Autowired
 	private ValidationService validationService;
@@ -40,14 +39,12 @@ public class ValidationMessageHandler {
 	@JmsListener(destination = "${orchestration.name}.orchestration.termserver-release-validation")
 	public void receiveValidationRequest(final TextMessage messageIn) {
 		try {
-			ValidationConfiguration validationConfig = constructValidaitonConfig(messageIn);
-			validationService.validate(validationConfig, messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), new OrchestrationCallback() {
-				@Override
-						public void complete(OrchProcStatus finalValidationStatus) {
-					Map<String, String> properties = new HashMap<>();
-					properties.put("status", finalValidationStatus.toString());
-					messagingHelper.sendResponse(messageIn, "", properties);
-				}
+			ValidationConfiguration validationConfig = constructValidationConfig(messageIn);
+			String authToken = messageIn.getStringProperty(X_AUTH_TOKEN);
+			validationService.validate(validationConfig, messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), authToken, finalValidationStatus -> {
+				Map<String, String> properties = new HashMap<>();
+				properties.put("status", finalValidationStatus.toString());
+				messagingHelper.sendResponse(messageIn, "", properties);
 			});
 		} catch (JMSException | EntityAlreadyExistsException e) {
 			logger.error("Failed to handle message, responding with error.", e);
@@ -55,8 +52,7 @@ public class ValidationMessageHandler {
 		}
 	}
 
-	private ValidationConfiguration constructValidaitonConfig(final TextMessage messageIn)
-			throws JMSException {
+	private ValidationConfiguration constructValidationConfig(final TextMessage messageIn) throws JMSException {
 		ValidationConfiguration validationConfig = new ValidationConfiguration();
 		validationConfig.setFailureExportMax(failureExportMax);
 		validationConfig.setAssertionGroupNames(messageIn.getStringProperty(ASSERTION_GROUP_NAMES));

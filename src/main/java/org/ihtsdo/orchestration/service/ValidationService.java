@@ -30,6 +30,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.Assert;
 
 public class ValidationService implements OrchestrationConstants {
@@ -41,8 +42,8 @@ public class ValidationService implements OrchestrationConstants {
 	@Autowired
 	protected OrchestrationProcessReportDAO processReportDAO;
 
-	@Autowired
-	protected SnowOwlRestClient snowOwlRestClient;
+	@Value("${snowowl.url}")
+	private String termserverUrl;
 
 	@Autowired
 	protected SRSRestClient srsClient;
@@ -63,7 +64,7 @@ public class ValidationService implements OrchestrationConstants {
 		executorService = Executors.newCachedThreadPool();
 	}
 
-	public synchronized void validate(ValidationConfiguration validationConfig, String branchPath, String effectiveDate, OrchestrationCallback callback) throws EntityAlreadyExistsException {
+	public synchronized void validate(ValidationConfiguration validationConfig, String branchPath, String effectiveDate, String authToken, OrchestrationCallback callback) throws EntityAlreadyExistsException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = processReportDAO.getStatus(branchPath, VALIDATION_PROCESS);
@@ -75,7 +76,7 @@ public class ValidationService implements OrchestrationConstants {
 		processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ValidationRunner(validationConfig, branchPath, effectiveDate, callback))).start();
+		(new Thread(new ValidationRunner(validationConfig, branchPath, effectiveDate, authToken, callback))).start();
 
 	}
 
@@ -116,11 +117,13 @@ public class ValidationService implements OrchestrationConstants {
 	private class ValidationRunner implements Runnable {
 
 		private final String branchPath;
+		private final String authToken;
 		private final OrchestrationCallback callback;
 		private ValidationConfiguration config;
 
-		private ValidationRunner(ValidationConfiguration validationConfig, String branchPath, String effectiveDate, OrchestrationCallback callback) {
+		private ValidationRunner(ValidationConfiguration validationConfig, String branchPath, String effectiveDate, String authToken, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
+			this.authToken = authToken;
 			this.callback = callback;
 			config = validationConfig;
 			config.setProductName(branchPath.replace("/", "_"));
@@ -145,8 +148,14 @@ public class ValidationService implements OrchestrationConstants {
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				//check and update export effective time
 				String exportEffectiveTime = resolveExportEffectiveTime(config);
+
+				// Create terminology server client using SSO security token
+				SnowOwlRestClient snowOwlRestClient = new SnowOwlRestClient(termserverUrl, authToken);
+
+				// Export RF2 delta
 				File exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
 						SnowOwlRestClient.ExportType.DELTA);
+
 				//send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);
 			} catch (Exception e) {
