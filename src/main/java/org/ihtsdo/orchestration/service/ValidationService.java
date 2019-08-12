@@ -42,6 +42,7 @@ public class ValidationService implements OrchestrationConstants {
 	@Autowired
 	protected OrchestrationProcessReportDAO processReportDAO;
 
+	@Autowired
 	private TerminologyServerRestClientFactory terminologyServerRestClientFactory;
 
 	@Autowired
