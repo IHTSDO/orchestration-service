@@ -25,30 +25,38 @@ public class FileManager {
 		if (fileMap.containsKey(file)) {
 			int currentValue = fileMap.get(file).intValue();
 			fileMap.put(file, new Integer(currentValue + 1));
-		} else {
+		}	else {
 			fileMap.put(file, new Integer(1));
 		}
 	}
 	
 	public void removeProcess(File file) {
-		if (fileMap.containsKey(file)) {
-			int currentValue = fileMap.get(file);
-			if (currentValue > 1) {
-				fileMap.put(file, currentValue - 1);
-			} else {
-				logger.debug("Removing " + file.getAbsolutePath());
-				fileMap.remove(file);
-				if (file.exists()) {
-					if (file.isDirectory()) {
-						try {
-							FileUtils.deleteDirectory(file);
-						} catch (IOException e) {
-							logger.error("Failed to delete directory {}", file.getAbsolutePath(), e);
-						}
-					} else {
-						file.delete();
-					}
+		if	(file != null) {
+			if	(fileMap.containsKey(file)) {
+				int currentValue = fileMap.get(file);
+				if (currentValue > 1) {
+					fileMap.put(file, currentValue - 1);
+					return;
+				} else {
+					fileMap.remove(file);
 				}
+			}
+			// delete if the file exists
+			deleteFileIfExists(file);
+		}
+	}
+
+	private void deleteFileIfExists(File file) {
+		logger.debug("Removing " + file.getAbsolutePath());
+		if	(file.exists()) {
+			if (file.isDirectory()) {
+				try {
+					FileUtils.deleteDirectory(file);
+				} catch (IOException e) {
+					logger.error("Failed to delete directory {}", file.getAbsolutePath(), e);
+				}
+			}	else {
+				file.delete();
 			}
 		}
 	}

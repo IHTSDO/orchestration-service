@@ -18,7 +18,6 @@ import org.ihtsdo.orchestration.OrchestrationConstants;
 import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.clients.snowowl.TerminologyServerRestClientFactory;
-import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
 import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
@@ -46,16 +45,10 @@ public class ValidationService implements OrchestrationConstants {
 	private TerminologyServerRestClientFactory terminologyServerRestClientFactory;
 
 	@Autowired
-	protected SRSRestClient srsClient;
-
-	@Autowired
 	protected RVFRestClient rvfClient;
 	
 	@Autowired
-	FileManager fileManager;
-	
-	@Autowired
-	ArtifactPublishService artifactPublishService;
+	private FileManager fileManager;
 
 	private ExecutorService executorService;
 
@@ -138,6 +131,7 @@ public class ValidationService implements OrchestrationConstants {
 		public void run() {
 			logger.debug("ValidationConfig:" + config);
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
+			File exportArchive = null;
 			try {
 				//check the config is set correctly
 				String errorMsg = config.checkMissingParameters();
@@ -153,7 +147,7 @@ public class ValidationService implements OrchestrationConstants {
 				SnowOwlRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
 
 				// Export RF2 delta
-				File exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
+				exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
 						SnowOwlRestClient.ExportType.DELTA);
 
 				//send delta export directly for RVF validation
@@ -161,7 +155,10 @@ public class ValidationService implements OrchestrationConstants {
 			} catch (Exception e) {
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Validation of {} failed.", branchPath, e);
+			} finally {
+				fileManager.removeProcess(exportArchive);
 			}
+			
 			if ( callback != null) {
 				callback.complete(finalOrchProcStatus);
 			}
@@ -175,12 +172,12 @@ public class ValidationService implements OrchestrationConstants {
 			} else if (config.getPreviousRelease() != null) {
 				mostRecentRelease = config.getPreviousRelease();
 			}
-			if (mostRecentRelease != null) {
+			if	(mostRecentRelease != null) {
 				String[] splits = mostRecentRelease.split(ValidationParameterConstants.UNDER_SCORE);
 				String dateStr = (splits.length == 2) ? splits[1] : splits[0];
 				Calendar calendar = new GregorianCalendar();
 				SimpleDateFormat formatter = new SimpleDateFormat(DateUtils.YYYYMMDD);
-				if (formatter.parse(config.getReleaseDate()).before(formatter.parse(dateStr))) {
+				if	(formatter.parse(config.getReleaseDate()).before(formatter.parse(dateStr))) {
 					calendar.setTime(formatter.parse(dateStr));
 					calendar.add(Calendar.DAY_OF_YEAR, 1);
 					exportEffectiveDate = formatter.format(calendar.getTime());
@@ -191,22 +188,28 @@ public class ValidationService implements OrchestrationConstants {
 		}
 
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
-			OrchProcStatus status = OrchProcStatus.FAILED;
-			//change file name exported to RF2 format
-			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
-			File zipFile = rvfClient.prepareExportFilesForValidation(exportArchive, config, false);
-			fileManager.addProcess(zipFile);
-			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
-			//call validation API
-			String rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(zipFile, config);
-			fileManager.removeProcess(zipFile);
-			//polling results
-			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
-			JSONObject rvfReport = rvfClient.waitForResponse(rvfResultUrl);
-			processReportDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
-			processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
-			status = OrchProcStatus.COMPLETED;
-			return status;
+			File localZipFile = null;
+			try	{
+				OrchProcStatus status = OrchProcStatus.FAILED;
+				//change file name exported to RF2 format
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
+				localZipFile = rvfClient.prepareExportFilesForValidation(exportArchive, config, false);
+				fileManager.addProcess(exportArchive);
+				fileManager.addProcess(localZipFile);
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
+				//call validation API
+				String rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(localZipFile, config);
+				//polling results
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
+				JSONObject rvfReport = rvfClient.waitForResponse(rvfResultUrl);
+				processReportDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
+				status = OrchProcStatus.COMPLETED;
+				return status;
+			}	finally {
+				fileManager.removeProcess(localZipFile);
+			}
+			
 		}
 	}
 }

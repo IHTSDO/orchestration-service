@@ -4,6 +4,7 @@ import org.ihtsdo.orchestration.clients.rvf.RVFRestClient;
 import org.ihtsdo.orchestration.clients.snowowl.TerminologyServerRestClientFactory;
 import org.ihtsdo.orchestration.clients.srs.SRSProjectConfiguration;
 import org.ihtsdo.orchestration.clients.srs.SRSRestClient;
+import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.otf.constants.Concepts;
 import org.ihtsdo.otf.rest.client.RestClientException;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+
 import us.monoid.json.JSONException;
 
 import java.io.File;
@@ -46,6 +48,9 @@ public class ReleaseService {
 	
 	@Autowired
 	private String failureExportMax;
+	
+	@Autowired
+	private FileManager fileManager;
 
 	private final boolean flatIndexExportStyle;
 
@@ -125,12 +130,13 @@ public class ReleaseService {
 		public void run() {
 
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
+			File exportArchive  = null;
 			try {
 				// Export
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				SnowOwlRestClient.ExportType exportType = flatIndexExportStyle ? SnowOwlRestClient.ExportType.SNAPSHOT : SnowOwlRestClient.ExportType.DELTA;
 				
-				File exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportModuleIds, exportCategory, exportType);
+				exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportModuleIds, exportCategory, exportType);
 				// Create files for SRS / Initiate SRS
 				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
 				config.setFailureExportMax(failureExportMax);
@@ -160,8 +166,10 @@ public class ReleaseService {
 			} catch (Exception e) {
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Release of {} failed.", branchPath, e);
+			} finally {
+				fileManager.removeProcess(exportArchive);
 			}
-
+			
 			if (callback != null) {
 				callback.complete(finalOrchProcStatus);
 			}
