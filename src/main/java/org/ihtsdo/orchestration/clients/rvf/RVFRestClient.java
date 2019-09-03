@@ -25,8 +25,6 @@ import org.springframework.util.Assert;
 import us.monoid.web.JSONResource;
 import us.monoid.web.RestyMod;
 
-import com.google.common.io.Files;
-
 public class RVFRestClient {
 
 	private static final String RVF_TS = "RVF_TS";
@@ -135,18 +133,13 @@ public class RVFRestClient {
 
 	}
 
-	public File prepareExportFilesForValidation(File exportArchive, ValidationConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
-		File tempDir = null;
+	public void prepareExportFilesForValidation(File exportArchive, ValidationConfiguration config, boolean includeExternalFiles, File localZipFile) throws ProcessWorkflowException, IOException {
 		File extractDir = null;
 		try {
 			extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternalFiles);
-			tempDir = Files.createTempDir();
-			File zipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
-			logger.debug("zip updated file into:" + zipFile.getName());
-			ZipFileUtils.zip(extractDir.getAbsolutePath(), zipFile.getAbsolutePath());
-			return zipFile;
+			logger.debug("zip updated file into:" + localZipFile.getName());
+			ZipFileUtils.zip(extractDir.getAbsolutePath(), localZipFile.getAbsolutePath());
 		} finally {
-			fileManager.removeProcess(tempDir);
 			fileManager.removeProcess(extractDir);
 		}
 	}

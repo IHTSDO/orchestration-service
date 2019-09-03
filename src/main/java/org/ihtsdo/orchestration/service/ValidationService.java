@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
+import com.google.common.io.Files;
+
 public class ValidationService implements OrchestrationConstants {
 
 	public static final String VALIDATION_PROCESS = "validation";
@@ -172,7 +174,7 @@ public class ValidationService implements OrchestrationConstants {
 			} else if (config.getPreviousRelease() != null) {
 				mostRecentRelease = config.getPreviousRelease();
 			}
-			if	(mostRecentRelease != null) {
+			if (mostRecentRelease != null) {
 				String[] splits = mostRecentRelease.split(ValidationParameterConstants.UNDER_SCORE);
 				String dateStr = (splits.length == 2) ? splits[1] : splits[0];
 				Calendar calendar = new GregorianCalendar();
@@ -188,12 +190,13 @@ public class ValidationService implements OrchestrationConstants {
 		}
 
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
-			File localZipFile = null;
-			try	{
+			File tempDir = Files.createTempDir();
+			File localZipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
+			try {
 				OrchProcStatus status = OrchProcStatus.FAILED;
 				//change file name exported to RF2 format
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
-				localZipFile = rvfClient.prepareExportFilesForValidation(exportArchive, config, false);
+				rvfClient.prepareExportFilesForValidation(exportArchive, config, false, localZipFile);
 				fileManager.addProcess(exportArchive);
 				fileManager.addProcess(localZipFile);
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
@@ -206,8 +209,9 @@ public class ValidationService implements OrchestrationConstants {
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
 				status = OrchProcStatus.COMPLETED;
 				return status;
-			}	finally {
+			} finally {
 				fileManager.removeProcess(localZipFile);
+				fileManager.removeProcess(tempDir);
 			}
 			
 		}
