@@ -51,14 +51,6 @@ public class SRSRestClientHelperTest {
 	}
 
 	@Test
-	public void testPrepareFiles() throws ProcessWorkflowException, IOException {
-		File location = srsFileDAO.readyInputFiles(testArchive, "international", TEST_DATE, false);
-		logger.debug("Test files made ready for SRS input at {}", location.getAbsolutePath());
-		logger.debug("Tidying up folder at {}", location.getAbsolutePath());
-		FileUtils.deleteDirectory(location);
-	}
-
-	@Test
 	public void testReplaceInFiles() throws ProcessWorkflowException, IOException {
 		URL testFileURL = getClass().getResource(TEST_FILE);
 		File testFile = new File(testFileURL.getFile());

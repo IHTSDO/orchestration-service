@@ -10,6 +10,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.ihtsdo.orchestration.clients.srs.SRSFileDAO;
+import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.otf.rest.client.resty.HttpEntityContent;
 import org.ihtsdo.otf.rest.client.resty.RestyServiceHelper;
 import org.ihtsdo.otf.rest.exception.ProcessWorkflowException;
@@ -45,6 +46,9 @@ public class RVFRestClient {
 	
 	@Autowired
 	protected SRSFileDAO srsDAO;
+	
+	@Autowired
+	private FileManager fileManager;
 
 	private String rvfRootUrl;
 	
@@ -132,12 +136,19 @@ public class RVFRestClient {
 	}
 
 	public File prepareExportFilesForValidation(File exportArchive, ValidationConfiguration config, boolean includeExternalFiles) throws ProcessWorkflowException, IOException {
-		File extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternalFiles);
-		File tempDir = Files.createTempDir();
-		File zipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
-		logger.debug("zip updated file into:" + zipFile.getName());
-		ZipFileUtils.zip(extractDir.getAbsolutePath(), zipFile.getAbsolutePath());
-		return zipFile;
+		File tempDir = null;
+		File extractDir = null;
+		try {
+			extractDir= srsDAO.extractAndConvertExportWithRF2FileNameFormat(exportArchive, config.getReleaseCenter(), config.getReleaseDate(), includeExternalFiles);
+			tempDir = Files.createTempDir();
+			File zipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
+			logger.debug("zip updated file into:" + zipFile.getName());
+			ZipFileUtils.zip(extractDir.getAbsolutePath(), zipFile.getAbsolutePath());
+			return zipFile;
+		} finally {
+			fileManager.removeProcess(tempDir);
+			fileManager.removeProcess(extractDir);
+		}
 	}
 
 	public String runValidationForRF2DeltaExport(File zipFile, ValidationConfiguration config) throws ProcessingException {

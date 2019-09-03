@@ -25,14 +25,14 @@ public class FileManager {
 		if (fileMap.containsKey(file)) {
 			int currentValue = fileMap.get(file).intValue();
 			fileMap.put(file, new Integer(currentValue + 1));
-		}	else {
+		} else {
 			fileMap.put(file, new Integer(1));
 		}
 	}
 	
 	public void removeProcess(File file) {
-		if	(file != null) {
-			if	(fileMap.containsKey(file)) {
+		if (file != null) {
+			if (fileMap.containsKey(file)) {
 				int currentValue = fileMap.get(file);
 				if (currentValue > 1) {
 					fileMap.put(file, currentValue - 1);
@@ -48,14 +48,14 @@ public class FileManager {
 
 	private void deleteFileIfExists(File file) {
 		logger.debug("Removing " + file.getAbsolutePath());
-		if	(file.exists()) {
+		if (file.exists()) {
 			if (file.isDirectory()) {
 				try {
 					FileUtils.deleteDirectory(file);
 				} catch (IOException e) {
 					logger.error("Failed to delete directory {}", file.getAbsolutePath(), e);
 				}
-			}	else {
+			} else {
 				file.delete();
 			}
 		}

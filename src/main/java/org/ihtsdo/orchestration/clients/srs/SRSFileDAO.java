@@ -193,8 +193,6 @@ public class SRSFileDAO {
 		return extractDir;
 	}
 	
-	
-	
 	private String getCountryOrNamespace(File extractDir) {
 		
 		String[] rf2Filenames = extractDir.list(new FilenameFilter() {
@@ -256,22 +254,6 @@ public class SRSFileDAO {
 			}
 		}
 	}
-
-
-	/*
-	 * @return - the directory containing the files ready for uploading to SRS
-	 */
-	public File readyInputFiles(File archive, String releaseCenter, String releaseDate, boolean includeExternalFiles) throws ProcessWorkflowException,
-			IOException {
-
-		File extractDir = extractAndConvertExportWithRF2FileNameFormat(archive, releaseCenter, releaseDate, includeExternalFiles);
-		// PGW 17/12/15 As a one off we're receiving CTV3 and SNOMED IDs in the SimpleMap file because this
-		// Data was received from Termmed. Strip this file for the moment.
-		File simpleMapFile = new File(extractDir, "der2_sRefset_SimpleMapDelta_INT_" + releaseDate + TXT);
-		filterUnacceptableValues(simpleMapFile, REFSET_ID_COLUMN, ACCEPTABLE_SIMPLEMAP_VALUES);
-		return extractDir;
-	}
-
 
 	private void enforceReleaseDate(File extractDir, String enforcedReleaseDate) throws ProcessWorkflowException {
 		//Loop through all the files in the directory and change the release date if required

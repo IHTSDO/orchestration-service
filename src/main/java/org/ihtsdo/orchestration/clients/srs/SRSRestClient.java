@@ -72,7 +72,7 @@ public class SRSRestClient {
 	protected SRSFileDAO srsDAO;
 	
 	@Autowired
-	FileManager fileManager;
+	private FileManager fileManager;
 
 	private final String srsRootURL;
 	private final String username;
@@ -108,19 +108,6 @@ public class SRSRestClient {
 			config.setReleaseDate(releaseDate);
 		}
 		File inputFilesDir = srsDAO.extractRF2FilesFromExport(exportArchive, config.getReleaseDate());
-		config.setInputFilesDir(inputFilesDir);
-		//Tell the file manager that we have an interest in that directory so it's not deleted until all interested processes have released
-		fileManager.addProcess(inputFilesDir);
-	}
-
-	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config, boolean includeExternallyMaintainedFiles)
-			throws Exception {
-		if (config.getReleaseDate() == null) {
-			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
-			config.setReleaseDate(releaseDate);
-		}
-		File inputFilesDir = srsDAO.readyInputFiles(exportArchive, config.getReleaseCenter(), config.getReleaseDate(),
-				includeExternallyMaintainedFiles);
 		config.setInputFilesDir(inputFilesDir);
 		//Tell the file manager that we have an interest in that directory so it's not deleted until all interested processes have released
 		fileManager.addProcess(inputFilesDir);
