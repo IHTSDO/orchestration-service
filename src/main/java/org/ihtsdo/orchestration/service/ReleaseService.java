@@ -49,9 +49,6 @@ public class ReleaseService {
 	@Autowired
 	private String failureExportMax;
 	
-	@Autowired
-	private FileManager fileManager;
-
 	private final boolean flatIndexExportStyle;
 
 	public ReleaseService(boolean flatIndexExportStyle) {
@@ -128,8 +125,10 @@ public class ReleaseService {
 
 		@Override
 		public void run() {
-
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
+			// Create files for SRS / Initiate SRS
+			SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
+			config.setFailureExportMax(failureExportMax);
 			File exportArchive  = null;
 			try {
 				// Export
@@ -137,16 +136,12 @@ public class ReleaseService {
 				SnowOwlRestClient.ExportType exportType = flatIndexExportStyle ? SnowOwlRestClient.ExportType.SNAPSHOT : SnowOwlRestClient.ExportType.DELTA;
 				
 				exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportModuleIds, exportCategory, exportType);
-				// Create files for SRS / Initiate SRS
-				SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
-				config.setFailureExportMax(failureExportMax);
+				
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				srsClient.prepareSRSFiles(exportArchive, config);
-				logger.info("RF2 delta files are extracted from the termServer export archive");
-
+				logger.info("RF2 delta files are extracted from the termServer export archive " + exportArchive.getName());
 				// Note that unlike validation, we will not configure the build here.
 				// That will be done externally eg srs-script-client calls.
-
 				// Trigger SRS
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILDING.toString(), null);
 				Map<String, String> srsResponse = srsClient.runBuild(config);
@@ -163,17 +158,17 @@ public class ReleaseService {
 					String error = "Did not find RVF Response location in SRS Client Response";
 					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), error);
 				}
+				
+				if (callback != null) {
+					callback.complete(finalOrchProcStatus);
+				}
 			} catch (Exception e) {
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Release of {} failed.", branchPath, e);
 			} finally {
-				fileManager.removeProcess(exportArchive);
-			}
-			
-			if (callback != null) {
-				callback.complete(finalOrchProcStatus);
+				FileManager.deleteFileIfExists(exportArchive);
+				FileManager.deleteFileIfExists(config.getInputFilesDir());
 			}
 		}
 	}
-
 }

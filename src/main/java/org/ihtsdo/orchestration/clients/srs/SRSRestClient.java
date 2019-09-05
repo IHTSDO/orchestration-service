@@ -70,10 +70,6 @@ public class SRSRestClient {
 
 	@Autowired
 	protected SRSFileDAO srsDAO;
-	
-	@Autowired
-	private FileManager fileManager;
-
 	private final String srsRootURL;
 	private final String username;
 	private final String password;
@@ -101,16 +97,13 @@ public class SRSRestClient {
 		resty = null;
 	}
 	
-	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config)
-			throws Exception {
+	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config) throws Exception {
 		if (config.getReleaseDate() == null) {
 			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
 			config.setReleaseDate(releaseDate);
 		}
 		File inputFilesDir = srsDAO.extractRF2FilesFromExport(exportArchive, config.getReleaseDate());
 		config.setInputFilesDir(inputFilesDir);
-		//Tell the file manager that we have an interest in that directory so it's not deleted until all interested processes have released
-		fileManager.addProcess(inputFilesDir);
 	}
 
 	private void initiateRestyIfNeeded() throws BusinessServiceException {
@@ -161,67 +154,64 @@ public class SRSRestClient {
 	}
 
 	public Map<String, String> runBuild(SRSProjectConfiguration config) throws Exception {
+		Assert.notNull(config.getProductName());
+		logger.info("Running {} build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
+				.getInputFilesDir().getAbsolutePath());
+
+		initiateRestyIfNeeded();
+		String srsProductURL = getProductUrl(config.getProductName(),config.getReleaseCenter());
+
+		// Delete any previously uploaded input files
+		logger.info("Deleting previous input-files");
+		resty.json(srsProductURL + INPUT_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
+		logger.info("Deleting previous source files in folder:" + TERMINOLOGY_SERVER);
+		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER, Resty.delete());
+		logger.info("Deleting previous source files in folder:" + EXTERNALly_MAINTAINED);
+		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED, Resty.delete());
+		
+		// Upload source files
+		logger.info("Upload source files for " +  TERMINOLOGY_SERVER);
+		uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER);
 		File externalExtractDir = null;
 		try {
-			Assert.notNull(config.getProductName());
-			logger.info("Running {} build for {} with files uploaded from: {}", config.getProductName(), config.getReleaseDate(), config
-					.getInputFilesDir().getAbsolutePath());
-
-			initiateRestyIfNeeded();
-			String srsProductURL = getProductUrl(config.getProductName(),config.getReleaseCenter());
-
-			// Delete any previously uploaded input files
-			logger.info("Deleting previous input-files");
-			resty.json(srsProductURL + INPUT_FILES_ENDPOINT + DELETE_FILTER, Resty.delete());
-			logger.info("Deleting previous source files in folder:" + TERMINOLOGY_SERVER);
-			resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER, Resty.delete());
-			logger.info("Deleting previous source files in folder:" + EXTERNALly_MAINTAINED);
-			resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED, Resty.delete());
-			
-			// Upload source files
-			logger.info("Upload source files for " +  TERMINOLOGY_SERVER);
-			uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER);
 			//upload externalMaintained refsets
 			externalExtractDir = Files.createTempDirectory("external").toFile();
 			srsDAO.downloadExternallyMaintainedFiles(externalExtractDir, config.getReleaseCenter(), config.getReleaseDate());
 			logger.info("Upload source files for " +  EXTERNALly_MAINTAINED);
 			uploadFiles(externalExtractDir, srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED);
-
-			//Call prepare input files step
-			logger.info("Calling SRS to prepare input files");
-			JSONResource prepareInputFileResponse = resty.json(srsProductURL + PREPARE_INPUT_FILES_ENDPOINT, EMPTY_CONTENT);
-			RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
-			
-			// Create a build. Pass blank content to encourage Resty to use POST
-			JSONResource json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
-			Object buildId = json.get(ID);
-			Assert.notNull(buildId, "Failed to recover create build at: " + srsProductURL);
-
-			// We're now telling the RVF (via the SRS) how many failures we want to see for each assertion
-			String failureExportMaxStr = "";
-			if (config.getFailureExportMax() != null && !config.getFailureExportMax().isEmpty()) {
-				failureExportMaxStr = "?failureExportMax=" + config.getFailureExportMax();
-			}
-
-			// Trigger Build
-			String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
-			logger.info("Triggering Build: {}", buildTriggerURL);
-			json = resty.json(buildTriggerURL, EMPTY_CONTENT);
-			try {
-				logger.debug("Build trigger returned: {}", json.object().toString(2));
-			} catch (Exception e) {
-				String msg = "Unable to parse response from build trigger.";
-				logger.error(msg, e);
-				logger.error("Build trigger returned status {}", json.getHTTPStatus());
-				throw new BusinessServiceException(msg, e);
-			}
-
-			return recoverItemsOfInterest(json);
 		} finally {
-			fileManager.removeProcess(config.getInputFilesDir());
-			fileManager.removeProcess(externalExtractDir);
+			FileManager.deleteFileIfExists(externalExtractDir);
 		}
+
+		//Call prepare input files step
+		logger.info("Calling SRS to prepare input files");
+		JSONResource prepareInputFileResponse = resty.json(srsProductURL + PREPARE_INPUT_FILES_ENDPOINT, EMPTY_CONTENT);
+		RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
 		
+		// Create a build. Pass blank content to encourage Resty to use POST
+		JSONResource json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
+		Object buildId = json.get(ID);
+		Assert.notNull(buildId, "Failed to recover create build at: " + srsProductURL);
+
+		// We're now telling the RVF (via the SRS) how many failures we want to see for each assertion
+		String failureExportMaxStr = "";
+		if (config.getFailureExportMax() != null && !config.getFailureExportMax().isEmpty()) {
+			failureExportMaxStr = "?failureExportMax=" + config.getFailureExportMax();
+		}
+
+		// Trigger Build
+		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
+		logger.info("Triggering Build: {}", buildTriggerURL);
+		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
+		try {
+			logger.debug("Build trigger returned: {}", json.object().toString(2));
+		} catch (Exception e) {
+			String msg = "Unable to parse response from build trigger.";
+			logger.error(msg, e);
+			logger.error("Build trigger returned status {}", json.getHTTPStatus());
+			throw new BusinessServiceException(msg, e);
+		}
+		return recoverItemsOfInterest(json);
 	}
 
 	public void checkProductExists(String productName, String releaseCenter, boolean createIfRequired) throws IOException,

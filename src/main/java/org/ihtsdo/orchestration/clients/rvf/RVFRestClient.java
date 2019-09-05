@@ -45,9 +45,6 @@ public class RVFRestClient {
 	@Autowired
 	protected SRSFileDAO srsDAO;
 	
-	@Autowired
-	private FileManager fileManager;
-
 	private String rvfRootUrl;
 	
 
@@ -140,7 +137,7 @@ public class RVFRestClient {
 			logger.debug("zip updated file into:" + localZipFile.getName());
 			ZipFileUtils.zip(extractDir.getAbsolutePath(), localZipFile.getAbsolutePath());
 		} finally {
-			fileManager.removeProcess(extractDir);
+			FileManager.deleteFileIfExists(extractDir);
 		}
 	}
 

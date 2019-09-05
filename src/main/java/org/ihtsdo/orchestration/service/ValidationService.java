@@ -49,9 +49,6 @@ public class ValidationService implements OrchestrationConstants {
 	@Autowired
 	protected RVFRestClient rvfClient;
 	
-	@Autowired
-	private FileManager fileManager;
-
 	private ExecutorService executorService;
 
 
@@ -154,15 +151,15 @@ public class ValidationService implements OrchestrationConstants {
 
 				//send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);
+				
+				if ( callback != null) {
+					callback.complete(finalOrchProcStatus);
+				}
 			} catch (Exception e) {
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Validation of {} failed.", branchPath, e);
 			} finally {
-				fileManager.removeProcess(exportArchive);
-			}
-			
-			if ( callback != null) {
-				callback.complete(finalOrchProcStatus);
+				FileManager.deleteFileIfExists(exportArchive);
 			}
 		}
 
@@ -197,8 +194,7 @@ public class ValidationService implements OrchestrationConstants {
 				//change file name exported to RF2 format
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				rvfClient.prepareExportFilesForValidation(exportArchive, config, false, localZipFile);
-				fileManager.addProcess(exportArchive);
-				fileManager.addProcess(localZipFile);
+		
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
 				//call validation API
 				String rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(localZipFile, config);
@@ -210,8 +206,8 @@ public class ValidationService implements OrchestrationConstants {
 				status = OrchProcStatus.COMPLETED;
 				return status;
 			} finally {
-				fileManager.removeProcess(localZipFile);
-				fileManager.removeProcess(tempDir);
+				FileManager.deleteFileIfExists(localZipFile);
+				FileManager.deleteFileIfExists(tempDir);
 			}
 			
 		}

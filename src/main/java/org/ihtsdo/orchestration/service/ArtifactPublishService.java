@@ -27,9 +27,6 @@ public class ArtifactPublishService {
 	@Autowired
 	MessagingHelper messenger;
 	
-	@Autowired
-	FileManager fileManager;
-	
 	@Value("${orchestration.name}")
 	String platform; //Combination of environment plus audience eg dev-int
 	
@@ -38,7 +35,6 @@ public class ArtifactPublishService {
 	
 	public void publish (File archive, String source, Map<String, ? extends Object> messageProperties) {
 		DataPublisher dp = new DataPublisher(archive, source, messageProperties);
-		fileManager.addProcess(archive);
 		new Thread(dp).start();
 	}
 
@@ -63,7 +59,7 @@ public class ArtifactPublishService {
 			} catch (Exception e) {
 				logger.error("Failed to publish archive to {} with properties {}", dest, messageProperties, e);
 			} finally {
-				fileManager.removeProcess(archive);
+				FileManager.deleteFileIfExists(archive);
 			}
 		}
 	}
