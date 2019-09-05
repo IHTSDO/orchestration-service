@@ -156,7 +156,7 @@ public class ReleaseService {
 			try {
 				// Wait for RVF response
 				// Did we obtain the RVF location for the next step in the process to poll?
-				if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
+				if (srsResponse != null && srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
 					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
 					JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
 					processReportDAO.saveReport(branchPath, RELEASE_PROCESS, rvfReport);
