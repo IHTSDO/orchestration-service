@@ -16,6 +16,9 @@ public class FileManager {
 	private static final Logger logger = LoggerFactory.getLogger(FileManager.class);
 	
 	public static void deleteFileIfExists(File file) {
+		if (file == null) {
+			return;
+		}
 		logger.debug("Removing " + file.getAbsolutePath());
 		if (file.exists()) {
 			if (file.isDirectory()) {

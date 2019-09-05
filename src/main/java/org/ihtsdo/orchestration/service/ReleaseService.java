@@ -130,6 +130,7 @@ public class ReleaseService {
 			SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
 			config.setFailureExportMax(failureExportMax);
 			File exportArchive  = null;
+			Map<String, String> srsResponse  = null;
 			try {
 				// Export
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
@@ -144,8 +145,15 @@ public class ReleaseService {
 				// That will be done externally eg srs-script-client calls.
 				// Trigger SRS
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILDING.toString(), null);
-				Map<String, String> srsResponse = srsClient.runBuild(config);
-
+				srsResponse = srsClient.runBuild(config);
+			} catch (Exception e) {
+				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
+				logger.error("Release of {} failed.", branchPath, e);
+			} finally {
+				FileManager.deleteFileIfExists(exportArchive);
+				FileManager.deleteFileIfExists(config.getInputFilesDir());
+			}
+			try {
 				// Wait for RVF response
 				// Did we obtain the RVF location for the next step in the process to poll?
 				if (srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
@@ -158,16 +166,12 @@ public class ReleaseService {
 					String error = "Did not find RVF Response location in SRS Client Response";
 					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), error);
 				}
-				
-				if (callback != null) {
-					callback.complete(finalOrchProcStatus);
-				}
 			} catch (Exception e) {
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
-				logger.error("Release of {} failed.", branchPath, e);
-			} finally {
-				FileManager.deleteFileIfExists(exportArchive);
-				FileManager.deleteFileIfExists(config.getInputFilesDir());
+				logger.error("Failed to poll release validation status.", branchPath, e);
+			}
+			if (callback != null) {
+				callback.complete(finalOrchProcStatus);
 			}
 		}
 	}

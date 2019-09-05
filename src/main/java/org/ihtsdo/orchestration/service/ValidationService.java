@@ -132,7 +132,7 @@ public class ValidationService implements OrchestrationConstants {
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
 			File exportArchive = null;
 			try {
-				//check the config is set correctly
+				// check the config is set correctly
 				String errorMsg = config.checkMissingParameters();
 				if (errorMsg != null) {
 					throw new BadRequestException("Validation configuration is not set correctly:" + errorMsg);
@@ -149,7 +149,7 @@ public class ValidationService implements OrchestrationConstants {
 				exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
 						SnowOwlRestClient.ExportType.DELTA);
 
-				//send delta export directly for RVF validation
+				// send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);
 				
 				if ( callback != null) {
@@ -189,27 +189,30 @@ public class ValidationService implements OrchestrationConstants {
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
 			File tempDir = Files.createTempDir();
 			File localZipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
+			OrchProcStatus status = OrchProcStatus.FAILED;
+			String rvfResultUrl = null;
 			try {
-				OrchProcStatus status = OrchProcStatus.FAILED;
-				//change file name exported to RF2 format
+				// change file name exported to RF2 format
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
+				// prepare files for validation
 				rvfClient.prepareExportFilesForValidation(exportArchive, config, false, localZipFile);
-		
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
-				//call validation API
-				String rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(localZipFile, config);
-				//polling results
+				// call validation API
+				rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(localZipFile, config);
+			} finally {
+				FileManager.deleteFileIfExists(localZipFile);
+				FileManager.deleteFileIfExists(tempDir);
+				FileManager.deleteFileIfExists(exportArchive);
+			}
+			// polling results
+			if (rvfResultUrl != null) {
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
 				JSONObject rvfReport = rvfClient.waitForResponse(rvfResultUrl);
 				processReportDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
 				status = OrchProcStatus.COMPLETED;
-				return status;
-			} finally {
-				FileManager.deleteFileIfExists(localZipFile);
-				FileManager.deleteFileIfExists(tempDir);
 			}
-			
+			return status;
 		}
 	}
 }
