@@ -272,7 +272,7 @@ public class SRSRestClient {
 		Assert.isTrue(file.exists(), "File for upload to " + url + " was found to not exist at location: " + file.getAbsolutePath());
 		Assert.isTrue(!file.isDirectory(), "File for upload to " + url + " was found to be a directory: " + file.getAbsolutePath());
 		try {
-			logger.debug("Uploading file to {} : {} ", url, file.getAbsolutePath());
+			logger.info("Uploading file to {} : {} ", url, file.getAbsolutePath());
 			MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
 			multipartEntityBuilder.addBinaryBody("file", file, ContentType.create(CONTENT_TYPE_MULTIPART), file.getName());
 			multipartEntityBuilder.setCharset(Charset.forName("UTF-8"));

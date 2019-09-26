@@ -466,9 +466,9 @@ public class SRSFileDAO {
 	}
 
 	public String findDateInString(String str, boolean optional) throws ProcessWorkflowException {
-		Matcher dateMatcher = Pattern.compile("(\\d{8})").matcher(str);
+		Matcher dateMatcher = Pattern.compile("_(\\d{8})").matcher(str);
 		if (dateMatcher.find()) {
-			return dateMatcher.group();
+			return dateMatcher.group(1);
 		} else {
 			if (optional) {
 				logger.warn("Did not find a date in: " + str);
