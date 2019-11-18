@@ -33,7 +33,7 @@ public class ArtifactPublishService {
 	@Value("${orchestration.jms.timeToLive}")
 	int timeToLive; //seconds
 	
-	public void publish (File archive, String source, Map<String, ? extends Object> messageProperties) {
+	public void publish (File archive, String source, Map<String, Object> messageProperties) {
 		DataPublisher dp = new DataPublisher(archive, source, messageProperties);
 		new Thread(dp).start();
 	}
@@ -41,9 +41,9 @@ public class ArtifactPublishService {
 	private class DataPublisher implements Runnable {
 		File archive;
 		String source;
-		Map<String, ? extends Object> messageProperties;
+		Map<String, Object> messageProperties;
 		
-		DataPublisher (File archive, String source, Map<String, ? extends Object> messageProperties) {
+		DataPublisher (File archive, String source, Map<String, Object> messageProperties) {
 			this.archive = archive;
 			this.source = source;
 			this.messageProperties = messageProperties;

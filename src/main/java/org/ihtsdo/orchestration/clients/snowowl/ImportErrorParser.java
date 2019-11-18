@@ -92,10 +92,6 @@ public class ImportErrorParser {
 		}
 	}
 
-	private String getConceptIdFromEndOfLine(String message) {
-		return message.substring(message.indexOf(CONCEPT_ID) + CONCEPT_ID.length());
-	}
-
 	private long copyLogAndGetImportStartOffset(InputStream snowOwlRolloverLogStream, InputStream snowOwlLogStream, Path tempFile) throws ImportErrorParserException {
 		Counter importStartOffset = new Counter(-1);
 		try {

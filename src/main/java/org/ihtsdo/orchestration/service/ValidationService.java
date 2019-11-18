@@ -22,7 +22,7 @@ import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.ValidationParameterConstants;
-import org.ihtsdo.otf.rest.client.snowowl.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.ihtsdo.otf.utils.DateUtils;
