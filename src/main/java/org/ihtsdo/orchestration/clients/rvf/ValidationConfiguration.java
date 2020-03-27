@@ -13,7 +13,7 @@ public class ValidationConfiguration {
 	private String previousPackage;
 	private String dependencyPackage;
 	private String includedModuleIds;
-	
+	private boolean enableMRCMValidation;
 	
 	public String checkMissingParameters() {
 		StringBuilder msgBuilder = new StringBuilder();
@@ -139,4 +139,13 @@ public class ValidationConfiguration {
 	public void setIncludedModuleIds(String includedModuleIds) {
 		this.includedModuleIds = includedModuleIds;
 	}
+
+	public boolean isEnableMRCMValidation() {
+		return enableMRCMValidation;
+	}
+
+	public void setEnableMRCMValidation(boolean enableMRCMValidation) {
+		this.enableMRCMValidation = enableMRCMValidation;
+	}
+
 }

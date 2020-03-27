@@ -12,4 +12,5 @@ public class ValidationParameterConstants {
 	public static final String INTERNATIONAL ="international";
 	public static final String PREVIOUS_PACKAGE = "previousPackage";
 	public static final String DEPENDENCY_PACKAGE = "dependencyPackage";
+	public static final String ENABLE_MRCM_VALIDATION = "enableMRCMValidation";
 }

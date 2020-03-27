@@ -170,6 +170,7 @@ public class RVFRestClient {
 		multipartEntityBuilder.addTextBody("failureExportMax", config.getFailureExportMax());
 		String storageLocation = RVF_TS  + "/" + config.getProductName() + "/" + runId;
 		multipartEntityBuilder.addTextBody("storageLocation", storageLocation );
+		multipartEntityBuilder.addTextBody("enableMRCMValidation", Boolean.toString(config.isEnableMRCMValidation()));
 		logger.debug("Validation storage location: " + storageLocation);
 		multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 		HttpEntity httpEntity = multipartEntityBuilder.build();

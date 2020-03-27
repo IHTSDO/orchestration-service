@@ -68,6 +68,14 @@ public class ValidationMessageHandler {
 		} else {
 			validationConfig.setReleaseCenter(INTERNATIONAL);
 		}
+		String enableMRCMValidation = messageIn.getStringProperty(ENABLE_MRCM_VALIDATION);
+		if (enableMRCMValidation != null) {
+			validationConfig.setEnableMRCMValidation(Boolean.parseBoolean(enableMRCMValidation));
+		}
+		else {
+			validationConfig.setEnableMRCMValidation(false);
+		}
+
 		logger.info("Validation conifg created:" + validationConfig);
 		return validationConfig;
 	}
