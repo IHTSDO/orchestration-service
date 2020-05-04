@@ -56,9 +56,9 @@ public class ReleaseService {
 	}
 
 	public synchronized void release(String productName, String releaseCenter, String branchPath,
-			String effectiveDate, Set<String> excludedModuleIds,
-			SnowOwlRestClient.ExportCategory exportCategory, String authToken,
-			OrchestrationCallback callback)
+									 String effectiveDate, Set <String> excludedModuleIds,
+									 SnowOwlRestClient.ExportCategory exportCategory, String authToken, String failureExportMax ,
+									 OrchestrationCallback callback)
 			throws IOException, JSONException, BusinessServiceException {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
@@ -79,7 +79,7 @@ public class ReleaseService {
 		processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
-		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportModuleIds, exportCategory, snowOwlRestClient, callback))).start();
+		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportModuleIds, exportCategory, snowOwlRestClient, failureExportMax, callback))).start();
 	}
 
 	private Set<String> buildModulesList(String branchPath, Set<String> excludedModuleIds, SnowOwlRestClient snowOwlRestClient) throws BusinessServiceException {
@@ -110,9 +110,10 @@ public class ReleaseService {
 		private final Set<String> exportModuleIds;
 		private String releaseCenter;
 		private SnowOwlRestClient snowOwlRestClient;
+		private String failureExportMaxFromRequest;
 
 		private ReleaseRunner(String productName, String releaseCenter, String branchPath, String effectiveDate, Set<String> exportModuleIds, 
-				SnowOwlRestClient.ExportCategory exportCategory, SnowOwlRestClient snowOwlRestClient, OrchestrationCallback callback) {
+				SnowOwlRestClient.ExportCategory exportCategory, SnowOwlRestClient snowOwlRestClient, String failureExportMax, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
 			this.exportModuleIds = exportModuleIds;
@@ -121,6 +122,7 @@ public class ReleaseService {
 			this.exportCategory = exportCategory;
 			this.releaseCenter = releaseCenter;
 			this.snowOwlRestClient = snowOwlRestClient;
+			this.failureExportMaxFromRequest = failureExportMax;
 		}
 
 		@Override
@@ -128,7 +130,7 @@ public class ReleaseService {
 			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
 			// Create files for SRS / Initiate SRS
 			SRSProjectConfiguration config = new SRSProjectConfiguration(productName, this.releaseCenter, this.effectiveDate);
-			config.setFailureExportMax(failureExportMax);
+			config.setFailureExportMax(failureExportMaxFromRequest != null? failureExportMaxFromRequest : failureExportMax);
 			File exportArchive  = null;
 			Map<String, String> srsResponse  = null;
 			try {

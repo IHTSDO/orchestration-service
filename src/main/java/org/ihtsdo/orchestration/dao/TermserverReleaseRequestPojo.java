@@ -13,6 +13,7 @@ public class TermserverReleaseRequestPojo {
 	private String releaseCenter;
 	private Set<String> excludedModuleIds;
 	private String authToken;
+	private String failureExportMax;
 
 	public TermserverReleaseRequestPojo() {
 	}
@@ -73,6 +74,14 @@ public class TermserverReleaseRequestPojo {
 		this.authToken = authToken;
 	}
 
+	public String getFailureExportMax() {
+		return failureExportMax;
+	}
+
+	public void setFailureExportMax(String failureExportMax) {
+		this.failureExportMax = failureExportMax;
+	}
+
 	@Override
 	public String toString() {
 		return "TermserverReleaseRequestPojo{" +
@@ -82,6 +91,7 @@ public class TermserverReleaseRequestPojo {
 				", branchPath='" + branchPath + '\'' +
 				", releaseCenter='" + releaseCenter + '\'' +
 				", excludedModuleIds=" + excludedModuleIds +
+				", failureExportMax=" + failureExportMax +
 				'}';
 	}
 }

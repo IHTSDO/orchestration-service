@@ -50,6 +50,7 @@ public class TerminologyServerController {
 		String productName = request.getProductName();
 		SnowOwlRestClient.ExportCategory exportCategory = request.getExportCategory();
 		String releaseCenter = request.getReleaseCenter();
+		String failureExportMax = request.getFailureExportMax();
 		Set<String> excludedModuleIds = request.getExcludedModuleIds();
 		if (request.getAuthToken() == null || request.getAuthToken().trim().isEmpty()) {
 			throw new IllegalArgumentException("X-AUTH-token must be specified but was " + request.getAuthToken());
@@ -59,7 +60,7 @@ public class TerminologyServerController {
 			releaseCenter = INTERNATIONAL;
 		}
 		// Passing null callback as this request has not come from a termserver user
-		releaseService.release(productName, releaseCenter, branchPath, effectiveDate, excludedModuleIds, exportCategory, request.getAuthToken(), null);
+		releaseService.release(productName, releaseCenter, branchPath, effectiveDate, excludedModuleIds, exportCategory, request.getAuthToken(), failureExportMax, null);
 	}
 
 	@RequestMapping(value = "/validations/**/latest", method = RequestMethod.GET)
