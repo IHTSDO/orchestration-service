@@ -161,9 +161,9 @@ public class RVFRestClient {
 			if (StringUtils.isNotBlank(config.getReleaseDate())) {
 				multipartEntityBuilder.addTextBody("effectiveTime", config.getReleaseDate());
 			}
-			if (StringUtils.isNotBlank(config.getIncludedModuleIds())) {
-				multipartEntityBuilder.addTextBody("includedModules", config.getIncludedModuleIds());
-			}
+		}
+		if (StringUtils.isNotBlank(config.getIncludedModuleIds())) {
+			multipartEntityBuilder.addTextBody("includedModules", config.getIncludedModuleIds());
 		}
 		String runId = Long.toString(System.currentTimeMillis());
 		multipartEntityBuilder.addTextBody("runId", runId);
