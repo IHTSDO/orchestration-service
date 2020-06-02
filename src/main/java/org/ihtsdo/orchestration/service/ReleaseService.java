@@ -63,10 +63,9 @@ public class ReleaseService {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = processReportDAO.getStatus(branchPath, RELEASE_PROCESS);
-		if (hasExistingBuild(status)) {
+		if (status != null && !OrchProcStatus.isFinalState(status)) {
 			throw new EntityAlreadyExistsException("An in-progress release has been detected for " + branchPath + " at state " + status);
 		}
-
 		// Check to make sure this product exists in SRS because we won't configure a new one!
 		srsClient.checkProductExists(productName, releaseCenter,false);
 
@@ -80,13 +79,6 @@ public class ReleaseService {
 
 		// Start thread for additional processing and return immediately
 		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportModuleIds, exportCategory, snowOwlRestClient, failureExportMax, callback))).start();
-	}
-
-	private boolean hasExistingBuild(String status) {
-		if (status != null && (OrchProcStatus.isFinalState(status) || status.equals(OrchProcStatus.VALIDATING.name()))) {
-			return true;
-		}
-		return false;
 	}
 
 	private Set<String> buildModulesList(String branchPath, Set<String> excludedModuleIds, SnowOwlRestClient snowOwlRestClient) throws BusinessServiceException {
@@ -166,9 +158,6 @@ public class ReleaseService {
 				// Wait for RVF response
 				// Did we obtain the RVF location for the next step in the process to poll?
 				if (srsResponse != null && srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
-					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
-					JSONObject rvfReport = rvfClient.waitForResponse(srsResponse.get(SRSRestClient.RVF_RESPONSE));
-					processReportDAO.saveReport(branchPath, RELEASE_PROCESS, rvfReport);
 					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
 					finalOrchProcStatus = OrchProcStatus.COMPLETED;
 				} else {

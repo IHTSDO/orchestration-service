@@ -6,9 +6,8 @@ public enum OrchProcStatus {
 	public static OrchProcStatus[] FINAL_STATES = new OrchProcStatus[] { COMPLETED, FAILED };
 
 	public static boolean isFinalState(String status) {
-
 		for (OrchProcStatus thisStatus : FINAL_STATES) {
-			if (status.equals(thisStatus.toString())) {
+			if (thisStatus.name().equals(status)) {
 				return true;
 			}
 		}
