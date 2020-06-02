@@ -66,7 +66,7 @@ public class SRSRestClient {
 	private static final byte[] EMPTY_CONTENT_ARRAY = new byte[0];
 	private static final Content EMPTY_CONTENT = new Content(CONTENT_TYPE_TEXT, EMPTY_CONTENT_ARRAY);
 
-	private static final Integer NOT_FOUND = new Integer(HttpStatus.NOT_FOUND.value());
+	private static final Integer NOT_FOUND = HttpStatus.NOT_FOUND.value();
 
 	@Autowired
 	protected SRSFileDAO srsDAO;
@@ -78,7 +78,7 @@ public class SRSRestClient {
 	private boolean restyInitiated = false;
 
 	public static final String RVF_RESPONSE = "buildReport.rvf_response";
-	protected static final String[] ITEMS_OF_INTEREST = { "outputfiles_url", "status", "logs_url", RVF_RESPONSE, "buildReport.Message" };
+	protected static final String[] ITEMS_OF_INTEREST = {"url", "status", "outputfiles_url", "logs_url", RVF_RESPONSE};
 
 	public SRSRestClient(String srsRootURL, String username, String password) {
 		this.srsRootURL = srsRootURL;
@@ -96,7 +96,7 @@ public class SRSRestClient {
 		password = null;
 		resty = null;
 	}
-	
+
 	public void prepareSRSFiles(File exportArchive, SRSProjectConfiguration config) throws Exception {
 		if (config.getReleaseDate() == null) {
 			String releaseDate = srsDAO.recoverReleaseDate(exportArchive);
@@ -168,7 +168,7 @@ public class SRSRestClient {
 		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER, Resty.delete());
 		logger.info("Deleting previous source files in folder:" + EXTERNALly_MAINTAINED);
 		resty.json(srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED, Resty.delete());
-		
+
 		// Upload source files
 		logger.info("Upload source files for " +  TERMINOLOGY_SERVER);
 		uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER);
@@ -186,32 +186,38 @@ public class SRSRestClient {
 		//Call prepare input files step
 		logger.info("Calling SRS to prepare input files");
 		JSONResource prepareInputFileResponse = resty.json(srsProductURL + PREPARE_INPUT_FILES_ENDPOINT, EMPTY_CONTENT);
-		RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
-		
+		try {
+			RestyServiceHelper.ensureSuccessfull(prepareInputFileResponse);
+		} catch (Exception e) {
+			// log errors here so that the build is always created and input file preparation report is copied.
+			logger.error("Input files preparation failed to complete successfully!", e);
+		}
+
 		// Create a build. Pass blank content to encourage Resty to use POST
 		JSONResource json = resty.json(srsProductURL + BUILD_ENDPOINT, EMPTY_CONTENT);
 		Object buildId = json.get(ID);
 		Assert.notNull(buildId, "Failed to recover create build at: " + srsProductURL);
+		logger.info("Release build {} is created", srsProductURL + BUILD_ENDPOINT + "/" + buildId);
 
 		// We're now telling the RVF (via the SRS) how many failures we want to see for each assertion
 		String failureExportMaxStr = "";
 		if (config.getFailureExportMax() != null && !config.getFailureExportMax().isEmpty()) {
 			failureExportMaxStr = "?failureExportMax=" + config.getFailureExportMax();
 		}
-
-		// Trigger Build
-		String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
-		logger.info("Triggering Build: {}", buildTriggerURL);
-		json = resty.json(buildTriggerURL, EMPTY_CONTENT);
+		
 		try {
+			// Trigger Build
+			String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
+			logger.info("Triggering Build: {}", buildTriggerURL);
+			json = resty.json(buildTriggerURL, EMPTY_CONTENT);
 			logger.debug("Build trigger returned: {}", json.object().toString(2));
+			return recoverItemsOfInterest(json);
 		} catch (Exception e) {
 			String msg = "Unable to parse response from build trigger.";
 			logger.error(msg, e);
 			logger.error("Build trigger returned status {}", json.getHTTPStatus());
 			throw new BusinessServiceException(msg, e);
 		}
-		return recoverItemsOfInterest(json);
 	}
 
 	public void checkProductExists(String productName, String releaseCenter, boolean createIfRequired) throws IOException,
@@ -236,7 +242,7 @@ public class SRSRestClient {
 
 	protected Map<String, String> recoverItemsOfInterest(JSONResource json) throws Exception {
 		// Recover some things the users might be interested in, to store in the Jira Ticket
-		Map<String, String> response = new HashMap<String, String>();
+		Map<String, String> response = new HashMap<>();
 		int itemsFound = 0;
 		for (String item : ITEMS_OF_INTEREST) {
 			try {
@@ -244,7 +250,7 @@ public class SRSRestClient {
 				response.put(item, value.toString());
 				itemsFound++;
 			} catch (Exception e) {
-				logger.error("Failed to recover item of interest from SRS Trigger Response: {} ", item, e);
+				logger.error("Failed to recover item of interest {} from SRS Trigger Response {}", item, response, e);
 			}
 		}
 

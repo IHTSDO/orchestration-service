@@ -36,7 +36,7 @@ public class ReleaseService {
 
 	@Autowired
 	protected OrchestrationProcessReportDAO processReportDAO;
-	
+
 	@Autowired
 	private TerminologyServerRestClientFactory terminologyServerRestClientFactory;
 
@@ -45,10 +45,10 @@ public class ReleaseService {
 
 	@Autowired
 	protected RVFRestClient rvfClient;
-	
+
 	@Autowired
 	private String failureExportMax;
-	
+
 	private final boolean flatIndexExportStyle;
 
 	public ReleaseService(boolean flatIndexExportStyle) {
@@ -63,13 +63,13 @@ public class ReleaseService {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = processReportDAO.getStatus(branchPath, RELEASE_PROCESS);
-		if (status != null && !OrchProcStatus.isFinalState(status)) {
+		if (hasExistingBuild(status)) {
 			throw new EntityAlreadyExistsException("An in-progress release has been detected for " + branchPath + " at state " + status);
 		}
 
 		// Check to make sure this product exists in SRS because we won't configure a new one!
 		srsClient.checkProductExists(productName, releaseCenter,false);
-		
+
 		// Create terminology server client using SSO security token
 		SnowOwlRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
 
@@ -80,6 +80,13 @@ public class ReleaseService {
 
 		// Start thread for additional processing and return immediately
 		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportModuleIds, exportCategory, snowOwlRestClient, failureExportMax, callback))).start();
+	}
+
+	private boolean hasExistingBuild(String status) {
+		if (status != null && (OrchProcStatus.isFinalState(status) || status.equals(OrchProcStatus.VALIDATING.name()))) {
+			return true;
+		}
+		return false;
 	}
 
 	private Set<String> buildModulesList(String branchPath, Set<String> excludedModuleIds, SnowOwlRestClient snowOwlRestClient) throws BusinessServiceException {
@@ -112,7 +119,7 @@ public class ReleaseService {
 		private SnowOwlRestClient snowOwlRestClient;
 		private String failureExportMaxFromRequest;
 
-		private ReleaseRunner(String productName, String releaseCenter, String branchPath, String effectiveDate, Set<String> exportModuleIds, 
+		private ReleaseRunner(String productName, String releaseCenter, String branchPath, String effectiveDate, Set<String> exportModuleIds,
 				SnowOwlRestClient.ExportCategory exportCategory, SnowOwlRestClient snowOwlRestClient, String failureExportMax, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
@@ -137,9 +144,9 @@ public class ReleaseService {
 				// Export
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
 				SnowOwlRestClient.ExportType exportType = flatIndexExportStyle ? SnowOwlRestClient.ExportType.SNAPSHOT : SnowOwlRestClient.ExportType.DELTA;
-				
+
 				exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportModuleIds, exportCategory, exportType);
-				
+
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
 				srsClient.prepareSRSFiles(exportArchive, config);
 				logger.info("RF2 delta files are extracted from the termServer export archive " + exportArchive.getName());
