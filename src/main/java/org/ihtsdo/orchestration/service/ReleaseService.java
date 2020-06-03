@@ -11,7 +11,6 @@ import org.ihtsdo.otf.rest.client.RestClientException;
 import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,29 +146,29 @@ public class ReleaseService {
 				// Trigger SRS
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.BUILDING.toString(), null);
 				srsResponse = srsClient.runBuild(config);
+				// update build status
+				if (srsResponse != null) {
+					String status = srsResponse.get(SRSRestClient.buildStatus);
+					if (SRSRestClient.BUILT.equalsIgnoreCase(status)) {
+						processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
+						finalOrchProcStatus = OrchProcStatus.COMPLETED;
+					} else {
+						processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), status);
+					}
+					logger.info("Release build ulr:" + srsResponse.get(SRSRestClient.buildUrl));
+				} else {
+					String error = "Did not find any messages form SRS Client response ";
+					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), error);
+				}
+				if (callback != null) {
+					callback.complete(finalOrchProcStatus);
+				}
 			} catch (Exception e) {
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
 				logger.error("Release of {} failed.", branchPath, e);
 			} finally {
 				FileManager.deleteFileIfExists(exportArchive);
 				FileManager.deleteFileIfExists(config.getInputFilesDir());
-			}
-			try {
-				// Wait for RVF response
-				// Did we obtain the RVF location for the next step in the process to poll?
-				if (srsResponse != null && srsResponse.containsKey(SRSRestClient.RVF_RESPONSE)) {
-					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
-					finalOrchProcStatus = OrchProcStatus.COMPLETED;
-				} else {
-					String error = "Did not find RVF Response location in SRS Client Response";
-					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), error);
-				}
-			} catch (Exception e) {
-				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
-				logger.error("Failed to poll release validation status.", branchPath, e);
-			}
-			if (callback != null) {
-				callback.complete(finalOrchProcStatus);
 			}
 		}
 	}

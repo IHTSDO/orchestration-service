@@ -36,6 +36,7 @@ import us.monoid.web.mime.MultipartContent;
 
 public class SRSRestClient {
 
+	public static final String BUILT = "BUILT";
 	private static final String EXTERNALly_MAINTAINED = "externally-maintained";
 
 	private static final String TERMINOLOGY_SERVER = "terminology-server";
@@ -76,9 +77,9 @@ public class SRSRestClient {
 
 	private final RestyHelper resty;
 	private boolean restyInitiated = false;
-
-	public static final String RVF_RESPONSE = "buildReport.rvf_response";
-	protected static final String[] ITEMS_OF_INTEREST = {"url", "status", "outputfiles_url", "logs_url", RVF_RESPONSE};
+	public static String buildStatus = "status";
+	public static String buildUrl = "url";
+	protected static final String[] ITEMS_OF_INTEREST = {"id", buildStatus, buildUrl, "logs_url"};
 
 	public SRSRestClient(String srsRootURL, String username, String password) {
 		this.srsRootURL = srsRootURL;
@@ -204,7 +205,7 @@ public class SRSRestClient {
 		if (config.getFailureExportMax() != null && !config.getFailureExportMax().isEmpty()) {
 			failureExportMaxStr = "?failureExportMax=" + config.getFailureExportMax();
 		}
-		
+
 		try {
 			// Trigger Build
 			String buildTriggerURL = srsProductURL + BUILD_ENDPOINT + "/" + buildId + TRIGGER_BUILD_ENDPOINT + failureExportMaxStr;
