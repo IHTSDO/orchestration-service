@@ -149,13 +149,14 @@ public class ReleaseService {
 				// update build status
 				if (srsResponse != null) {
 					String status = srsResponse.get(SRSRestClient.buildStatus);
+					logger.info("Build status from SRS:" + status);
 					if (SRSRestClient.BUILT.equalsIgnoreCase(status)) {
 						processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
 						finalOrchProcStatus = OrchProcStatus.COMPLETED;
 					} else {
 						processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), status);
 					}
-					logger.info("Release build ulr:" + srsResponse.get(SRSRestClient.buildUrl));
+					logger.info("Detailed information can be found via the release build ulr:" + srsResponse.get(SRSRestClient.buildUrl));
 				} else {
 					String error = "Did not find any messages form SRS Client response ";
 					processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.FAILED.toString(), error);
