@@ -172,16 +172,31 @@ public class SRSRestClient {
 
 		// Upload source files
 		logger.info("Upload source files for " +  TERMINOLOGY_SERVER);
-		uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER);
+		int total = 0;
+		total += uploadFiles(config.getInputFilesDir(), srsProductURL + SOURCE_FILES_ENDPOINT + "/" + TERMINOLOGY_SERVER);
 		File externalExtractDir = null;
 		try {
 			//upload externalMaintained refsets
 			externalExtractDir = Files.createTempDirectory("external").toFile();
 			srsDAO.downloadExternallyMaintainedFiles(externalExtractDir, config.getReleaseCenter(), config.getReleaseDate());
 			logger.info("Upload source files for " +  EXTERNALly_MAINTAINED);
-			uploadFiles(externalExtractDir, srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED);
+			total += uploadFiles(externalExtractDir, srsProductURL + SOURCE_FILES_ENDPOINT + "/" + EXTERNALly_MAINTAINED);
 		} finally {
 			FileManager.deleteFileIfExists(externalExtractDir);
+		}
+
+		// check sources files are all uploaded
+		JSONResource resourceFilesListingResponse = resty.json(srsProductURL + SOURCE_FILES_ENDPOINT);
+		try {
+			RestyServiceHelper.ensureSuccessfull(resourceFilesListingResponse);
+		} catch (Exception e) {
+			logger.error("Failed to list source files uploaded!", e);
+		}
+		if (resourceFilesListingResponse != null) {
+			if (total != resourceFilesListingResponse.array().length()) {
+				logger.error("{} source files uploaded but only {} were successful.", total, resourceFilesListingResponse.array().length());
+				throw new RuntimeException("Failed to upload all source files successfully!");
+			}
 		}
 
 		//Call prepare input files step
@@ -265,13 +280,16 @@ public class SRSRestClient {
 		return response;
 	}
 
-	private void uploadFiles(File srsFilesDir, String url) throws ProcessingException {
+	private int uploadFiles(File srsFilesDir, String url) throws ProcessingException {
 		Assert.isTrue(srsFilesDir.isDirectory(), srsFilesDir.getAbsolutePath() + " must be a directory in order to use it to upload files.");
+		int counter = 0;
 		for (File thisFile : srsFilesDir.listFiles()) {
 			if (thisFile.exists() && !thisFile.isDirectory()) {
 				uploadFile(url, thisFile);
+				counter++;
 			}
 		}
+		return counter;
 	}
 
 	private void uploadFile(String url, File file) throws ProcessingException {
