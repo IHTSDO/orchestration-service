@@ -25,6 +25,7 @@ import org.ihtsdo.orchestration.rest.ValidationParameterConstants;
 import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
+import org.ihtsdo.otf.rest.exception.ProcessingException;
 import org.ihtsdo.otf.utils.DateUtils;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -209,8 +210,22 @@ public class ValidationService implements OrchestrationConstants {
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
 				JSONObject rvfReport = rvfClient.waitForResponse(rvfResultUrl);
 				processReportDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
-				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
-				status = OrchProcStatus.COMPLETED;
+				Object responseState = rvfReport.get(RVFRestClient.JSON_FIELD_STATUS);
+				RVFRestClient.RVF_STATE currentState;
+				try {
+					currentState = RVFRestClient.RVF_STATE.valueOf(responseState.toString());
+				} catch (Exception e) {
+					throw new ProcessingException("Failed to determine RVF Status from response: " + rvfReport.toString(RVFRestClient.INDENT));
+				}
+				if (RVFRestClient.RVF_STATE.COMPLETE.equals(currentState)) {
+					processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
+					status = OrchProcStatus.COMPLETED;
+				} else {
+					String errorMsg = new JSONObject(rvfReport.get(RVFRestClient.JSON_FIELD_RVF_VALIDATION_RESULT).toString()).get(RVFRestClient.JSON_FIELD_FAILURE_MESSAGES).toString();
+					logger.error("Failed to validate. Error: " + errorMsg);
+					processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), errorMsg);
+					status = OrchProcStatus.FAILED;
+				}
 			}
 			return status;
 		}

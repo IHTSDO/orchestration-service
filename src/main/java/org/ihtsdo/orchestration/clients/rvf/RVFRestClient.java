@@ -33,6 +33,12 @@ public class RVFRestClient {
 	
 	public static final String JSON_FIELD_STATUS = "status";
 
+	public static final String JSON_FIELD_RVF_VALIDATION_RESULT = "rvfValidationResult";
+
+	public static final String JSON_FIELD_FAILURE_MESSAGES = "failureMessages";
+
+	public static final int INDENT = 2;
+
 	public enum RVF_STATE {
 		QUEUED, RUNNING, COMPLETE, FAILED, UNKNOWN
 	};
@@ -40,8 +46,7 @@ public class RVFRestClient {
 	private final RestyMod resty;
 	private final int pollPeriod;
 	private final int maxElapsedTime;
-	private final int INDENT = 2;
-	
+
 	@Autowired
 	protected SRSFileDAO srsDAO;
 	
@@ -66,7 +71,7 @@ public class RVFRestClient {
 	public JSONObject waitForResponse(String pollURL) throws Exception {
 		JSONResource resource = waitForResults(pollURL);
 		if (resource != null) {
-			return new JSONObject(resource.object().toString(2));
+			return new JSONObject(resource.object().toString(INDENT));
 		} else {
 			return new JSONObject();
 		}
@@ -112,7 +117,7 @@ public class RVFRestClient {
 					pollCount++;
 					break;
 				case FAILED:
-					throw new ProcessingException("RVF reported a technical failure: " + json.object().toString(INDENT));
+//					throw new ProcessingException("RVF reported a technical failure: " + json.object().toString(INDENT));
 				case COMPLETE:
 					isFinalState = true;
 					break;
