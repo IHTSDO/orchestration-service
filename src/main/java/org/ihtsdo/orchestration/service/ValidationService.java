@@ -35,7 +35,9 @@ import org.springframework.util.Assert;
 
 import com.google.common.io.Files;
 
+import static org.ihtsdo.orchestration.service.OrchProcStatus.FAILED;
 import static org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient.ExportCategory.UNPUBLISHED;
+import static org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient.ExportType.DELTA;
 
 public class ValidationService implements OrchestrationConstants {
 
@@ -132,7 +134,7 @@ public class ValidationService implements OrchestrationConstants {
 		@Override
 		public void run() {
 			logger.debug("ValidationConfig:" + config);
-			OrchProcStatus finalOrchProcStatus = OrchProcStatus.FAILED;
+			OrchProcStatus finalOrchProcStatus = FAILED;
 			File exportArchive = null;
 			try {
 				// check the config is set correctly
@@ -149,19 +151,18 @@ public class ValidationService implements OrchestrationConstants {
 				SnowstormRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
 
 				// Export RF2 delta
-				exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, UNPUBLISHED,
-						SnowstormRestClient.ExportType.DELTA);
+				exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, UNPUBLISHED, DELTA);
 
 				// send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);
-				
-				if ( callback != null) {
-					callback.complete(finalOrchProcStatus);
-				}
 			} catch (Exception e) {
-				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), e.getMessage());
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, FAILED.toString(), e.getMessage());
+				finalOrchProcStatus = FAILED;
 				logger.error("Validation of {} failed.", branchPath, e);
 			} finally {
+				if (callback != null) {
+					callback.complete(finalOrchProcStatus);
+				}
 				FileManager.deleteFileIfExists(exportArchive);
 			}
 		}
@@ -192,7 +193,7 @@ public class ValidationService implements OrchestrationConstants {
 		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
 			File tempDir = Files.createTempDir();
 			File localZipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
-			OrchProcStatus status = OrchProcStatus.FAILED;
+			OrchProcStatus status = FAILED;
 			String rvfResultUrl = null;
 			try {
 				// change file name exported to RF2 format
@@ -225,8 +226,8 @@ public class ValidationService implements OrchestrationConstants {
 				} else {
 					String errorMsg = new JSONObject(rvfReport.get(RVFRestClient.JSON_FIELD_RVF_VALIDATION_RESULT).toString()).get(RVFRestClient.JSON_FIELD_FAILURE_MESSAGES).toString();
 					logger.error("Failed to validate. Error: " + errorMsg);
-					processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.FAILED.toString(), errorMsg);
-					status = OrchProcStatus.FAILED;
+					processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, FAILED.toString(), errorMsg);
+					status = FAILED;
 				}
 			}
 			return status;

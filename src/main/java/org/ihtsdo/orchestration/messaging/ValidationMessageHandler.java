@@ -76,7 +76,7 @@ public class ValidationMessageHandler {
 			validationConfig.setEnableMRCMValidation(false);
 		}
 
-		logger.info("Validation conifg created:" + validationConfig);
+		logger.info("Validation config created:" + validationConfig);
 		return validationConfig;
 	}
 }
