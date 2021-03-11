@@ -5,7 +5,7 @@ import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.util.PathUtil;
 import org.ihtsdo.orchestration.service.ReleaseService;
 import org.ihtsdo.orchestration.service.ValidationService;
-import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.ResourceNotFoundException;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class TerminologyServerController {
 		String branchPath = request.getBranchPath();
 		String effectiveDate = request.getEffectiveDate();
 		String productName = request.getProductName();
-		SnowOwlRestClient.ExportCategory exportCategory = request.getExportCategory();
+		SnowstormRestClient.ExportCategory exportCategory = request.getExportCategory();
 		String releaseCenter = request.getReleaseCenter();
 		String failureExportMax = request.getFailureExportMax();
 		Set<String> excludedModuleIds = request.getExcludedModuleIds();

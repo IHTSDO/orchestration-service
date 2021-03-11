@@ -1,6 +1,6 @@
 package org.ihtsdo.orchestration.clients.snowowl;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,12 +19,12 @@ public class TerminologyServerRestClientFactory {
 	@Value("${snowowl.classification.timeout}")
 	private int classificationTimeout;
 
-	public SnowOwlRestClient getClient(String authToken) {
-		SnowOwlRestClient snowOwlRestClient = new SnowOwlRestClient(url, authToken);
-		snowOwlRestClient.setReasonerId(reasonerId);
-		snowOwlRestClient.setImportTimeoutMinutes(importTimeout);
-		snowOwlRestClient.setClassificationTimeoutMinutes(classificationTimeout);
-		return snowOwlRestClient;
+	public SnowstormRestClient getClient(String authToken) {
+		SnowstormRestClient snowstormRestClient = new SnowstormRestClient(url, authToken);
+		snowstormRestClient.setReasonerId(reasonerId);
+		snowstormRestClient.setImportTimeoutMinutes(importTimeout);
+		snowstormRestClient.setClassificationTimeoutMinutes(classificationTimeout);
+		return snowstormRestClient;
 	}
 
 }

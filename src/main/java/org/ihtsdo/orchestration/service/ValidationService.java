@@ -22,7 +22,7 @@ import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.ValidationParameterConstants;
-import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient;
 import org.ihtsdo.otf.rest.exception.BadRequestException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.ihtsdo.otf.rest.exception.ProcessingException;
@@ -34,6 +34,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import com.google.common.io.Files;
+
+import static org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient.ExportCategory.UNPUBLISHED;
 
 public class ValidationService implements OrchestrationConstants {
 
@@ -144,11 +146,11 @@ public class ValidationService implements OrchestrationConstants {
 				String exportEffectiveTime = resolveExportEffectiveTime(config);
 
 				// Create terminology server client using SSO security token
-				SnowOwlRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
+				SnowstormRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
 
 				// Export RF2 delta
-				exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, SnowOwlRestClient.ExportCategory.UNPUBLISHED,
-						SnowOwlRestClient.ExportType.DELTA);
+				exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, UNPUBLISHED,
+						SnowstormRestClient.ExportType.DELTA);
 
 				// send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);

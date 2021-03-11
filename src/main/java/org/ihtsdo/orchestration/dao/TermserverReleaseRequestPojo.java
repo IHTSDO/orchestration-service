@@ -1,6 +1,6 @@
 package org.ihtsdo.orchestration.dao;
 
-import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient;
 
 import java.util.Set;
 
@@ -8,7 +8,7 @@ public class TermserverReleaseRequestPojo {
 
 	private String productName;
 	private String effectiveDate;
-	private SnowOwlRestClient.ExportCategory exportCategory;
+	private SnowstormRestClient.ExportCategory exportCategory;
 	private String branchPath;
 	private String releaseCenter;
 	private Set<String> excludedModuleIds;
@@ -34,11 +34,11 @@ public class TermserverReleaseRequestPojo {
 		this.effectiveDate = effectiveDate;
 	}
 
-	public SnowOwlRestClient.ExportCategory getExportCategory() {
+	public SnowstormRestClient.ExportCategory getExportCategory() {
 		return exportCategory;
 	}
 
-	public void setExportCategory(SnowOwlRestClient.ExportCategory exportCategory) {
+	public void setExportCategory(SnowstormRestClient.ExportCategory exportCategory) {
 		this.exportCategory = exportCategory;
 	}
 

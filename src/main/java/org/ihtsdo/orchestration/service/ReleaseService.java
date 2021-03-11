@@ -8,7 +8,7 @@ import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
 import org.ihtsdo.otf.constants.Concepts;
 import org.ihtsdo.otf.rest.client.RestClientException;
-import org.ihtsdo.otf.rest.client.terminologyserver.SnowOwlRestClient;
+import org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient;
 import org.ihtsdo.otf.rest.exception.BusinessServiceException;
 import org.ihtsdo.otf.rest.exception.EntityAlreadyExistsException;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class ReleaseService {
 
 	public synchronized void release(String productName, String releaseCenter, String branchPath,
 									 String effectiveDate, Set <String> excludedModuleIds,
-									 SnowOwlRestClient.ExportCategory exportCategory, String authToken, String failureExportMax ,
+									 SnowstormRestClient.ExportCategory exportCategory, String authToken, String failureExportMax ,
 									 OrchestrationCallback callback)
 			throws IOException, JSONException, BusinessServiceException {
 		Assert.notNull(branchPath);
@@ -69,7 +69,7 @@ public class ReleaseService {
 		srsClient.checkProductExists(productName, releaseCenter,false);
 
 		// Create terminology server client using SSO security token
-		SnowOwlRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
+		SnowstormRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
 
 		Set<String> exportModuleIds = buildModulesList(branchPath, excludedModuleIds, snowOwlRestClient);
 
@@ -80,12 +80,12 @@ public class ReleaseService {
 		(new Thread(new ReleaseRunner(productName, releaseCenter, branchPath, effectiveDate, exportModuleIds, exportCategory, snowOwlRestClient, failureExportMax, callback))).start();
 	}
 
-	private Set<String> buildModulesList(String branchPath, Set<String> excludedModuleIds, SnowOwlRestClient snowOwlRestClient) throws BusinessServiceException {
+	private Set<String> buildModulesList(String branchPath, Set<String> excludedModuleIds, SnowstormRestClient snowstormRestClient) throws BusinessServiceException {
 		// If any modules are excluded build a list of modules to include
 		Set<String> exportModuleIds = null;
 		if (excludedModuleIds != null && !excludedModuleIds.isEmpty()) {
 			try {
-				Set<String> allModules = snowOwlRestClient.eclQuery(branchPath, "<<" + Concepts.MODULE, 1000);
+				Set<String> allModules = snowstormRestClient.eclQuery(branchPath, "<<" + Concepts.MODULE, 1000);
 				allModules.removeAll(excludedModuleIds);
 				exportModuleIds = new HashSet<>();
 				exportModuleIds.addAll(allModules);
@@ -103,15 +103,15 @@ public class ReleaseService {
 		private final String branchPath;
 		private final String effectiveDate;
 		private final String productName;
-		private final SnowOwlRestClient.ExportCategory exportCategory;
+		private final SnowstormRestClient.ExportCategory exportCategory;
 		private final OrchestrationCallback callback;
 		private final Set<String> exportModuleIds;
 		private String releaseCenter;
-		private SnowOwlRestClient snowOwlRestClient;
+		private SnowstormRestClient snowOwlRestClient;
 		private String failureExportMaxFromRequest;
 
 		private ReleaseRunner(String productName, String releaseCenter, String branchPath, String effectiveDate, Set<String> exportModuleIds,
-				SnowOwlRestClient.ExportCategory exportCategory, SnowOwlRestClient snowOwlRestClient, String failureExportMax, OrchestrationCallback callback) {
+		                      SnowstormRestClient.ExportCategory exportCategory, SnowstormRestClient snowOwlRestClient, String failureExportMax, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
 			this.effectiveDate = effectiveDate;
 			this.exportModuleIds = exportModuleIds;
@@ -134,7 +134,7 @@ public class ReleaseService {
 			try {
 				// Export
 				processReportDAO.setStatus(branchPath, RELEASE_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
-				SnowOwlRestClient.ExportType exportType = flatIndexExportStyle ? SnowOwlRestClient.ExportType.SNAPSHOT : SnowOwlRestClient.ExportType.DELTA;
+				SnowstormRestClient.ExportType exportType = flatIndexExportStyle ? SnowstormRestClient.ExportType.SNAPSHOT : SnowstormRestClient.ExportType.DELTA;
 
 				exportArchive = snowOwlRestClient.export(branchPath, effectiveDate, exportModuleIds, exportCategory, exportType);
 
