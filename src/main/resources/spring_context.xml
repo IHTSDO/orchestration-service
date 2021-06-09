@@ -46,7 +46,7 @@
 		<constructor-arg value="${ts.rvf.failureExportMax:100}"/>
 	</bean>
 	
-	<bean class="org.ihtsdo.orchestration.service.ValidationService" init-method="init"/>
+	<bean class="org.ihtsdo.orchestration.service.ValidationService"/>
 	
 	<bean class="org.ihtsdo.orchestration.service.ReleaseService">
 		<constructor-arg value="${snowowl.flatIndexExportStyle}"/>

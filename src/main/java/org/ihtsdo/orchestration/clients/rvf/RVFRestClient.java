@@ -63,7 +63,7 @@ public class RVFRestClient {
 	public RVFRestClient(String rvfRootUrl,int pollPeriod, int timeout) {
 		this.resty = new RestyMod();
 		this.rvfRootUrl = rvfRootUrl;
-		logger.info("RVF root url:" + rvfRootUrl);
+		logger.info("RVF root url:{}", rvfRootUrl);
 		this.pollPeriod = pollPeriod * 1000;
 		maxElapsedTime = timeout * 60 * 1000;
 	}
@@ -78,7 +78,8 @@ public class RVFRestClient {
 	}
 
 	public JSONResource waitForResults(String pollURL) throws Exception  {
-		
+		logger.info("Polling RVF report {} for a final status.", pollURL);
+
 		//Poll the URL and see what status the results are in
 		boolean isFinalState = false;
 		long msElapsed = 0;
@@ -176,6 +177,9 @@ public class RVFRestClient {
 		String storageLocation = RVF_TS  + "/" + config.getProductName() + "/" + runId;
 		multipartEntityBuilder.addTextBody("storageLocation", storageLocation );
 		multipartEntityBuilder.addTextBody("enableMRCMValidation", Boolean.toString(config.isEnableMRCMValidation()));
+		if (config.getContentHeadTimestamp() != null) {
+			multipartEntityBuilder.addTextBody("contentHeadTimestamp", Long.toString(config.getContentHeadTimestamp()));
+		}
 		logger.debug("Validation storage location: " + storageLocation);
 		multipartEntityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 		HttpEntity httpEntity = multipartEntityBuilder.build();

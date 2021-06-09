@@ -1,12 +1,12 @@
-package org.ihtsdo.orchestration.service;
+package org.ihtsdo.orchestration.model;
 
-public enum OrchProcStatus {
+public enum JobStatus {
 	SCHEDULED, EXPORTING, BUILD_INITIATING, BUILDING, VALIDATING, COMPLETED, FAILED;
 
-	public static OrchProcStatus[] FINAL_STATES = new OrchProcStatus[] { COMPLETED, FAILED };
+	public static JobStatus[] FINAL_STATES = new JobStatus[] { COMPLETED, FAILED };
 
 	public static boolean isFinalState(String status) {
-		for (OrchProcStatus thisStatus : FINAL_STATES) {
+		for (JobStatus thisStatus : FINAL_STATES) {
 			if (thisStatus.name().equals(status)) {
 				return true;
 			}

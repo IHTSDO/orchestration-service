@@ -14,7 +14,8 @@ public class ValidationConfiguration {
 	private String dependencyPackage;
 	private String includedModuleIds;
 	private boolean enableMRCMValidation;
-	
+	private Long contentHeadTimestamp;
+
 	public String checkMissingParameters() {
 		StringBuilder msgBuilder = new StringBuilder();
 		if (this.assertionGroupNames == null) {
@@ -148,4 +149,11 @@ public class ValidationConfiguration {
 		this.enableMRCMValidation = enableMRCMValidation;
 	}
 
+	public void setContentHeadTimestamp(Long contentHeadTimestamp) {
+		this.contentHeadTimestamp = contentHeadTimestamp;
+	}
+
+	public Long getContentHeadTimestamp() {
+		return contentHeadTimestamp;
+	}
 }

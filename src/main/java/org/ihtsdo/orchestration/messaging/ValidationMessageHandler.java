@@ -34,7 +34,7 @@ public class ValidationMessageHandler {
 	@Autowired
 	private String failureExportMax;
 	
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@JmsListener(destination = "${orchestration.name}.orchestration.termserver-release-validation")
 	public void receiveValidationRequest(final TextMessage messageIn) {
@@ -43,7 +43,8 @@ public class ValidationMessageHandler {
 			String authToken = messageIn.getStringProperty(X_AUTH_TOKEN);
 			validationService.validate(validationConfig, messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), authToken, finalValidationStatus -> {
 				Map<String, Object> properties = new HashMap<>();
-				properties.put("status", finalValidationStatus.toString());
+				properties.put("status", finalValidationStatus.getStatus());
+				properties.put("reportUrl", finalValidationStatus.getReportUrl());
 				messagingHelper.sendResponse(messageIn, "", properties);
 			});
 		} catch (JMSException | EntityAlreadyExistsException e) {

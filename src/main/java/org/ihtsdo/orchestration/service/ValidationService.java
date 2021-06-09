@@ -20,6 +20,8 @@ import org.ihtsdo.orchestration.clients.rvf.ValidationConfiguration;
 import org.ihtsdo.orchestration.clients.snowowl.TerminologyServerRestClientFactory;
 import org.ihtsdo.orchestration.dao.FileManager;
 import org.ihtsdo.orchestration.dao.OrchestrationProcessReportDAO;
+import org.ihtsdo.orchestration.model.JobStatus;
+import org.ihtsdo.orchestration.model.StatusAndReportUrl;
 import org.ihtsdo.orchestration.model.ValidationReportDTO;
 import org.ihtsdo.orchestration.rest.ValidationParameterConstants;
 import org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient;
@@ -35,7 +37,7 @@ import org.springframework.util.Assert;
 
 import com.google.common.io.Files;
 
-import static org.ihtsdo.orchestration.service.OrchProcStatus.FAILED;
+import static org.ihtsdo.orchestration.model.JobStatus.FAILED;
 import static org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient.ExportCategory.UNPUBLISHED;
 import static org.ihtsdo.otf.rest.client.terminologyserver.SnowstormRestClient.ExportType.DELTA;
 
@@ -54,10 +56,9 @@ public class ValidationService implements OrchestrationConstants {
 	@Autowired
 	protected RVFRestClient rvfClient;
 	
-	private ExecutorService executorService;
+	private final ExecutorService executorService;
 
-
-	public void init() throws IOException {
+	public ValidationService() {
 		executorService = Executors.newCachedThreadPool();
 	}
 
@@ -65,12 +66,12 @@ public class ValidationService implements OrchestrationConstants {
 		Assert.notNull(branchPath);
 		// Check we either don't have a current status, or the status is FAILED or COMPLETE
 		String status = processReportDAO.getStatus(branchPath, VALIDATION_PROCESS);
-		if (status != null && !OrchProcStatus.isFinalState(status)) {
+		if (status != null && !JobStatus.isFinalState(status)) {
 			throw new EntityAlreadyExistsException("An in-progress validation has been detected for " + branchPath + " at state " + status);
 		}
 
 		// Update S3 location
-		processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.SCHEDULED.toString(), null);
+		processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, JobStatus.SCHEDULED.toString(), null);
 
 		// Start thread for additional processing and return immediately
 		(new Thread(new ValidationRunner(validationConfig, branchPath, effectiveDate, authToken, callback))).start();
@@ -81,7 +82,7 @@ public class ValidationService implements OrchestrationConstants {
 		final String status = processReportDAO.getStatus(path, VALIDATION_PROCESS);
 		String latestReport = null;
 		if (status != null) {
-			if (status.equals(OrchProcStatus.COMPLETED.toString())) {
+			if (status.equals(JobStatus.COMPLETED.toString())) {
 				latestReport = processReportDAO.getLatestValidationReport(path);
 			}
 			return new ValidationReportDTO(status, latestReport);
@@ -92,12 +93,7 @@ public class ValidationService implements OrchestrationConstants {
 	public List<String> getLatestValidationStatuses(List<String> paths) throws IOException {
 		List<Callable<String>> tasks = new ArrayList<>();
 		for (final String path : paths) {
-			tasks.add(new Callable<String>() {
-				@Override
-				public String call() throws Exception {
-					return processReportDAO.getStatus(path, VALIDATION_PROCESS);
-				}
-			});
+			tasks.add(() -> processReportDAO.getStatus(path, VALIDATION_PROCESS));
 		}
 		try {
 			final List<Future<String>> futures = executorService.invokeAll(tasks);
@@ -116,7 +112,7 @@ public class ValidationService implements OrchestrationConstants {
 		private final String branchPath;
 		private final String authToken;
 		private final OrchestrationCallback callback;
-		private ValidationConfiguration config;
+		private final ValidationConfiguration config;
 
 		private ValidationRunner(ValidationConfiguration validationConfig, String branchPath, String effectiveDate, String authToken, OrchestrationCallback callback) {
 			this.branchPath = branchPath;
@@ -133,8 +129,8 @@ public class ValidationService implements OrchestrationConstants {
 
 		@Override
 		public void run() {
-			logger.debug("ValidationConfig:" + config);
-			OrchProcStatus finalOrchProcStatus = FAILED;
+			logger.debug("ValidationConfig:{}", config);
+			StatusAndReportUrl finalOrchProcStatus = new StatusAndReportUrl(FAILED);
 			File exportArchive = null;
 			try {
 				// check the config is set correctly
@@ -143,21 +139,23 @@ public class ValidationService implements OrchestrationConstants {
 					throw new BadRequestException("Validation configuration is not set correctly:" + errorMsg);
 				}
 				// Export
-				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.EXPORTING.toString(), null);
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, JobStatus.EXPORTING.toString(), null);
 				//check and update export effective time
 				String exportEffectiveTime = resolveExportEffectiveTime(config);
 
 				// Create terminology server client using SSO security token
-				SnowstormRestClient snowOwlRestClient = terminologyServerRestClientFactory.getClient(authToken);
+				SnowstormRestClient snowstormClient = terminologyServerRestClientFactory.getClient(authToken);
 
 				// Export RF2 delta
-				exportArchive = snowOwlRestClient.export(branchPath, exportEffectiveTime, null, UNPUBLISHED, DELTA);
+				final long branchHeadTimestamp = snowstormClient.getBranch(branchPath).getHeadTimestamp();
+				exportArchive = snowstormClient.export(branchPath, exportEffectiveTime, null, UNPUBLISHED, DELTA);
+				config.setContentHeadTimestamp(branchHeadTimestamp);
 
 				// send delta export directly for RVF validation
 				finalOrchProcStatus = validateByRvfDirectly(exportArchive);
 			} catch (Exception e) {
 				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, FAILED.toString(), e.getMessage());
-				finalOrchProcStatus = FAILED;
+				finalOrchProcStatus = new StatusAndReportUrl(FAILED);
 				logger.error("Validation of {} failed.", branchPath, e);
 			} finally {
 				if (callback != null) {
@@ -190,17 +188,17 @@ public class ValidationService implements OrchestrationConstants {
 			return exportEffectiveDate;
 		}
 
-		public OrchProcStatus validateByRvfDirectly(File exportArchive) throws Exception {
+		public StatusAndReportUrl validateByRvfDirectly(File exportArchive) throws Exception {
 			File tempDir = Files.createTempDir();
 			File localZipFile = new File(tempDir, config.getProductName() + "_" + config.getReleaseDate() + ".zip");
-			OrchProcStatus status = FAILED;
+			JobStatus status = FAILED;
 			String rvfResultUrl = null;
 			try {
 				// change file name exported to RF2 format
-				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILD_INITIATING.toString(), null);
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, JobStatus.BUILD_INITIATING.toString(), null);
 				// prepare files for validation
 				rvfClient.prepareExportFilesForValidation(exportArchive, config, false, localZipFile);
-				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.BUILDING.toString(), null);
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, JobStatus.BUILDING.toString(), null);
 				// call validation API
 				rvfResultUrl = rvfClient.runValidationForRF2DeltaExport(localZipFile, config);
 			} finally {
@@ -210,7 +208,7 @@ public class ValidationService implements OrchestrationConstants {
 			}
 			// polling results
 			if (rvfResultUrl != null) {
-				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.VALIDATING.toString(), null);
+				processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, JobStatus.VALIDATING.toString(), null);
 				JSONObject rvfReport = rvfClient.waitForResponse(rvfResultUrl);
 				processReportDAO.saveReport(branchPath, VALIDATION_PROCESS, rvfReport);
 				Object responseState = rvfReport.get(RVFRestClient.JSON_FIELD_STATUS);
@@ -221,16 +219,16 @@ public class ValidationService implements OrchestrationConstants {
 					throw new ProcessingException("Failed to determine RVF Status from response: " + rvfReport.toString(RVFRestClient.INDENT));
 				}
 				if (RVFRestClient.RVF_STATE.COMPLETE.equals(currentState)) {
-					processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, OrchProcStatus.COMPLETED.toString(), null);
-					status = OrchProcStatus.COMPLETED;
+					processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, JobStatus.COMPLETED.toString(), null);
+					status = JobStatus.COMPLETED;
 				} else {
 					String errorMsg = new JSONObject(rvfReport.get(RVFRestClient.JSON_FIELD_RVF_VALIDATION_RESULT).toString()).get(RVFRestClient.JSON_FIELD_FAILURE_MESSAGES).toString();
-					logger.error("Failed to validate. Error: " + errorMsg);
+					logger.error("Failed to validate. Error: {}", errorMsg);
 					processReportDAO.setStatus(branchPath, VALIDATION_PROCESS, FAILED.toString(), errorMsg);
 					status = FAILED;
 				}
 			}
-			return status;
+			return new StatusAndReportUrl(status, rvfResultUrl);
 		}
 	}
 }
