@@ -43,7 +43,7 @@ public class ValidationMessageHandler {
 			String authToken = messageIn.getStringProperty(X_AUTH_TOKEN);
 			validationService.validate(validationConfig, messageIn.getStringProperty(PATH), messageIn.getStringProperty(EFFECTIVE_TIME), authToken, finalValidationStatus -> {
 				Map<String, Object> properties = new HashMap<>();
-				properties.put("status", finalValidationStatus.getStatus());
+				properties.put("status", finalValidationStatus.getStatus().toString());
 				properties.put("reportUrl", finalValidationStatus.getReportUrl());
 				messagingHelper.sendResponse(messageIn, "", properties);
 			});
