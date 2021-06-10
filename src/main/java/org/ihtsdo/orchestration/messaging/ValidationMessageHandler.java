@@ -45,6 +45,7 @@ public class ValidationMessageHandler {
 				Map<String, Object> properties = new HashMap<>();
 				properties.put("status", finalValidationStatus.getStatus().toString());
 				properties.put("reportUrl", finalValidationStatus.getReportUrl());
+				properties.put(X_AUTH_TOKEN, authToken);
 				messagingHelper.sendResponse(messageIn, "", properties);
 			});
 		} catch (JMSException | EntityAlreadyExistsException e) {
@@ -77,7 +78,7 @@ public class ValidationMessageHandler {
 			validationConfig.setEnableMRCMValidation(false);
 		}
 
-		logger.info("Validation config created:" + validationConfig);
+		logger.info("Validation config created:{}", validationConfig);
 		return validationConfig;
 	}
 }
