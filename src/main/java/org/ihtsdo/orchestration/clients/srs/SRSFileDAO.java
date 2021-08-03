@@ -1,13 +1,11 @@
 package org.ihtsdo.orchestration.clients.srs;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -56,11 +54,8 @@ public class SRSFileDAO {
 
 	public static final String UNKNOWN_EFFECTIVE_DATE = "Unpublished";
 	public static final int EFFECTIVE_DATE_COLUMN = 1;
-	public static final int CHARACTERISTIC_TYPE_ID_COLUMN = 8;
-	public static final int REFSET_ID_COLUMN = 4;
 	public static final int TYPE_ID_COLUMN = 6;
 
-	public static final String STATED_RELATIONSHIP_SCTID = "900000000000010007";
 	public static final String TEXT_DEFINITION_SCTID = "900000000000550004";
 	public static final String ICDO_REFSET_ID = "446608001";
 	public static Set<String> ACCEPTABLE_SIMPLEMAP_VALUES;
@@ -74,12 +69,12 @@ public class SRSFileDAO {
 	@Autowired
 	S3ClientImpl s3Client;
 
-	private String refsetBucket;
+	private final String refsetBucket;
 	private final boolean snowOwlFlatIndexExportStyle;
 
 	static Map<String, RefsetCombiner> refsetMap;
 	static {
-		refsetMap = new HashMap<String, RefsetCombiner>();
+		refsetMap = new HashMap<>();
 		refsetMap.put("Simple", new RefsetCombiner("der2_Refset_Simple****_$$$_########.txt", new String[] {
 				"der2_Refset_NonHumanSimpleReferenceSet****_$$$_########.txt",
 				"der2_Refset_VirtualMedicinalProductSimpleReferenceSet****_$$$_########.txt",
@@ -102,8 +97,6 @@ public class SRSFileDAO {
 		refsetMap.put("Language", new RefsetCombiner("der2_cRefset_Language****-en_$$$_########.txt", new String[] {
 				"der2_cRefset_GBEnglish****-en-gb_$$$_########.txt", "der2_cRefset_USEnglish****-en-us_$$$_########.txt" }));
 
-		refsetMap.put("RefsetDescriptor", new RefsetCombiner("der2_cciRefset_RefsetDescriptor****_$$$_########.txt", new String[] {}));
-
 		refsetMap.put("DescriptionType", new RefsetCombiner("der2_ciRefset_DescriptionType****_$$$_########.txt",
 				new String[] { "der2_ciRefset_DescriptionFormat****_$$$_########.txt" }));
 
@@ -113,11 +106,7 @@ public class SRSFileDAO {
 		refsetMap.put("SimpleMap", new RefsetCombiner("der2_sRefset_SimpleMap****_$$$_########.txt", new String[] {
 				"der2_sRefset_CTV3SimpleMap****_$$$_########.txt", "der2_sRefset_ICD-OSimpleMapReferenceSet****_$$$_########.txt",
 				"der2_sRefset_SNOMEDRTIDSimpleMap****_$$$_########.txt", "der2_sRefset_GMDNSimpleMapReferenceSet****_$$$_########.txt" }));
-
-		refsetMap.put("ModuleDependency", new RefsetCombiner("der2_ssRefset_ModuleDependency****_$$$_########.txt",
-				new String[] { "der2_ssRefset_ModuleDependency****_$$$_########.txt" }));
-
-		ACCEPTABLE_SIMPLEMAP_VALUES = new HashSet<String>();
+		ACCEPTABLE_SIMPLEMAP_VALUES = new HashSet<>();
 		ACCEPTABLE_SIMPLEMAP_VALUES.add(ICDO_REFSET_ID);
 	}
 
@@ -143,7 +132,7 @@ public class SRSFileDAO {
 		logger.debug("Unzipped files to {}", extractDir.getAbsolutePath());
 		
 		String countryNamespace = getCountryOrNamespace(extractDir);
-		logger.debug("Country or namespace found from file name:" + countryNamespace);
+		logger.debug("Country or namespace found from file name:{}", countryNamespace);
 		if (countryNamespace == null) {
 			countryNamespace = "INT";
 		}
@@ -154,7 +143,7 @@ public class SRSFileDAO {
 		enforceReleaseDate(extractDir, releaseDate);
 		// suppress files that no longer to be released.
 		suppressFilesNotRequired(FILE_NAMES_TO_BE_EXCLUDED, extractDir);
-		//exclude files for extension releasee
+		// exclude files for extension release
 		if (!INTERNATIONAL.equalsIgnoreCase(releaseCenter)){
 			suppressFilesNotRequired(EXTENSION_EXCLUDED_FILES, extractDir);
 		}
@@ -225,7 +214,7 @@ public class SRSFileDAO {
 		File updatedName = new File(extractDir, "der2_Refset_DanishTranslatedConceptsSimpleDelta_DK1000005_" + releaseDate + TXT);
 		if (wrongName.exists()) {
 			wrongName.renameTo(updatedName);
-			logger.warn("found wrong file name:" + wrongName +  " and updated it to :" + updatedName);
+			logger.warn("found wrong file name: {} and updated it to : {}", wrongName, updatedName);
 		} 
 	
 	}
@@ -249,7 +238,7 @@ public class SRSFileDAO {
 		for (String fileName : filesToBeRemoved) {
 			File file = new File(extractDir,fileName);
 			if (file.exists()) {
-				logger.debug("File is excluded:" + file.getName());
+				logger.debug("File is excluded: {}", file.getName());
 				file.delete();
 			}
 		}
@@ -261,7 +250,7 @@ public class SRSFileDAO {
 			if (thisFile.isFile()) {
 				String thisReleaseDate = findDateInString(thisFile.getName(), true);
 				if (thisReleaseDate != null && !thisReleaseDate.equals(enforcedReleaseDate)) {
-					logger.debug("Modifying releaseDate in " + thisFile.getName() + " to " + enforcedReleaseDate);
+					logger.debug("Modifying releaseDate in {} to {}", thisFile.getName(), enforcedReleaseDate);
 					renameFile(extractDir, thisFile, thisReleaseDate, enforcedReleaseDate);
 				}
 			}
@@ -363,8 +352,8 @@ public class SRSFileDAO {
 			logger.debug("Creating {} as a subset of {} and {} rows in original.", target, source, (removeFromOriginal ? "removing"
 					: "leaving"));
 			List<String> allLines = FileUtils.readLines(source, StandardCharsets.UTF_8);
-			List<String> newLines = new ArrayList<String>();
-			List<String> remainingLines = new ArrayList<String>();
+			List<String> newLines = new ArrayList<>();
+			List<String> remainingLines = new ArrayList<>();
 			int lineCount = 1;
 			for (String thisLine : allLines) {
 				String[] columns = thisLine.split("\t");
@@ -399,9 +388,9 @@ public class SRSFileDAO {
 	 */
 	protected void filterUnacceptableValues(File target, int columnNum, Set<String> acceptableValues) throws IOException {
 		if (target.exists() && !target.isDirectory()) {
-			logger.debug("Filtering unacceptable values from " + target.getAbsolutePath());
+			logger.debug("Filtering unacceptable values from {} ", target.getAbsolutePath());
 			List<String> allLines = FileUtils.readLines(target, StandardCharsets.UTF_8);
-			List<String> acceptableLines = new ArrayList<String>();
+			List<String> acceptableLines = new ArrayList<>();
 			int lineCount = 1;
 			for (String thisLine : allLines) {
 				String[] columns = thisLine.split("\t");
@@ -416,53 +405,22 @@ public class SRSFileDAO {
 		}
 	}
 
-	private void stripAllExceptHeader(File target) throws IOException {
-
-		logger.debug("Stripping all but header from: " + target.getAbsolutePath());
-		// Move target file out of the way for a moment so it can be recreated
-		// with just the header row
-		File tempFile = null;
-		try {
-			tempFile = new File(target.getParent(), target.getName() + ".delete");
-			Files.move(target, tempFile);
-		} catch (IOException e) {
-			logger.warn("Failed to strip all but headers from " + target.getAbsolutePath() + " due to " + e.getMessage());
-			return;
-		}
-
-		// Read the first line from the temp file and write back to the original file
-		InputStream fis = new FileInputStream(tempFile);
-		InputStreamReader isr = new InputStreamReader(fis, CharEncoding.UTF_8);
-		BufferedReader br = new BufferedReader(isr);
-		String header = br.readLine();
-		FileUtils.writeStringToFile(target, header, CharEncoding.UTF_8);
-		br.close();
-		isr.close();
-		fis.close();
-
-		tempFile.delete();
-	}
-
 	public String recoverReleaseDate(File archive) throws ProcessWorkflowException, IOException {
 		// Ensure that we have a valid archive
 		if (!archive.isFile()) {
 			throw new ProcessWorkflowException("Could not open supplied archive: " + archive.getAbsolutePath());
 		}
 
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-		ZipEntry ze = zis.getNextEntry();
-		try {
+		try (ZipInputStream zis = new ZipInputStream(new FileInputStream(archive))) {
+			ZipEntry ze = zis.getNextEntry();
 			while (ze != null) {
 				if (!ze.isDirectory()) {
 					return findDateInString(ze.getName(), false);
 				}
 				ze = zis.getNextEntry();
 			}
-		} finally {
-			zis.closeEntry();
-			zis.close();
+			throw new ProcessWorkflowException("No files found in archive: " + archive.getAbsolutePath());
 		}
-		throw new ProcessWorkflowException("No files found in archive: " + archive.getAbsolutePath());
 	}
 
 	public String findDateInString(String str, boolean optional) throws ProcessWorkflowException {
@@ -471,7 +429,7 @@ public class SRSFileDAO {
 			return dateMatcher.group(1);
 		} else {
 			if (optional) {
-				logger.warn("Did not find a date in: " + str);
+				logger.warn("Did not find a date in: {} ", str);
 			} else {
 				throw new ProcessWorkflowException("Unable to determine date from " + str);
 			}
@@ -485,26 +443,23 @@ public class SRSFileDAO {
 			throw new ProcessWorkflowException(targetDir + " is not a viable directory in which to extract archive");
 		}
 
-		ZipInputStream zis = new ZipInputStream(new FileInputStream(archive));
-		ZipEntry ze = zis.getNextEntry();
-		try {
+		try (ZipInputStream zis = new ZipInputStream(new FileInputStream(archive))) {
+			ZipEntry ze = zis.getNextEntry();
 			while (ze != null) {
 				if (!ze.isDirectory()) {
 					Path p = Paths.get(ze.getName());
 					String extractedFileName = p.getFileName().toString();
 					File extractedFile = new File(targetDir, extractedFileName);
-					OutputStream out = new FileOutputStream(extractedFile);
-					IOUtils.copy(zis, out);
-					IOUtils.closeQuietly(out);
+					try (OutputStream out = new FileOutputStream(extractedFile)) {
+						IOUtils.copy(zis, out);
+						IOUtils.closeQuietly(out);
+					}
 				}
 				ze = zis.getNextEntry();
 			}
-		} finally {
-			zis.closeEntry();
-			zis.close();
 		}
 	}
-	
+
 	public void downloadExternallyMaintainedFiles(File extractDir,String releaseCenter,String targetReleaseDate) throws IOException {
 		FileHelper s3 = new FileHelper(this.refsetBucket, s3Client);
 		// Recover all files in the folder ready for the next release
